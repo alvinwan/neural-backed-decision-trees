@@ -3,8 +3,9 @@
 # Edit at https://www.gitignore.io/?templates=macos,python
 
 *.xml
-data
-!data/cifar10/wnid.txt
+data/tiny-imagenet-200/test
+data/tiny-imagenet-200/train
+data/tiny-imagenet-200/val
 
 ### macOS ###
 # General

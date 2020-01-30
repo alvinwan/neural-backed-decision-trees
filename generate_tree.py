@@ -14,7 +14,7 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset',
-    help='Must be a folder data/{dataset} containing a wnid.txt',
+    help='Must be a folder data/{dataset} containing a wnids.txt',
     choices=('tiny-imagenet-200', 'cifar10'),
     default='cifar10')
 
@@ -22,7 +22,7 @@ args = parser.parse_args()
 tree = ET.parse('structure_released.xml')
 
 directory = os.path.join('data', args.dataset)
-with open(os.path.join(directory, 'wnid.txt')) as f:
+with open(os.path.join(directory, 'wnids.txt')) as f:
     wnids = f.readlines()
 
 def print_tree_stats(tree, name):
