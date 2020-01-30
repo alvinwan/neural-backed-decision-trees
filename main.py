@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
+from utils.datasets import CIFAR10NodeDataset
 
 import torchvision
 import torchvision.transforms as transforms
@@ -12,13 +13,40 @@ import os
 import argparse
 
 from models import *
-from utils import progress_bar
+from utils.utils import progress_bar
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
+parser.add_argument('--test', action='store_true', help='run dataset tests')
 args = parser.parse_args()
+
+
+if args.test:
+    import xml.etree.ElementTree as ET
+
+    for wnid, text in (
+            ('fall11', 'root'),
+            ('n03575240', 'instrument'),
+            ('n03791235', 'motor vehicle'),
+            ('n02370806', 'hoofed mammal')):
+        dataset = CIFAR10NodeDataset(wnid)
+
+        print(text)
+        print(dataset.mapping)
+
+    with open('./data/cifar10/wnids.txt') as f:
+        wnids = [line.strip() for line in f.readlines()]
+
+    tree = ET.parse('./data/cifar10/tree.xml');
+    for wnid in wnids:
+        node = tree.find('.//synset[@wnid="{}"]'.format(wnid))
+        assert len(node.getchildren()) == 0, (
+            node.get('words'), [child.get('words') for child in node.getchildren()]
+        )
+    exit()
+
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0  # best test accuracy

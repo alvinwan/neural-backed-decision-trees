@@ -8,6 +8,12 @@ import xml
 from collections import defaultdict, Counter
 
 
+def remove(tree, node):
+    node_to_parent = {child: parent for parent in tree.iter() for child in parent}
+    parent = node_to_parent[node]
+    parent.remove(node)
+
+
 def find_attribute_contains(tree, attribute, contains):
     seen = set()
     nodes = []
