@@ -5,6 +5,7 @@
 """
 
 import xml
+from collections import defaultdict
 
 
 def get_ancestors(node, node_to_parent):
@@ -43,12 +44,12 @@ def compute_depth_bfs(tree):
 
 def keep_matched_nodes_and_ancestors(tree, criteria):
     node_to_parent = {child: parent for parent in tree.iter() for child in parent}
-    keep = set()
+    keep = defaultdict(lambda: 0)
 
     for criterion in criteria:
         node = tree.find(criterion)
         for ancestor in get_ancestors(node, node_to_parent):
-            keep.add(ancestor.get('wnid'))
+            keep[ancestor.get('wnid')] += 1
 
     if not len(keep):
         raise UserWarning('No nodes were matched. Check your criteria.')
@@ -58,5 +59,9 @@ def keep_matched_nodes_and_ancestors(tree, criteria):
             if node not in node_to_parent:
                 continue
             node_to_parent[node].remove(node)
+
+    n_redundant_nodes = sum(count == len(criteria) for count in keep.values())
+    assert n_redundant_nodes <= 1, \
+        'There are multiple nodes that all leaves share. Weird'
 
     return tree
