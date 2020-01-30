@@ -1,3 +1,8 @@
+Notes:
+- downloaded structure_released.xml from http://image-net.org/download-toolbox
+- downloaded tinyimagenet from https://tiny-imagenet.herokuapp.com/
+
+
 # Train CIFAR10 with PyTorch
 
 I'm playing with [PyTorch](http://pytorch.org/) on the CIFAR10 dataset.
