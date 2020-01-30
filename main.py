@@ -178,7 +178,14 @@ def test(epoch):
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/ckpt.pth')
+
+        fname = 'ckpt'
+        fname += '-' + args.dataset
+
+        if args.dataset == 'cifar10node':
+            fname += '-' + args.wnid
+
+        torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
 
 
