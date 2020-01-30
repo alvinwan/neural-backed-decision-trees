@@ -20,6 +20,27 @@ def count_nodes(tree):
     return n
 
 
+def compute_depth_bfs(tree):
+    root = tree.getroot()
+    root.set('depth', 0)
+    frontier = [root]
+
+    depth_max = 0
+    while frontier:
+        node = frontier.pop(0)
+        for child in node.getchildren():
+            depth = node.get('depth') + 1
+            if depth > depth_max:
+                depth_max = depth
+            child.set('depth', depth)
+            frontier.append(child)
+
+    for node in tree.iter():
+        node.attrib.pop('depth')
+
+    return depth_max
+
+
 def keep_matched_nodes_and_ancestors(tree, criteria):
     node_to_parent = {child: parent for parent in tree.iter() for child in parent}
     keep = set()
