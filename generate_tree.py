@@ -8,11 +8,21 @@ tiny-imagenet-200/wnids.txt and their ancestors are included.
 from utils.xmlutils import keep_matched_nodes_and_ancestors, count_nodes, \
     compute_depth, compute_num_children, prune_single_child_nodes
 import xml.etree.ElementTree as ET
+import argparse
+import os
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset',
+    help='Must be a folder data/{dataset} containing a wnid.txt',
+    choices=('tiny-imagenet-200', 'cifar10'),
+    default='cifar10')
+
+args = parser.parse_args()
 tree = ET.parse('structure_released.xml')
 
-with open('tiny-imagenet-200/wnids.txt') as f:
+directory = os.path.join('data', args.dataset)
+with open(os.path.join(directory, 'wnid.txt')) as f:
     wnids = f.readlines()
 
 def print_tree_stats(tree, name):
@@ -36,4 +46,7 @@ num_children = compute_num_children(tree)
 print(' => {} max number of children'.format(max(num_children)))
 
 print(num_children)
-tree.write('subset_structure_released.xml')
+path = os.path.join(directory, 'tree.xml')
+tree.write(path)
+
+print('Wrote final pruned tree to {}'.format(path))

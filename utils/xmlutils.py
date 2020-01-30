@@ -8,6 +8,20 @@ import xml
 from collections import defaultdict, Counter
 
 
+def find_attribute_contains(tree, attribute, contains):
+    seen = set()
+    nodes = []
+    for node in tree.iter():
+        if attribute not in node.keys():
+            continue
+        if contains in node.get(attribute):
+            wnid = node.get('wnid')
+            if wnid not in seen:
+                seen.add(wnid)
+                nodes.append(node)
+    return nodes
+
+
 def get_ancestors(node, node_to_parent):
     while node in node_to_parent:
         yield node
@@ -97,6 +111,7 @@ def prune_single_child_nodes(tree):
             parent.insert(0, children[0])
 
     return tree
+
 
 def get_leaves(tree):
     leaves = []
