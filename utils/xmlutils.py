@@ -5,7 +5,7 @@
 """
 
 import xml
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 
 def get_ancestors(node, node_to_parent):
@@ -21,25 +21,42 @@ def count_nodes(tree):
     return n
 
 
-def compute_depth_bfs(tree):
+def bfs(tree, func):
     root = tree.getroot()
-    root.set('depth', 0)
     frontier = [root]
 
-    depth_max = 0
     while frontier:
         node = frontier.pop(0)
         for child in node.getchildren():
-            depth = node.get('depth') + 1
-            if depth > depth_max:
-                depth_max = depth
-            child.set('depth', depth)
+            func(node, child)
             frontier.append(child)
+
+
+def compute_depth(tree):
+    root = tree.getroot()
+    root.set('depth', 0)
+
+    depth_max = 0
+    def func(node, child):
+        nonlocal depth_max
+        depth = node.get('depth') + 1
+        if depth > depth_max:
+            depth_max = depth
+        child.set('depth', depth)
+
+    bfs(tree, func)
 
     for node in tree.iter():
         node.attrib.pop('depth')
 
     return depth_max
+
+
+def compute_num_children(tree, condition = lambda count: count > 0):
+    num_children = []
+    for node in tree.iter():
+        num_children.append(len(node.getchildren()))
+    return Counter(filter(condition, num_children))
 
 
 def keep_matched_nodes_and_ancestors(tree, criteria):
@@ -65,3 +82,24 @@ def keep_matched_nodes_and_ancestors(tree, criteria):
         'There are multiple nodes that all leaves share. Weird'
 
     return tree
+
+
+def prune_single_child_nodes(tree):
+    node_to_parent = {child: parent for parent in tree.iter() for child in parent}
+
+    for node in tree.iter():
+        children = node.getchildren()
+        if node not in node_to_parent:
+            continue
+        if len(children) == 1:
+            parent = node_to_parent[node]
+            parent.remove(node)
+            parent.insert(0, children[0])
+
+    return tree
+
+def get_leaves(tree):
+    leaves = []
+    for node in tree.iter():
+        if not node.getchildren():
+            yield node
