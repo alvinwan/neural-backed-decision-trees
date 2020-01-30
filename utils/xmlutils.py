@@ -88,9 +88,9 @@ def prune_single_child_nodes(tree):
     node_to_parent = {child: parent for parent in tree.iter() for child in parent}
 
     for node in tree.iter():
-        children = node.getchildren()
         if node not in node_to_parent:
             continue
+        children = node.getchildren()
         if len(children) == 1:
             parent = node_to_parent[node]
             parent.remove(node)
