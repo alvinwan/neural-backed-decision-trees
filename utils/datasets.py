@@ -70,8 +70,10 @@ class CIFAR10Node:
         classes = [[] for _ in range(n + 1)]
         for old_index in range(10):
             original_class = self.original_classes[old_index]
+            new_index = self.mapping[old_index]
             classes[new_index].append(original_class)
-        self.classes = [','.join(names) for names in classes]
+
+        self.classes = [','.join(names) for names in classes if names]
 
     @staticmethod
     def get_wnid_to_node(path_tree, path_wnids):

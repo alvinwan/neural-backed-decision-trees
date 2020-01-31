@@ -59,6 +59,7 @@ if args.test:
 
         print(text)
         print(dataset.node.mapping)
+        print(dataset.classes)
 
     with open('./data/cifar10/wnids.txt') as f:
         wnids = [line.strip() for line in f.readlines()]
