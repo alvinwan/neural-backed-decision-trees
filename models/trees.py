@@ -12,7 +12,7 @@ class CIFAR10Tree(nn.Module):
             path_tree='./data/cifar10/tree.xml',
             path_wnids='./data/cifar10/wnids.txt',
             pretrained=True,
-            num_classes=None,  # this is ignored
+            num_classes=10,
             **kwargs):
         super().__init__()
 
@@ -21,6 +21,8 @@ class CIFAR10Tree(nn.Module):
         self.nodes = [wnid_to_node[wnid] for wnid in wnids]
         self.nets = nn.ModuleList([
             self.get_net_for_node(node, pretrained) for node in self.nodes])
+
+        self.linear = nn.Linear(self.get_input_dim(), num_classes)
 
     def get_net_for_node(self, node, pretrained):
         import models
@@ -44,5 +46,4 @@ class CIFAR10Tree(nn.Module):
             for net in self.nets:
                 sample.extend(net(old_sample))
             sample = torch.cat(sample, 0)
-
-            return sample
+        return self.linear(sample)
