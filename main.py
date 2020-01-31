@@ -15,7 +15,7 @@ import argparse
 import models
 from utils.utils import progress_bar, initialize_confusion_matrix, \
     update_confusion_matrix, confusion_matrix_recall, confusion_matrix_precision, \
-    set_np_printoptions
+    set_np_printoptions, generate_fname
 
 
 CIFAR10NODE = 'CIFAR10node'
