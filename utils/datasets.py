@@ -2,6 +2,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import xml.etree.ElementTree as ET
 from utils.xmlutils import get_leaves, remove
+import torch
 
 
 class TinyImagenetDataset(datasets.ImageFolder):
@@ -82,3 +83,40 @@ class CIFAR10NodeDataset(datasets.CIFAR10):
     def __getitem__(self, i):
         sample, old_label = super().__getitem__(i)
         return sample, self.mapping[old_label]
+
+
+class CIFAR10PathCheckDataset(datasets.CIFAR10):
+    """returns samples that assume all node classifiers are perfect"""
+
+    def __init__(self, root='./data', *args,
+            path_tree='./data/cifar10/tree.xml',
+            path_wnids='./data/cifar10/wnids.txt', **kwargs):
+        super().__init__(root=root, *args, **kwargs)
+
+        tree = ET.parse(path_tree)
+        wnid_to_dataset = {}
+        for node in tree.iter():
+            wnid = node.get('wnid')
+            if wnid is None or len(node.getchildren()) == 0:
+                continue
+            wnid_to_dataset[wnid] = CIFAR10NodeDataset(node.get('wnid'), *args,
+                root=root, path_tree=path_tree, path_wnids=path_wnids, **kwargs)
+
+        wnids = sorted(wnid_to_dataset)
+        self.datasets = [wnid_to_dataset[wnid] for wnid in wnids]
+
+    def get_sample(self, dataset, old_label):
+        new_label = dataset.mapping[old_label]
+        sample = [0] * len(dataset.classes)
+        sample[new_label] = 1
+        return sample
+
+    def __getitem__(self, i):
+        _, old_label = super().__getitem__(i)
+
+        sample = []
+        for dataset in self.datasets:
+            sample.extend(self.get_sample(dataset, old_label))
+        sample = torch.Tensor(sample)
+
+        return sample, old_label
