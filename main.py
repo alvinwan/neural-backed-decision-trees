@@ -22,6 +22,8 @@ datasets = ('CIFAR10', 'CIFAR100', 'CIFAR10node')
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
 parser.add_argument('--batch-size', default=128, type=int,
                     help='Batch size used for training')
+parser.add_argument('--epochs', '-e', default=350, type=int,
+                    help='By default, lr schedule is scaled accordingly')
 parser.add_argument('--dataset', default='CIFAR10', choices=datasets)
 parser.add_argument('--model', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
@@ -115,9 +117,9 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
 def adjust_learning_rate(epoch, lr):
-    if epoch <= 150:  # 32k iterations
+    if epoch <= 150 / 350. * args.epochs:  # 32k iterations
       return lr
-    elif epoch <= 250:  # 48k iterations
+    elif epoch <= 250 / 350. * args.epochs:  # 48k iterations
       return lr/10
     else:
       return lr/100
@@ -190,6 +192,6 @@ def test(epoch):
         best_acc = acc
 
 
-for epoch in range(start_epoch, start_epoch+350):
+for epoch in range(start_epoch, args.epochs):
     train(epoch)
     test(epoch)
