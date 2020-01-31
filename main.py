@@ -13,7 +13,9 @@ import os
 import argparse
 
 import models
-from utils.utils import progress_bar
+from utils.utils import progress_bar, initialize_confusion_matrix, \
+    update_confusion_matrix, confusion_matrix_recall, confusion_matrix_precision, \
+    set_np_printoptions
 
 
 CIFAR10NODE = 'CIFAR10node'
@@ -33,11 +35,13 @@ parser.add_argument('--resume', '-r', action='store_true', help='resume from che
 
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
+parser.add_argument('--eval', help='eval only', action='store_true')
 parser.add_argument('--test', action='store_true', help='run dataset tests')
 parser.add_argument('--test-path-sanity', action='store_true',
                     help='test path classifier with oracle fc')
 parser.add_argument('--test-path', action='store_true',
                     help='test path classifier with random init')
+parser.add_argument('--print-confusion-matrix', action='store_true')
 
 args = parser.parse_args()
 
@@ -170,12 +174,13 @@ def train(epoch):
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
-def test(epoch):
+def test(epoch, print_confusion_matrix):
     global best_acc
     net.eval()
     test_loss = 0
     correct = 0
     total = 0
+    confusion_matrix = initialize_confusion_matrix(len(trainset.classes))
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
@@ -186,6 +191,10 @@ def test(epoch):
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
+
+            predicted = predicted.numpy().ravel()
+            targets = targets.numpy().ravel()
+            confusion_matrix = update_confusion_matrix(confusion_matrix, predicted, targets)
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
@@ -211,7 +220,16 @@ def test(epoch):
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
 
+    if print_confusion_matrix:
+        set_np_printoptions()
+        print(confusion_matrix_recall(confusion_matrix))
+
+
+if args.eval:
+    test(0, args.print_confusion_matrix)
+    exit()
+
 
 for epoch in range(start_epoch, args.epochs):
     train(epoch)
-    test(epoch)
+    test(epoch, args.print_confusion_matrix)
