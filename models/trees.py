@@ -11,7 +11,7 @@ class CIFAR10Tree(nn.Module):
     def __init__(self, *args,
             path_tree='./data/cifar10/tree.xml',
             path_wnids='./data/cifar10/wnids.txt',
-            pretrained=False,
+            pretrained=True,
             num_classes=10,
             one_hot_feature=False,
             **kwargs):
@@ -47,6 +47,7 @@ class CIFAR10Tree(nn.Module):
             sample = []
             for net in self.nets:
                 feature = net(old_sample)
+                feature = feature / feature.sum(axis=1)[None]
 
                 if self.one_hot_feature:
                     maximum = torch.max(feature, dim=1)[0]
