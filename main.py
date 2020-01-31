@@ -185,7 +185,7 @@ def test(epoch):
 
         fname = 'ckpt'
         fname += '-' + args.dataset
-
+        fname += '-' + args.model
         if args.dataset == CIFAR10NODE:
             fname += '-' + args.wnid
 
