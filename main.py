@@ -78,7 +78,7 @@ transform_test = transforms.Compose([
 ])
 
 dataset_args = ()
-if args.dataset == 'CIFAR10Node':
+if args.dataset == 'CIFAR10node':
     dataset = CIFAR10NodeDataset
     dataset_args = (args.wnid,)
 else:
