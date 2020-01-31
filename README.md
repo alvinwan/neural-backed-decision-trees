@@ -1,3 +1,7 @@
+Really just [Kuang Liu's pytorch-cifar](https://github.com/kuangliu/pytorch-cifar), but with a few extra commits:
+- Learning rate automatically adjusted
+- Model functions accept a num_classes argument
+
 # Train CIFAR10 with PyTorch
 
 I'm playing with [PyTorch](http://pytorch.org/) on the CIFAR10 dataset.

@@ -61,7 +61,7 @@ class ShuffleNet(nn.Module):
         self.layer1 = self._make_layer(out_planes[0], num_blocks[0], groups)
         self.layer2 = self._make_layer(out_planes[1], num_blocks[1], groups)
         self.layer3 = self._make_layer(out_planes[2], num_blocks[2], groups)
-        self.linear = nn.Linear(out_planes[2], 10)
+        self.linear = nn.Linear(out_planes[2], cfg['num_classes'])
 
     def _make_layer(self, out_planes, num_blocks, groups):
         layers = []
@@ -83,19 +83,21 @@ class ShuffleNet(nn.Module):
         return out
 
 
-def ShuffleNetG2():
+def ShuffleNetG2(num_classes=10):
     cfg = {
         'out_planes': [200,400,800],
         'num_blocks': [4,8,4],
-        'groups': 2
+        'groups': 2,
+        'num_classes': num_classes
     }
     return ShuffleNet(cfg)
 
-def ShuffleNetG3():
+def ShuffleNetG3(num_classes=10):
     cfg = {
         'out_planes': [240,480,960],
         'num_blocks': [4,8,4],
-        'groups': 3
+        'groups': 3,
+        'num_classes': num_classes
     }
     return ShuffleNet(cfg)
 
