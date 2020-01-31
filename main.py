@@ -17,13 +17,16 @@ from utils.utils import progress_bar
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
-parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
-                    default='fall11')
+parser.add_argument('--batch-size', default=128, help='Batch size used for training')
 parser.add_argument('--dataset', default='CIFAR10', choices=('CIFAR10', 'CIFAR100', 'CIFAR10Node'))
 parser.add_argument('--model', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--test', action='store_true', help='run dataset tests')
+
+parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
+                    default='fall11')
+
 args = parser.parse_args()
 
 
@@ -80,7 +83,7 @@ else:
 trainset = dataset(*dataset_args, root='./data', train=True, download=True, transform=transform_train)
 testset = dataset(*dataset_args, root='./data', train=False, download=True, transform=transform_test)
 
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
 print(f'Training with dataset {args.dataset} and classes {trainset.classes}')
