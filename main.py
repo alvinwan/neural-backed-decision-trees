@@ -229,6 +229,8 @@ def test(epoch, print_confusion_matrix, checkpoint=True):
 
 
 if args.eval:
+    if not args.resume:
+        print(' * Warning: Model is not loaded from checkpoint. Use --resume')
     test(0, args.print_confusion_matrix, checkpoint=False)
     exit()
 
