@@ -16,7 +16,8 @@ import models
 from utils.utils import progress_bar
 
 
-datasets = ('CIFAR10', 'CIFAR100', 'CIFAR10node')
+CIFAR10NODE = 'CIFAR10node'
+datasets = ('CIFAR10', 'CIFAR100', CIFAR10NODE)
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
@@ -80,7 +81,7 @@ transform_test = transforms.Compose([
 ])
 
 dataset_args = ()
-if args.dataset == 'CIFAR10node':
+if args.dataset == CIFAR10NODE:
     dataset = CIFAR10NodeDataset
     dataset_args = (args.wnid,)
 else:
@@ -185,7 +186,7 @@ def test(epoch):
         fname = 'ckpt'
         fname += '-' + args.dataset
 
-        if args.dataset == 'cifar10node':
+        if args.dataset == CIFAR10NODE:
             fname += '-' + args.wnid
 
         torch.save(state, './checkpoint/{}.pth'.format(fname))
