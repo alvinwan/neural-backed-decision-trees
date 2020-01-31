@@ -16,9 +16,13 @@ import models
 from utils.utils import progress_bar
 
 
+datasets = ('CIFAR10', 'CIFAR100', 'CIFAR10node')
+
+
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
-parser.add_argument('--batch-size', default=128, help='Batch size used for training')
-parser.add_argument('--dataset', default='CIFAR10', choices=('CIFAR10', 'CIFAR100', 'CIFAR10Node'))
+parser.add_argument('--batch-size', default=128, type=int,
+                    help='Batch size used for training')
+parser.add_argument('--dataset', default='CIFAR10', choices=datasets)
 parser.add_argument('--model', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
