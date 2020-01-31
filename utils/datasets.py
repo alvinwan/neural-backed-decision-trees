@@ -73,6 +73,18 @@ class CIFAR10Node:
             classes[new_index].append(original_class)
         self.classes = [','.join(names) for names in classes]
 
+    @staticmethod
+    def get_wnid_to_node(path_tree, path_wnids):
+        tree = ET.parse(path_tree)
+        wnid_to_node = {}
+        for node in tree.iter():
+            wnid = node.get('wnid')
+            if wnid is None or len(node.getchildren()) == 0:
+                continue
+            wnid_to_node[wnid] = CIFAR10Node(node.get('wnid'),
+                path_tree=path_tree, path_wnids=path_wnids)
+        return wnid_to_node
+
 
 
 class CIFAR10NodeDataset(datasets.CIFAR10):
@@ -101,18 +113,9 @@ class CIFAR10PathSanityDataset(datasets.CIFAR10):
             path_tree='./data/cifar10/tree.xml',
             path_wnids='./data/cifar10/wnids.txt', **kwargs):
         super().__init__(root=root, *args, **kwargs)
-
-        tree = ET.parse(path_tree)
-        wnid_to_dataset = {}
-        for node in tree.iter():
-            wnid = node.get('wnid')
-            if wnid is None or len(node.getchildren()) == 0:
-                continue
-            wnid_to_dataset[wnid] = CIFAR10Node(node.get('wnid'),
-                path_tree=path_tree, path_wnids=path_wnids)
-
-        wnids = sorted(wnid_to_dataset)
-        self.nodes = [wnid_to_dataset[wnid] for wnid in wnids]
+        wnid_to_node = CIFAR10Node.get_wnid_to_node(path_tree, path_wnids)
+        wnids = sorted(wnid_to_node)
+        self.nodes = [wnid_to_node[wnid] for wnid in wnids]
 
     def get_sample(self, node, old_label):
         new_label = node.mapping[old_label]
@@ -149,5 +152,44 @@ class CIFAR10PathSanityDataset(datasets.CIFAR10):
         for dataset in self.nodes:
             sample.extend(self.get_sample(dataset, old_label))
         sample = torch.Tensor(sample)
+
+        return sample, old_label
+
+
+class CIFAR10PathDataset(datasets.CIFAR10):
+    """returns samples from all node classifiers"""
+
+    def __init__(self, root='./data', *args,
+            path_tree='./data/cifar10/tree.xml',
+            path_wnids='./data/cifar10/wnids.txt',
+            pretrained=True,
+            **kwargs):
+        super().__init__(root=root, *args, **kwargs)
+
+        wnid_to_node = CIFAR10Node.get_wnid_to_node(path_tree, path_wnids)
+        wnids = sorted(wnid_to_node)
+        self.nodes = [wnid_to_node[wnid] for wnid in wnids]
+        self.nets = [self.get_net_for_node(node, pretrained) for node in self.nodes]
+
+    def get_net_for_node(self, node, pretrained):
+        import models
+        # TODO: WARNING: the model and paths are hardcoded
+        net = models.ResNet10(num_classes=len(node.classes))
+        if pretrained:
+            checkpoint = torch.load(f'./data/ckpt-CIFAR10node-ResNet10-{node.wnid}.pth')
+            net.load_state_dict(checkpoint['net'])
+        return net
+
+    # WARNING: copy-pasta from above
+    def get_input_dim(self):
+        return sum([len(dataset.classes) for dataset in self.nodes])
+
+    def __getitem__(self, i):
+        old_sample, old_label = super().__getitem__(i)
+
+        sample = []
+        for net in self.nets:
+            sample.extend(net(old_sample[None]))
+        sample = torch.cat(sample, 0)
 
         return sample, old_label

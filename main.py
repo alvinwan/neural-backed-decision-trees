@@ -4,7 +4,8 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-from utils.datasets import CIFAR10NodeDataset, CIFAR10PathSanityDataset
+from utils.datasets import CIFAR10NodeDataset, CIFAR10PathSanityDataset, \
+    CIFAR10PathDataset
 
 import torchvision
 import torchvision.transforms as transforms
@@ -18,7 +19,8 @@ from utils.utils import progress_bar
 
 CIFAR10NODE = 'CIFAR10node'
 CIFAR10PATHSANITY = 'CIFAR10pathsanity'
-datasets = ('CIFAR10', 'CIFAR100', CIFAR10NODE, CIFAR10PATHSANITY)
+CIFAR10PATH = 'CIFAR10path'
+datasets = ('CIFAR10', 'CIFAR100', CIFAR10NODE, CIFAR10PATHSANITY, CIFAR10PATH)
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
@@ -89,7 +91,7 @@ transform_test = transforms.Compose([
 ])
 
 if args.test_path_sanity or args.test_path:
-    assert args.dataset == CIFAR10PATHSANITY
+    assert args.dataset in (CIFAR10PATHSANITY, CIFAR10PATH)
 
 dataset_args = ()
 if args.dataset == CIFAR10NODE:
@@ -97,6 +99,8 @@ if args.dataset == CIFAR10NODE:
     dataset_args = (args.wnid,)
 elif args.dataset == CIFAR10PATHSANITY:
     dataset = CIFAR10PathSanityDataset
+elif args.dataset == CIFAR10PATH:
+    dataset = CIFAR10PathDataset
 else:
     dataset = getattr(torchvision.datasets, args.dataset)
 
