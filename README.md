@@ -1,6 +1,8 @@
 Really just [Kuang Liu's pytorch-cifar](https://github.com/kuangliu/pytorch-cifar), but with a few extra commits:
 - Learning rate automatically adjusted
 - Model functions accept a num_classes argument
+- CLI supports a `--model` flag, to pick models by name
+- proper .gitignore
 
 # Train CIFAR10 with PyTorch
 

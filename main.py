@@ -17,7 +17,7 @@ from utils import progress_bar
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
 parser.add_argument('--dataset', default='CIFAR10', choices=('CIFAR10', 'CIFAR100'))
-parser.add_argument('--model', default='EfficientNetB0', choices=list(models.get_model_choices()))
+parser.add_argument('--model', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 args = parser.parse_args()
@@ -52,7 +52,9 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship'
 
 # Model
 print('==> Building model..')
-net = getattr(models, args.model)()
+net = getattr(models, args.model)(
+    num_classes=len(trainset.classes)
+)
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
