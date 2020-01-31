@@ -135,7 +135,8 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('./checkpoint/ckpt.pth')
+    fname = generate_fname(args)
+    checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
@@ -177,7 +178,7 @@ def train(epoch):
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
-def test(epoch, print_confusion_matrix):
+def test(epoch, print_confusion_matrix, checkpoint=True):
     global best_acc
     net.eval()
     test_loss = 0
@@ -207,7 +208,7 @@ def test(epoch, print_confusion_matrix):
 
     # Save checkpoint.
     acc = 100.*correct/total
-    if acc > best_acc:
+    if acc > best_acc and checkpoint:
         print('Saving..')
         state = {
             'net': net.state_dict(),
@@ -217,12 +218,7 @@ def test(epoch, print_confusion_matrix):
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
 
-        fname = 'ckpt'
-        fname += '-' + args.dataset
-        fname += '-' + args.model
-        if args.dataset == CIFAR10NODE:
-            fname += '-' + args.wnid
-
+        fname = generate_fname(args)
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
 
@@ -233,7 +229,7 @@ def test(epoch, print_confusion_matrix):
 
 
 if args.eval:
-    test(0, args.print_confusion_matrix)
+    test(0, args.print_confusion_matrix, checkpoint=False)
     exit()
 
 

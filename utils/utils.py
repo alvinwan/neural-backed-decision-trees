@@ -154,3 +154,12 @@ def confusion_matrix_precision(confusion_matrix):
 
 def set_np_printoptions():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
+
+
+def generate_fname(args):
+    fname = 'ckpt'
+    fname += '-' + args.dataset
+    fname += '-' + args.model
+    if args.dataset == CIFAR10NODE:
+        fname += '-' + args.wnid
+    return fname
