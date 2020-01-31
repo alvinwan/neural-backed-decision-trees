@@ -13,6 +13,7 @@ class CIFAR10Tree(nn.Module):
             path_wnids='./data/cifar10/wnids.txt',
             pretrained=False,
             num_classes=10,
+            one_hot_feature=False,
             **kwargs):
         super().__init__()
 
@@ -22,6 +23,7 @@ class CIFAR10Tree(nn.Module):
         self.nets = nn.ModuleList([
             self.get_net_for_node(node, pretrained) for node in self.nodes])
 
+        self.one_hot_feature = one_hot_feature
         self.linear = nn.Linear(self.get_input_dim(), num_classes)
 
     def get_net_for_node(self, node, pretrained):
@@ -44,6 +46,11 @@ class CIFAR10Tree(nn.Module):
         with torch.no_grad():
             sample = []
             for net in self.nets:
-                sample.append(net(old_sample))
+                feature = net(old_sample)
+
+                if self.one_hot_feature:
+                    maximum = torch.max(feature, dim=1)[0]
+                    feature = (feature == maximum[:, None]).float()
+                sample.append(feature)
             sample = torch.cat(sample, 1)
         return self.linear(sample)
