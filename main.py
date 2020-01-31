@@ -195,6 +195,9 @@ def test(epoch, print_confusion_matrix):
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
+            if device == 'cuda':
+                predicted = predicted.cpu()
+                targets = targets.cpu()
             predicted = predicted.numpy().ravel()
             targets = targets.numpy().ravel()
             confusion_matrix = update_confusion_matrix(confusion_matrix, predicted, targets)
