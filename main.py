@@ -198,6 +198,7 @@ def test(epoch, print_confusion_matrix):
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
+            break
 
     # Save checkpoint.
     acc = 100.*correct/total
@@ -222,7 +223,8 @@ def test(epoch, print_confusion_matrix):
 
     if print_confusion_matrix:
         set_np_printoptions()
-        print(confusion_matrix_recall(confusion_matrix))
+        for row, cls in zip(confusion_matrix_recall(confusion_matrix), trainset.classes):
+            print(row, cls)
 
 
 if args.eval:
