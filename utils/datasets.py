@@ -3,6 +3,7 @@ import torchvision.transforms as transforms
 import xml.etree.ElementTree as ET
 from utils.xmlutils import get_leaves, remove
 import torch
+import numpy as np
 
 
 class TinyImagenetDataset(datasets.ImageFolder):
@@ -85,7 +86,7 @@ class CIFAR10NodeDataset(datasets.CIFAR10):
         return sample, self.mapping[old_label]
 
 
-class CIFAR10PathCheckDataset(datasets.CIFAR10):
+class CIFAR10PathSanityDataset(datasets.CIFAR10):
     """returns samples that assume all node classifiers are perfect"""
 
     def __init__(self, root='./data', *args,
@@ -110,6 +111,28 @@ class CIFAR10PathCheckDataset(datasets.CIFAR10):
         sample = [0] * len(dataset.classes)
         sample[new_label] = 1
         return sample
+
+    def _get_dataset_weights(self, dataset):
+        n = len(dataset.classes)
+        k = 10
+
+        A = np.zeros((n, k))
+        for new_index, cls in enumerate(dataset.classes):
+            if ',' not in cls and cls:  # if class is leaf
+                old_index = dataset.original_classes.index(cls)
+                A[new_index, old_index] = 1
+        return A
+
+    def get_weights(self):
+        """get perfect fully-connected layer weights"""
+        weights = []
+        for dataset in self.datasets:
+            weights.append(self._get_dataset_weights(dataset))
+        weights = np.concatenate(weights, axis=0).T
+        return torch.Tensor(weights)
+
+    def get_input_dim(self):
+        return sum([len(dataset.classes) for dataset in self.datasets])
 
     def __getitem__(self, i):
         _, old_label = super().__getitem__(i)

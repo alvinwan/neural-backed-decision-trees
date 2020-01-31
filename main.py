@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-from utils.datasets import CIFAR10NodeDataset, CIFAR10PathCheckDataset
+from utils.datasets import CIFAR10NodeDataset, CIFAR10PathSanityDataset
 
 import torchvision
 import torchvision.transforms as transforms
@@ -17,8 +17,8 @@ from utils.utils import progress_bar
 
 
 CIFAR10NODE = 'CIFAR10node'
-CIFAR10PATHCHECK = 'CIFAR10pathcheck'
-datasets = ('CIFAR10', 'CIFAR100', CIFAR10NODE, CIFAR10PATHCHECK)
+CIFAR10PATHSANITY = 'CIFAR10pathsanity'
+datasets = ('CIFAR10', 'CIFAR100', CIFAR10NODE, CIFAR10PATHSANITY)
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
@@ -30,10 +30,14 @@ parser.add_argument('--dataset', default='CIFAR10', choices=datasets)
 parser.add_argument('--model', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
-parser.add_argument('--test', action='store_true', help='run dataset tests')
 
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
+parser.add_argument('--test', action='store_true', help='run dataset tests')
+parser.add_argument('--test-path-sanity', action='store_true',
+                    help='test path classifier with oracle fc')
+parser.add_argument('--test-path', action='store_true',
+                    help='test path classifier with random init')
 
 args = parser.parse_args()
 
@@ -41,7 +45,7 @@ args = parser.parse_args()
 if args.test:
     import xml.etree.ElementTree as ET
 
-    dataset = CIFAR10PathCheckDataset()
+    dataset = CIFAR10PathSanityDataset()
     print(dataset[0][0])
 
     for wnid, text in (
@@ -84,12 +88,15 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
+if args.test_path_sanity or args.test_path:
+    assert args.dataset == CIFAR10PATHSANITY
+
 dataset_args = ()
 if args.dataset == CIFAR10NODE:
     dataset = CIFAR10NodeDataset
     dataset_args = (args.wnid,)
-elif args.dataset == CIFAR10PATHCHECK:
-    dataset = CIFAR10PathCheckDataset
+elif args.dataset == CIFAR10PATHSANITY:
+    dataset = CIFAR10PathSanityDataset
 else:
     dataset = getattr(torchvision.datasets, args.dataset)
 
@@ -110,6 +117,12 @@ net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
+
+if args.test_path_sanity or args.test_path:
+    net = models.linear(trainset.get_input_dim(), len(trainset.classes))
+
+if args.test_path_sanity:
+    net.set_weight(trainset.get_weights())
 
 if args.resume:
     # Load checkpoint.
