@@ -176,7 +176,7 @@ class CIFAR10PathDataset(datasets.CIFAR10):
         # TODO: WARNING: the model and paths are hardcoded
         net = models.ResNet10(num_classes=len(node.classes))
         if pretrained:
-            checkpoint = torch.load(f'./data/ckpt-CIFAR10node-ResNet10-{node.wnid}.pth')
+            checkpoint = torch.load(f'./checkpoint/ckpt-CIFAR10node-ResNet10-{node.wnid}.pth')
             net.load_state_dict(checkpoint['net'])
         return net
 
