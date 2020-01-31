@@ -47,7 +47,6 @@ class CIFAR10Tree(nn.Module):
             sample = []
             for net in self.nets:
                 feature = net(old_sample)
-                feature = feature / feature.sum(axis=1)[None]
 
                 if self.one_hot_feature:
                     maximum = torch.max(feature, dim=1)[0]
