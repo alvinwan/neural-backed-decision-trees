@@ -12,15 +12,15 @@ import torchvision.transforms as transforms
 import os
 import argparse
 
-from models import *
-from utils.utils import progress_bar
+import models
+from utils import progress_bar
 
 
-parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--dataset', choices=('cifar10', 'cifar10node'),
-                    default='cifar10')
+parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
+parser.add_argument('--dataset', default='CIFAR10', choices=('CIFAR10', 'CIFAR100', 'CIFAR10Node'))
+parser.add_argument('--model', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--test', action='store_true', help='run dataset tests')
@@ -70,12 +70,13 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
-if args.dataset == 'cifar10':
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
-    testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
-elif args.dataset == 'cifar10node':
-    trainset = CIFAR10NodeDataset(args.wnid, root='./data', train=True, download=True, transform=transform_train)
-    testset = CIFAR10NodeDataset(args.wnid, root='./data', train=False, download=True, transform=transform_test)
+if args.dataset == 'CIFAR10Node':
+    dataset = CIFAR10NodeDataset
+else:
+    dataset = getattr(torchvision.datasets, args.dataset)
+
+trainset = dataset(root='./data', train=True, download=True, transform=transform_train)
+testset = dataset(root='./data', train=False, download=True, transform=transform_test)
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
@@ -84,19 +85,9 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship'
 
 # Model
 print('==> Building model..')
-# net = VGG('VGG19')
-# net = ResNet18()
-net = PreActResNet18()
-# net = GoogLeNet()
-# net = DenseNet121()
-# net = ResNeXt29_2x64d()
-# net = MobileNet()
-# net = MobileNetV2()
-# net = DPN92()
-# net = ShuffleNetG2()
-# net = SENet18()
-# net = ShuffleNetV2(1)
-# net = EfficientNetB0()
+net = getattr(models, args.model)(
+    num_classes=len(trainset.classes)
+)
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)

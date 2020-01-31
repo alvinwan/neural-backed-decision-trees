@@ -7,6 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+__all__ = ('SENet18',)
+
+
 class BasicBlock(nn.Module):
     def __init__(self, in_planes, planes, stride=1):
         super(BasicBlock, self).__init__()
@@ -109,8 +112,8 @@ class SENet(nn.Module):
         return out
 
 
-def SENet18():
-    return SENet(PreActBlock, [2,2,2,2])
+def SENet18(num_classes=10):
+    return SENet(PreActBlock, [2,2,2,2], num_classes)
 
 
 def test():

@@ -11,6 +11,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+__all__ = ('ResNet18', 'ResNet34', 'ResNet50', 'ResNet101', 'ResNet152')
+
+
 class BasicBlock(nn.Module):
     expansion = 1
 
@@ -97,20 +100,20 @@ class ResNet(nn.Module):
         return out
 
 
-def ResNet18():
-    return ResNet(BasicBlock, [2,2,2,2])
+def ResNet18(num_classes=10):
+    return ResNet(BasicBlock, [2,2,2,2], num_classes=num_classes)
 
-def ResNet34():
-    return ResNet(BasicBlock, [3,4,6,3])
+def ResNet34(num_classes=10):
+    return ResNet(BasicBlock, [3,4,6,3], num_classes=num_classes)
 
-def ResNet50():
-    return ResNet(Bottleneck, [3,4,6,3])
+def ResNet50(num_classes=10):
+    return ResNet(Bottleneck, [3,4,6,3], num_classes=num_classes)
 
-def ResNet101():
-    return ResNet(Bottleneck, [3,4,23,3])
+def ResNet101(num_classes=10):
+    return ResNet(Bottleneck, [3,4,23,3], num_classes=num_classes)
 
-def ResNet152():
-    return ResNet(Bottleneck, [3,8,36,3])
+def ResNet152(num_classes=10):
+    return ResNet(Bottleneck, [3,8,36,3], num_classes=num_classes)
 
 
 def test():

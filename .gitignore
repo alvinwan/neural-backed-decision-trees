@@ -1,10 +1,9 @@
-
-# Created by https://www.gitignore.io/api/macos,python
-# Edit at https://www.gitignore.io/?templates=macos,python
-
 *.xml
 data/*
 !data/cifar10/wnids.txt
+
+# Created by https://www.gitignore.io/api/macos,python
+# Edit at https://www.gitignore.io/?templates=macos,python
 
 ### macOS ###
 # General

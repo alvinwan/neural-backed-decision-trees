@@ -7,6 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+__all__ = ('EfficientNetB0',)
+
+
 class Block(nn.Module):
     '''expand + depthwise + pointwise + squeeze-excitation'''
 
@@ -77,7 +80,7 @@ class EfficientNet(nn.Module):
         return out
 
 
-def EfficientNetB0():
+def EfficientNetB0(num_classes=10):
     # (expansion, out_planes, num_blocks, stride)
     cfg = [(1,  16, 1, 2),
            (6,  24, 2, 1),
@@ -86,7 +89,7 @@ def EfficientNetB0():
            (6, 112, 3, 1),
            (6, 192, 4, 2),
            (6, 320, 1, 2)]
-    return EfficientNet(cfg)
+    return EfficientNet(cfg, num_classes=num_classes)
 
 
 def test():
