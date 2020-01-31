@@ -11,7 +11,7 @@ class CIFAR10Tree(nn.Module):
     def __init__(self, *args,
             path_tree='./data/cifar10/tree.xml',
             path_wnids='./data/cifar10/wnids.txt',
-            pretrained=True,
+            pretrained=False,
             num_classes=10,
             **kwargs):
         super().__init__()
@@ -44,6 +44,6 @@ class CIFAR10Tree(nn.Module):
         with torch.no_grad():
             sample = []
             for net in self.nets:
-                sample.extend(net(old_sample))
-            sample = torch.cat(sample, 0)
+                sample.append(net(old_sample))
+            sample = torch.cat(sample, 1)
         return self.linear(sample)
