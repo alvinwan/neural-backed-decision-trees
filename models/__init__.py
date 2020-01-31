@@ -13,3 +13,11 @@ from .preact_resnet import *
 from .mobilenet import *
 from .mobilenetv2 import *
 from .efficientnet import *
+
+
+def get_model_choices():
+    from types import ModuleType
+
+    for key in globals():
+        if not key.startswith('__') and not isinstance(key, ModuleType):
+            yield key

@@ -2,6 +2,10 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
+
+__all__ = ('LeNet',)
+
+
 class LeNet(nn.Module):
     def __init__(self, num_classes=10):
         super(LeNet, self).__init__()

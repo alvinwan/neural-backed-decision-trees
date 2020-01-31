@@ -7,6 +7,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+__all__ = ('ResNeXt29_2x64d', 'ResNeXt29_4x64d', 'ResNeXt29_8x64d',
+           'ResNeXt29_32x4d')
+
+
 class Block(nn.Module):
     '''Grouped convolution block.'''
     expansion = 2

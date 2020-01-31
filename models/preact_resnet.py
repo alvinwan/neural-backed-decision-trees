@@ -9,6 +9,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+__all__ = ('PreActResNet18', 'PreActResNet34', 'PreActResNet50',
+           'PreActResNet101', 'PreActResNet152')
+
+
 class PreActBlock(nn.Module):
     '''Pre-activation version of the BasicBlock.'''
     expansion = 1

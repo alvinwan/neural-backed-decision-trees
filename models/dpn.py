@@ -4,6 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+__all__ = ('DPN26', 'DPN92')
+
+
 class Bottleneck(nn.Module):
     def __init__(self, last_planes, in_planes, out_planes, dense_depth, stride, first_layer):
         super(Bottleneck, self).__init__()
@@ -80,7 +83,7 @@ def DPN26(num_classes=10):
     }
     return DPN(cfg)
 
-def DPN92():
+def DPN92(num_classes=10):
     cfg = {
         'in_planes': (96,192,384,768),
         'out_planes': (256,512,1024,2048),

@@ -7,6 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+__all__ = ('ShuffleNetG2', 'ShuffleNetG3')
+
+
 class ShuffleBlock(nn.Module):
     def __init__(self, groups):
         super(ShuffleBlock, self).__init__()

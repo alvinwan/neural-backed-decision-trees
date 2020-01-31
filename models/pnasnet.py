@@ -7,6 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+__all__ = ('PNASNetA', 'PNASNetB')
+
+
 class SepConv(nn.Module):
     '''Separable Convolution.'''
     def __init__(self, in_planes, out_planes, kernel_size, stride):

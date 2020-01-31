@@ -8,6 +8,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+__all__ = ('MobileNet',)
+
+
 class Block(nn.Module):
     '''Depthwise conv + Pointwise conv'''
     def __init__(self, in_planes, out_planes, stride=1):

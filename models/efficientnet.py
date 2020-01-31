@@ -7,6 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+__all__ = ('EfficientNetB0',)
+
+
 class Block(nn.Module):
     '''expand + depthwise + pointwise + squeeze-excitation'''
 
