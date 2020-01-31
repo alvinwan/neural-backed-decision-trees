@@ -78,8 +78,19 @@ if args.resume:
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
+def adjust_learning_rate(epoch, lr):
+    if epoch <= 150:  # 32k iterations
+      return lr
+    elif epoch <= 250:  # 48k iterations
+      return lr/10
+    else:
+      return lr/100
+
 # Training
 def train(epoch):
+    lr = adjust_learning_rate(epoch, args.lr)
+    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
+
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
