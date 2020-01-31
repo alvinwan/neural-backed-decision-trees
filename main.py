@@ -13,7 +13,7 @@ import os
 import argparse
 
 import models
-from utils import progress_bar
+from utils.utils import progress_bar
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
@@ -70,18 +70,20 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
+dataset_args = ()
 if args.dataset == 'CIFAR10Node':
     dataset = CIFAR10NodeDataset
+    dataset_args = (args.wnid,)
 else:
     dataset = getattr(torchvision.datasets, args.dataset)
 
-trainset = dataset(root='./data', train=True, download=True, transform=transform_train)
-testset = dataset(root='./data', train=False, download=True, transform=transform_test)
+trainset = dataset(*dataset_args, root='./data', train=True, download=True, transform=transform_train)
+testset = dataset(*dataset_args, root='./data', train=False, download=True, transform=transform_test)
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
-classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+print(f'Training with dataset {args.dataset} and classes {trainset.classes}')
 
 # Model
 print('==> Building model..')

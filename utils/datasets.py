@@ -26,7 +26,7 @@ class CIFAR10NodeDataset(datasets.CIFAR10):
     wnids.txt is needed to map wnids to class indices
     """
 
-    names = (
+    original_classes = (
         'airplane',
         'automobile',
         'bird',
@@ -59,15 +59,25 @@ class CIFAR10NodeDataset(datasets.CIFAR10):
         n = len(children)
         assert n > 0, 'Cannot build dataset for leaf node.'
 
+        classes = [[] for _ in range(n + 1)]
+
         for new_index, child in enumerate(children):
             for leaf in get_leaves(child):
                 wnid = leaf.get('wnid')
                 old_index = wnids.index(wnid)
                 self.mapping[old_index] = new_index
 
+                original_class = self.original_classes[old_index]
+                classes[new_index].append(original_class)
+
         for old_index in range(10):
             if old_index not in self.mapping:
                 self.mapping[old_index] = n
+
+                original_class = self.original_classes[old_index]
+                classes[n].append(original_class)
+
+        self.classes = [','.join(names) for names in classes]
 
     def __getitem__(self, i):
         sample, old_label = super().__getitem__(i)
