@@ -13,6 +13,10 @@ import torch.nn as nn
 import torch.nn.init as init
 
 
+CIFAR10NODE = 'CIFAR10node'
+CIFAR10PATHSANITY = 'CIFAR10pathsanity'
+
+
 def get_mean_and_std(dataset):
     '''Compute the mean and std value of dataset.'''
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=2)
