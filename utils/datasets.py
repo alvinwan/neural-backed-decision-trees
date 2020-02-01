@@ -97,6 +97,10 @@ class Node:
         nodes = [wnid_to_node[wnid] for wnid in wnids]
         return nodes
 
+    @staticmethod
+    def dim(nodes):
+        return sum([len(node.classes) for node in nodes])
+
 
 class CIFAR10Node(datasets.CIFAR10):
     """Creates dataset for a specific node in the CIFAR10 wordnet tree
@@ -175,7 +179,7 @@ class CIFAR10PathSanity(datasets.CIFAR10):
         return torch.Tensor(weights)
 
     def get_input_dim(self):
-        return sum([len(dataset.classes) for dataset in self.nodes])
+        return Node.dim(self.nodes)
 
     def __getitem__(self, i):
         _, old_label = super().__getitem__(i)

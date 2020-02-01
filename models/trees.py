@@ -1,9 +1,20 @@
 from utils.datasets import Node
 import torch
 import torch.nn as nn
+import os
 
 
-__all__ = ('CIFAR10Tree', 'CIFAR10JointNodes')
+__all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree')
+
+
+def load_checkpoint(net, path):
+    if not os.path.exists(path):
+        print(f' * Failed to load model. No such path found: {path}')
+        return
+    checkpoint = torch.load(path)
+    # hacky fix lol
+    state_dict = {key.replace('module.', '', 1): value for key, value in checkpoint['net'].items()}
+    net.load_state_dict(state_dict)
 
 
 class CIFAR10Tree(nn.Module):
@@ -31,15 +42,11 @@ class CIFAR10Tree(nn.Module):
         net = models.ResNet10(num_classes=len(node.classes))
 
         if pretrained:
-            checkpoint = torch.load(f'./checkpoint/ckpt-Node-ResNet10-{node.wnid}.pth')
-            # hacky fix lol
-            state_dict = {key.replace('module.', '', 1): value for key, value in checkpoint['net'].items()}
-            net.load_state_dict(state_dict)
+            load_checkpoint(net, f'./checkpoint/ckpt-CIFAR10Node-ResNet10-{node.wnid}.pth')
         return net
 
-    # WARNING: copy-pasta from above
     def get_input_dim(self):
-        return sum([len(dataset.classes) for dataset in self.nodes])
+        return Node.dim(self.nodes)
 
     def forward(self, old_sample):
         with torch.no_grad():
@@ -104,3 +111,26 @@ class CIFAR10JointNodes(nn.Module):
         for head in self.heads:
             outputs.append(head(x))
         return outputs
+
+
+class CIFAR10JointTree(nn.Module):
+
+    def __init__(self, *args,
+            path_tree='./data/cifar10/tree.xml',
+            path_wnids='./data/cifar10/wnids.txt',
+            num_classes=10,
+            pretrained=True,
+            **kwargs):
+        super().__init__()
+
+        self.net = CIFAR10JointNodes(*args, path_tree, path_wnids, **kwargs)
+        if pretrained:
+            load_checkpoint(self.net, './checkpoint/ckpt-CIFAR10JointNodes-CIFAR10JointNodes.pth')
+        self.linear = nn.Linear(Node.dim(self.net.nodes), num_classes)
+
+    def forward(self, x):
+        with torch.no_grad():
+            x = self.net(x)
+        x = torch.cat(x, dim=1)
+        x = self.linear(x)
+        return x
