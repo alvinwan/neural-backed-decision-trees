@@ -218,7 +218,7 @@ def test(epoch, print_confusion_matrix, checkpoint=True):
                 predicted = predicted.cpu()
                 targets = targets.cpu()
 
-            if predicted.shape[1] == 1:
+            if len(predicted.shape) == 1:
                 predicted = predicted.numpy().ravel()
                 targets = targets.numpy().ravel()
                 confusion_matrix = update_confusion_matrix(confusion_matrix, predicted, targets)
