@@ -104,6 +104,41 @@ def keep_matched_nodes_and_ancestors(tree, criteria):
     return tree
 
 
+def prune_duplicate_leaves(tree):
+    node_to_parent = {child: parent for parent in tree.iter() for child in parent}
+    count = defaultdict(lambda: 0)
+
+    for leaf in get_leaves(tree):
+        count[leaf.get('wnid')] += 1
+
+    duplicates_removed = defaultdict(lambda: 0)
+    duplicate_leaves = set()
+
+    for node in tree.iter():
+        if count[node.get('wnid')] - duplicates_removed[node.get('wnid')] > 1:
+            duplicates_removed[node.get('wnid')] += 1
+            duplicate_leaves.add(node)
+
+    # prune each of these leaves. prune upwards until parent node has >1 child
+    for node in duplicate_leaves:
+        print("duplicate found: ", node.get('wnid'))
+        prune_upwards(node, node_to_parent, tree)
+
+    return tree
+
+
+# prune upwards from a leaf, removing a leaf's entire path to the root
+def prune_upwards(node, node_to_parent, tree):
+    # my replacement for a do while in python
+    while True:
+        parent = node_to_parent[node]
+        print("removing node " + node.get('wnid'))
+        parent.remove(node)
+        if len(parent.getchildren()) > 0:
+            break
+        node = parent
+
+
 def prune_single_child_nodes(tree):
     node_to_parent = {child: parent for parent in tree.iter() for child in parent}
 
