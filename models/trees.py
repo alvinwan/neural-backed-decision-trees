@@ -63,7 +63,10 @@ class CIFAR10Tree(nn.Module):
 
 
 class CIFAR10JointNodes(nn.Module):
-    """Requires that model have a featurize method"""
+    """
+    Requires that model have a featurize method. Like training individual nodes,
+    except all nodes share convolutions. Thus, all nodes are trained jointly.
+    """
 
     def __init__(self, *args,
             path_tree='./data/cifar10/tree.xml',
@@ -114,6 +117,10 @@ class CIFAR10JointNodes(nn.Module):
 
 
 class CIFAR10JointTree(nn.Module):
+    """
+    Final classifier for the nodes trained jointly above, in the
+    CIFAR10JointNodes model
+    """
 
     def __init__(self, *args,
             path_tree='./data/cifar10/tree.xml',
