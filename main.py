@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-from utils.datasets import CIFAR10NodeDataset, CIFAR10PathSanityDataset
+import utils.datasets as CIFAR10datasets
 
 import torchvision
 import torchvision.transforms as transforms
@@ -18,7 +18,7 @@ from utils.utils import progress_bar, initialize_confusion_matrix, \
     set_np_printoptions, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY
 
 
-datasets = ('CIFAR10', 'CIFAR100', CIFAR10NODE, CIFAR10PATHSANITY)
+datasets = ('CIFAR10', 'CIFAR100') + CIFAR10datasets.names
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
@@ -47,7 +47,7 @@ args = parser.parse_args()
 if args.test:
     import xml.etree.ElementTree as ET
 
-    dataset = CIFAR10PathSanityDataset()
+    dataset = CIFAR10datasets.CIFAR10PathSanity()
     print(dataset[0][0])
 
     for wnid, text in (
@@ -55,7 +55,7 @@ if args.test:
             ('n03575240', 'instrument'),
             ('n03791235', 'motor vehicle'),
             ('n02370806', 'hoofed mammal')):
-        dataset = CIFAR10NodeDataset(wnid)
+        dataset = CIFAR10datasets.CIFAR10Node(wnid)
 
         print(text)
         print(dataset.node.mapping)
@@ -95,16 +95,18 @@ transform_test = transforms.Compose([
 ])
 
 if args.test_path_sanity or args.test_path:
-    assert args.dataset in (CIFAR10PATHSANITY, CIFAR10PATH)
+    assert args.dataset == CIFAR10PATHSANITY
+if args.model == 'CIFAR10JointNodes':
+    assert args.dataset == 'CIFAR10JointNodes'
+
+if args.dataset in CIFAR10datasets.names:
+    dataset = getattr(CIFAR10datasets, args.dataset)
+else:
+    dataset = getattr(torchvision.datasets, args.dataset)
 
 dataset_args = ()
 if args.dataset == CIFAR10NODE:
-    dataset = CIFAR10NodeDataset
     dataset_args = (args.wnid,)
-elif args.dataset == CIFAR10PATHSANITY:
-    dataset = CIFAR10PathSanityDataset
-else:
-    dataset = getattr(torchvision.datasets, args.dataset)
 
 trainset = dataset(*dataset_args, root='./data', train=True, download=True, transform=transform_train)
 testset = dataset(*dataset_args, root='./data', train=False, download=True, transform=transform_test)
@@ -165,17 +167,28 @@ def train(epoch):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
-        loss = criterion(outputs, targets)
+        loss = get_loss(criterion, outputs, targets)
         loss.backward()
         optimizer.step()
 
         train_loss += loss.item()
-        _, predicted = outputs.max(1)
+        predicted = get_prediction(outputs)
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+
+def get_prediction(outputs):
+    if hasattr(net, 'custom_prediction'):
+        return net.custom_prediction(outputs)
+    _, predicted = outputs.max(1)
+    return predicted
+
+def get_loss(criterion, outputs, targets):
+    if hasattr(net, 'custom_loss'):
+        return net.custom_loss(criterion, outputs, targets)
+    return criterion(outputs, targets)
 
 def test(epoch, print_confusion_matrix, checkpoint=True):
     global best_acc

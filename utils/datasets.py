@@ -6,6 +6,9 @@ import torch
 import numpy as np
 
 
+__all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity')
+
+
 class TinyImagenetDataset(datasets.ImageFolder):
     """Tiny imagenet dataloader"""
 
@@ -22,7 +25,7 @@ class TinyImagenetDataset(datasets.ImageFolder):
         return transforms.ToTensor()
 
 
-class CIFAR10Node:
+class Node:
 
     original_classes = (
         'airplane',
@@ -83,13 +86,19 @@ class CIFAR10Node:
             wnid = node.get('wnid')
             if wnid is None or len(node.getchildren()) == 0:
                 continue
-            wnid_to_node[wnid] = CIFAR10Node(node.get('wnid'),
+            wnid_to_node[wnid] = Node(node.get('wnid'),
                 path_tree=path_tree, path_wnids=path_wnids)
         return wnid_to_node
 
+    @staticmethod
+    def get_nodes(path_tree, path_wnids):
+        wnid_to_node = Node.get_wnid_to_node(path_tree, path_wnids)
+        wnids = sorted(wnid_to_node)
+        nodes = [wnid_to_node[wnid] for wnid in wnids]
+        return nodes
 
 
-class CIFAR10NodeDataset(datasets.CIFAR10):
+class CIFAR10Node(datasets.CIFAR10):
     """Creates dataset for a specific node in the CIFAR10 wordnet tree
 
     wnids.txt is needed to map wnids to class indices
@@ -99,7 +108,7 @@ class CIFAR10NodeDataset(datasets.CIFAR10):
             path_tree='./data/cifar10/tree.xml',
             path_wnids='./data/cifar10/wnids.txt', **kwargs):
         super().__init__(root=root, *args, **kwargs)
-        self.node = CIFAR10Node(wnid, path_tree, path_wnids)
+        self.node = Node(wnid, path_tree, path_wnids)
         self.classes = self.node.classes
         self.original_classes = self.node.original_classes
 
@@ -108,14 +117,35 @@ class CIFAR10NodeDataset(datasets.CIFAR10):
         return sample, self.node.mapping[old_label]
 
 
-class CIFAR10PathSanityDataset(datasets.CIFAR10):
+class CIFAR10JointNodes(datasets.CIFAR10):
+
+    def __init__(self, root='./data', *args,
+            path_tree='./data/cifar10/tree.xml',
+            path_wnids='./data/cifar10/wnids.txt', **kwargs):
+        super().__init__(root=root, *args, **kwargs)
+        self.nodes = Node.get_nodes(path_tree, path_wnids)
+
+        # NOTE: the below is used for computing num_classes, which is ignored
+        # anyways. Also, this will break the confusion matrix code
+        self.classes = self.nodes[0].classes
+        self.original_classes = self.nodes[0].original_classes
+
+    def __getitem__(self, i):
+        sample, old_label = super().__getitem__(i)
+        new_label = torch.Tensor([
+            node.mapping[old_label] for node in self.nodes
+        ]).long()
+        return sample, new_label
+
+
+class CIFAR10PathSanity(datasets.CIFAR10):
     """returns samples that assume all node classifiers are perfect"""
 
     def __init__(self, root='./data', *args,
             path_tree='./data/cifar10/tree.xml',
             path_wnids='./data/cifar10/wnids.txt', **kwargs):
         super().__init__(root=root, *args, **kwargs)
-        wnid_to_node = CIFAR10Node.get_wnid_to_node(path_tree, path_wnids)
+        wnid_to_node = Node.get_wnid_to_node(path_tree, path_wnids)
         wnids = sorted(wnid_to_node)
         self.nodes = [wnid_to_node[wnid] for wnid in wnids]
 

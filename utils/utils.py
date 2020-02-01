@@ -13,8 +13,8 @@ import torch.nn as nn
 import torch.nn.init as init
 
 
-CIFAR10NODE = 'CIFAR10node'
-CIFAR10PATHSANITY = 'CIFAR10pathsanity'
+CIFAR10NODE = 'CIFAR10Node'
+CIFAR10PATHSANITY = 'CIFAR10PathSanity'
 
 
 def get_mean_and_std(dataset):
