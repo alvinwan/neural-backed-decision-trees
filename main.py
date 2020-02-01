@@ -179,6 +179,7 @@ def train(epoch):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+        break
 
 def get_net():
     if device == 'cuda':
@@ -207,19 +208,21 @@ def test(epoch, print_confusion_matrix, checkpoint=True):
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
-            loss = criterion(outputs, targets)
+            loss = get_loss(criterion, outputs, targets)
 
             test_loss += loss.item()
-            _, predicted = outputs.max(1)
-            total += targets.size(0)
+            predicted = get_prediction(outputs)
+            total += np.prod(targets.size())
             correct += predicted.eq(targets).sum().item()
 
             if device == 'cuda':
                 predicted = predicted.cpu()
                 targets = targets.cpu()
-            predicted = predicted.numpy().ravel()
-            targets = targets.numpy().ravel()
-            confusion_matrix = update_confusion_matrix(confusion_matrix, predicted, targets)
+
+            if predicted.shape[1] == 1:
+                predicted = predicted.numpy().ravel()
+                targets = targets.numpy().ravel()
+                confusion_matrix = update_confusion_matrix(confusion_matrix, predicted, targets)
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
