@@ -15,7 +15,7 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset',
     help='Must be a folder data/{dataset} containing a wnids.txt',
-    choices=('tiny-imagenet-200', 'cifar10'),
+    choices=('tiny-imagenet-200', 'cifar10', 'CIFAR100'),
     default='cifar10')
 
 args = parser.parse_args()
