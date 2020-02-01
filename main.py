@@ -11,6 +11,7 @@ import torchvision.transforms as transforms
 
 import os
 import argparse
+import numpy as np
 
 import models
 from utils.utils import progress_bar, initialize_confusion_matrix, \
@@ -173,21 +174,26 @@ def train(epoch):
 
         train_loss += loss.item()
         predicted = get_prediction(outputs)
-        total += targets.size(0)
+        total += np.prod(targets.size())
         correct += predicted.eq(targets).sum().item()
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
+def get_net():
+    if device == 'cuda':
+        return net.module
+    return net
+
 def get_prediction(outputs):
-    if hasattr(net, 'custom_prediction'):
-        return net.custom_prediction(outputs)
+    if hasattr(get_net(), 'custom_prediction'):
+        return get_net().custom_prediction(outputs)
     _, predicted = outputs.max(1)
     return predicted
 
 def get_loss(criterion, outputs, targets):
-    if hasattr(net, 'custom_loss'):
-        return net.custom_loss(criterion, outputs, targets)
+    if hasattr(get_net(), 'custom_loss'):
+        return get_net().custom_loss(criterion, outputs, targets)
     return criterion(outputs, targets)
 
 def test(epoch, print_confusion_matrix, checkpoint=True):
