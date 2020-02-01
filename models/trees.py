@@ -39,7 +39,7 @@ class CIFAR10Tree(nn.Module):
     def get_net_for_node(self, node, pretrained):
         import models
         # TODO: WARNING: the model and paths are hardcoded
-        net = models.ResNet10(num_classes=len(node.classes))
+        net = models.ResNet10(num_classes=node.num_classes)
 
         if pretrained:
             load_checkpoint(net, f'./checkpoint/ckpt-CIFAR10Node-ResNet10-{node.wnid}.pth')
@@ -81,7 +81,7 @@ class CIFAR10JointNodes(nn.Module):
         self.nodes = Node.get_nodes(path_tree, path_wnids)
         self.heads = nn.ModuleList([
             # hardcoded for ResNet10
-            nn.Linear(512, len(node.classes))
+            nn.Linear(512, node.num_classes)
             for node in self.nodes
         ])
 

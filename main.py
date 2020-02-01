@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-import utils.datasets as CIFAR10datasets
+import utils.datasets as CIFARdatasets
 
 import torchvision
 import torchvision.transforms as transforms
@@ -19,7 +19,7 @@ from utils.utils import progress_bar, initialize_confusion_matrix, \
     set_np_printoptions, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY
 
 
-datasets = ('CIFAR10', 'CIFAR100') + CIFAR10datasets.names
+datasets = ('CIFAR10', 'CIFAR100') + CIFARdatasets.names
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
@@ -48,7 +48,7 @@ args = parser.parse_args()
 if args.test:
     import xml.etree.ElementTree as ET
 
-    dataset = CIFAR10datasets.CIFAR10PathSanity()
+    dataset = CIFARdatasets.CIFAR10PathSanity()
     print(dataset[0][0])
 
     for wnid, text in (
@@ -56,7 +56,7 @@ if args.test:
             ('n03575240', 'instrument'),
             ('n03791235', 'motor vehicle'),
             ('n02370806', 'hoofed mammal')):
-        dataset = CIFAR10datasets.CIFAR10Node(wnid)
+        dataset = CIFARdatasets.CIFAR10Node(wnid)
 
         print(text)
         print(dataset.node.mapping)
@@ -100,8 +100,8 @@ if args.test_path_sanity or args.test_path:
 if args.model == 'CIFAR10JointNodes':
     assert args.dataset == 'CIFAR10JointNodes'
 
-if args.dataset in CIFAR10datasets.names:
-    dataset = getattr(CIFAR10datasets, args.dataset)
+if args.dataset in CIFARdatasets.names:
+    dataset = getattr(CIFARdatasets, args.dataset)
 else:
     dataset = getattr(torchvision.datasets, args.dataset)
 

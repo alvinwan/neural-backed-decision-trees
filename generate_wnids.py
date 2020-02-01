@@ -39,20 +39,23 @@ hardcoded_mapping = {
     'whale': wn.synsets('whale', pos=wn.NOUN)[1],
 }
 
+wnids = []
+for cls in dataset.classes:
+    if cls in hardcoded_mapping:
+        synset = hardcoded_mapping[cls]
+    else:
+        synsets = wn.synsets(cls, pos=wn.NOUN)
+        if not synsets:
+            print(f' => Failed to find synset for {cls}')
+            failures.append(cls)
+            continue
+        synset = synsets[0]
+    wnid = f'{synset.pos()}0{synset.offset()}'
+    print(f'{wnid}: ({cls}) {synset.definition()}')
+    wnids.append(wnid)
+
 with open(str(path), 'w') as f:
-    for cls in dataset.classes:
-        if cls in hardcoded_mapping:
-            synset = hardcoded_mapping[cls]
-        else:
-            synsets = wn.synsets(cls, pos=wn.NOUN)
-            if not synsets:
-                print(f' => Failed to find synset for {cls}')
-                failures.append(cls)
-                continue
-            synset = synsets[0]
-        wnid = synset.pos() + str(synset.offset())
-        print(f'{wnid}: ({cls}) {synset.definition()}')
-        f.write(f'{wnid}\n')
+    f.write('\n'.join(wnids))
 
 if failures:
     print(f' => Warning: failed to find wordnet IDs for {failures}')

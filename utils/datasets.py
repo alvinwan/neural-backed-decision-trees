@@ -27,26 +27,16 @@ class TinyImagenetDataset(datasets.ImageFolder):
 
 class Node:
 
-    original_classes = (
-        'airplane',
-        'automobile',
-        'bird',
-        'cat',
-        'deer',
-        'dog',
-        'frog',
-        'horse',
-        'ship',
-        'truck'
-    )
-
     def __init__(self, wnid,
             path_tree='./data/cifar10/tree.xml',
-            path_wnids='./data/cifar10/wnids.txt'):
+            path_wnids='./data/cifar10/wnids.txt',
+            classes=()):
         self.wnid = wnid
+        self.original_classes = classes
 
         with open(path_wnids) as f:
             wnids = [line.strip() for line in f.readlines()]
+        self.num_original_classes = len(wnids)
 
         tree = ET.parse(path_tree)
         # handle multiple paths issue with hack -- remove other path
@@ -59,6 +49,7 @@ class Node:
         n = len(children)
         assert n > 0, 'Cannot build dataset for leaf node.'
         self.num_children = n
+        self.num_classes = self.num_children + 1
 
         for new_index, child in enumerate(children):
             for leaf in get_leaves(child):
@@ -66,20 +57,22 @@ class Node:
                 old_index = wnids.index(wnid)
                 self.mapping[old_index] = new_index
 
-        for old_index in range(10):
+        for old_index in range(self.num_original_classes):
             if old_index not in self.mapping:
                 self.mapping[old_index] = n
 
-        classes = [[] for _ in range(n + 1)]
-        for old_index in range(10):
-            original_class = self.original_classes[old_index]
-            new_index = self.mapping[old_index]
-            classes[new_index].append(original_class)
+        self.classes = []
+        if self.original_classes:
+            classes = [[] for _ in range(n + 1)]
+            for old_index in range(self.num_original_classes):
+                original_class = self.original_classes[old_index]
+                new_index = self.mapping[old_index]
+                classes[new_index].append(original_class)
 
-        self.classes = [','.join(names) for names in classes if names]
+            self.classes = [','.join(names) for names in classes if names]
 
     @staticmethod
-    def get_wnid_to_node(path_tree, path_wnids):
+    def get_wnid_to_node(path_tree, path_wnids, classes):
         tree = ET.parse(path_tree)
         wnid_to_node = {}
         for node in tree.iter():
@@ -87,19 +80,19 @@ class Node:
             if wnid is None or len(node.getchildren()) == 0:
                 continue
             wnid_to_node[wnid] = Node(node.get('wnid'),
-                path_tree=path_tree, path_wnids=path_wnids)
+                path_tree=path_tree, path_wnids=path_wnids, classes=classes)
         return wnid_to_node
 
     @staticmethod
-    def get_nodes(path_tree, path_wnids):
-        wnid_to_node = Node.get_wnid_to_node(path_tree, path_wnids)
+    def get_nodes(path_tree, path_wnids, classes):
+        wnid_to_node = Node.get_wnid_to_node(path_tree, path_wnids, classes)
         wnids = sorted(wnid_to_node)
         nodes = [wnid_to_node[wnid] for wnid in wnids]
         return nodes
 
     @staticmethod
     def dim(nodes):
-        return sum([len(node.classes) for node in nodes])
+        return sum([node.num_classes for node in nodes])
 
 
 class CIFAR10Node(datasets.CIFAR10):
@@ -112,9 +105,9 @@ class CIFAR10Node(datasets.CIFAR10):
             path_tree='./data/cifar10/tree.xml',
             path_wnids='./data/cifar10/wnids.txt', **kwargs):
         super().__init__(root=root, *args, **kwargs)
-        self.node = Node(wnid, path_tree, path_wnids)
+        self.node = Node(wnid, path_tree, path_wnids, self.classes)
+        self.original_classes = self.classes
         self.classes = self.node.classes
-        self.original_classes = self.node.original_classes
 
     def __getitem__(self, i):
         sample, old_label = super().__getitem__(i)
@@ -127,12 +120,12 @@ class CIFAR10JointNodes(datasets.CIFAR10):
             path_tree='./data/cifar10/tree.xml',
             path_wnids='./data/cifar10/wnids.txt', **kwargs):
         super().__init__(root=root, *args, **kwargs)
-        self.nodes = Node.get_nodes(path_tree, path_wnids)
+        self.nodes = Node.get_nodes(path_tree, path_wnids, self.classes)
 
         # NOTE: the below is used for computing num_classes, which is ignored
         # anyways. Also, this will break the confusion matrix code
+        self.original_classes = self.classes
         self.classes = self.nodes[0].classes
-        self.original_classes = self.nodes[0].original_classes
 
     def __getitem__(self, i):
         sample, old_label = super().__getitem__(i)
@@ -149,18 +142,18 @@ class CIFAR10PathSanity(datasets.CIFAR10):
             path_tree='./data/cifar10/tree.xml',
             path_wnids='./data/cifar10/wnids.txt', **kwargs):
         super().__init__(root=root, *args, **kwargs)
-        wnid_to_node = Node.get_wnid_to_node(path_tree, path_wnids)
+        wnid_to_node = Node.get_wnid_to_node(path_tree, path_wnids, self.classes)
         wnids = sorted(wnid_to_node)
         self.nodes = [wnid_to_node[wnid] for wnid in wnids]
 
     def get_sample(self, node, old_label):
         new_label = node.mapping[old_label]
-        sample = [0] * len(node.classes)
+        sample = [0] * node.num_classes
         sample[new_label] = 1
         return sample
 
     def _get_node_weights(self, node):
-        n = len(node.classes)
+        n = node.num_classes
         k = 10
 
         A = np.zeros((n, k))
