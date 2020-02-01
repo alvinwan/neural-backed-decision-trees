@@ -72,7 +72,7 @@ class Node:
             self.classes = [','.join(names) for names in classes if names]
 
     @staticmethod
-    def get_wnid_to_node(path_tree, path_wnids, classes):
+    def get_wnid_to_node(path_tree, path_wnids, classes=()):
         tree = ET.parse(path_tree)
         wnid_to_node = {}
         for node in tree.iter():
@@ -84,7 +84,7 @@ class Node:
         return wnid_to_node
 
     @staticmethod
-    def get_nodes(path_tree, path_wnids, classes):
+    def get_nodes(path_tree, path_wnids, classes=()):
         wnid_to_node = Node.get_wnid_to_node(path_tree, path_wnids, classes)
         wnids = sorted(wnid_to_node)
         nodes = [wnid_to_node[wnid] for wnid in wnids]
