@@ -23,6 +23,8 @@ datasets = ('CIFAR10', 'CIFAR100') + CIFARdatasets.names
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
+parser.add_argument('--name', default='',
+                    help='Name of experiment. Used for checkpoint filename')
 parser.add_argument('--batch-size', default=128, type=int,
                     help='Batch size used for training')
 parser.add_argument('--epochs', '-e', default=350, type=int,

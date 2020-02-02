@@ -171,4 +171,6 @@ def generate_fname(args):
     fname += '-' + args.model
     if args.dataset == CIFAR10NODE:
         fname += '-' + args.wnid
+    if args.name:
+        fname += '-' + args.name
     return fname
