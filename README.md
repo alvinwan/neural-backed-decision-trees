@@ -2,6 +2,19 @@ Notes:
 - downloaded structure_released.xml from http://image-net.org/download-toolbox
 - downloaded tinyimagenet from https://tiny-imagenet.herokuapp.com/
 
+### Results
+
+| Dataset | ResNet10 | ResNet18 | ResNet101 | ResNet10 Tree | ResNet10 JointTree |
+| --- | --- | --- | --- | --- | --- |
+| *batch size* | 512 | 512 | 128 | 512 | 512 | 
+| CIFAR10 | 93.64% | 94.92% | 95.31% | 93.75% | 93.11% |
+| CIFAR100 | | | | - | |
+
+- The ResNet10Tree and the ResNet101 models have comparable complexity -- former with 9 gflops, 135 mb params and the latter with 8 gflops, 155 mb params.
+- The ResNet10JointTree and the ResNet10 models have comparable complexity
+
+-----------------
+
 Really just [Kuang Liu's pytorch-cifar](https://github.com/kuangliu/pytorch-cifar), but with a few extra commits:
 - Learning rate automatically adjusted
 - Model functions accept a num_classes argument
