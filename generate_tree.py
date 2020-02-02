@@ -6,7 +6,8 @@ tiny-imagenet-200/wnids.txt and their ancestors are included.
 
 
 from utils.xmlutils import keep_matched_nodes_and_ancestors, count_nodes, \
-    compute_depth, compute_num_children, prune_single_child_nodes
+    compute_depth, compute_num_children, prune_single_child_nodes, \
+    prune_duplicate_leaves
 import xml.etree.ElementTree as ET
 import argparse
 import os
@@ -39,6 +40,10 @@ print_tree_stats(tree, 'matched')
 tree = prune_single_child_nodes(tree)
 tree = prune_single_child_nodes(tree)
 tree = prune_single_child_nodes(tree)
+
+# prune duplicate leaves
+tree = prune_duplicate_leaves(tree)
+
 
 print_tree_stats(tree, 'pruned')
 
