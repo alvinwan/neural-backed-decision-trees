@@ -149,8 +149,7 @@ class JointTree(nn.Module):
             path_wnids,
             net,
             num_classes=10,
-            pretrained=True,
-            normalize=True):
+            pretrained=True):
         super().__init__()
 
         self.net = net
@@ -158,20 +157,10 @@ class JointTree(nn.Module):
             # TODO: should use generate_fname
             load_checkpoint(self.net, f'./checkpoint/ckpt-{dataset}JointNodes-{dataset}JointNodes.pth')
         self.linear = nn.Linear(Node.dim(self.net.nodes), num_classes)
-        self.normalize = normalize
-
-    def normalize(self, outputs):
-        x = []
-        for output in outputs:
-            output = output - output.min()
-            x.append(output / output.sum())
-        return x
 
     def forward(self, x):
         with torch.no_grad():
             x = self.net(x)
-        if self.normalize:
-            x = self.normalize(x)
         x = torch.cat(x, dim=1)
         x = self.linear(x)
         return x
