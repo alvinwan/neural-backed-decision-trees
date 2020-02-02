@@ -9,7 +9,7 @@ from utils.utils import (
 )
 
 __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
-           'CIFAR100Tree')
+           'CIFAR100Tree', 'CIFAR100JointNodes')
 
 
 def load_checkpoint(net, path):
@@ -72,17 +72,13 @@ class CIFAR100Tree(Tree):
             pretrained=pretrained, num_classes=num_classes, **kwargs)
 
 
-class CIFAR10JointNodes(nn.Module):
+class JointNodes(nn.Module):
     """
     Requires that model have a featurize method. Like training individual nodes,
     except all nodes share convolutions. Thus, all nodes are trained jointly.
     """
 
-    def __init__(self, *args,
-            path_tree='./data/cifar10/tree.xml',
-            path_wnids='./data/cifar10/wnids.txt',
-            num_classes=None,  # ignored
-            **kwargs):
+    def __init__(self, path_tree, path_wnids):
         super().__init__()
 
         import models
@@ -124,6 +120,19 @@ class CIFAR10JointNodes(nn.Module):
         for head in self.heads:
             outputs.append(head(x))
         return outputs
+
+
+# num_classes is ignored
+class CIFAR10JointNodes(JointNodes):
+
+    def __init__(self, num_classes=None):
+        super().__init__(DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS)
+
+
+class CIFAR100JointNodes(JointNodes):
+
+    def __init__(self, num_classes=None):
+        super().__init__(DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS)
 
 
 class CIFAR10JointTree(nn.Module):

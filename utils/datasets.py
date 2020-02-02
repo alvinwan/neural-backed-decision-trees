@@ -5,16 +5,14 @@ from utils.xmlutils import get_leaves, remove
 import torch
 import numpy as np
 from torch.utils.data import Dataset
+from utils.utils import (
+    DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
+    DEFAULT_CIFAR100_WNIDS
+)
 
 
 __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
-                   'CIFAR100Node')
-
-
-DEFAULT_CIFAR10_TREE = './data/CIFAR10/tree.xml'
-DEFAULT_CIFAR10_WNIDS = './data/CIFAR10/wnids.txt'
-DEFAULT_CIFAR100_TREE = './data/CIFAR100/tree.xml'
-DEFAULT_CIFAR100_WNIDS = './data/CIFAR100/wnids.txt'
+                   'CIFAR100Node', 'CIFAR100JointNodes')
 
 
 class TinyImagenetDataset(datasets.ImageFolder):
@@ -128,45 +126,52 @@ class NodeDataset(Dataset):
 
 class CIFAR10Node(NodeDataset):
 
-    def __init__(self, wnid, *args,
-            root='./data',
-            path_tree=DEFAULT_CIFAR10_TREE,
-            path_wnids=DEFAULT_CIFAR10_WNIDS,
-            **kwargs):
-        super().__init__(wnid, path_tree, path_wnids,
+    def __init__(self, wnid, *args, root='./data', **kwargs):
+        super().__init__(wnid, DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR100_TREE,
             dataset=datasets.CIFAR10(*args, root=root, **kwargs))
 
 
 class CIFAR100Node(NodeDataset):
 
-    def __init__(self, wnid, *args,
-            root='./data',
-            path_tree=DEFAULT_CIFAR100_TREE,
-            path_wnids=DEFAULT_CIFAR100_WNIDS,
-            **kwargs):
-        super().__init__(wnid, path_tree, path_wnids,
+    def __init__(self, wnid, *args, root='./data', **kwargs):
+        super().__init__(wnid, DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
             dataset=datasets.CIFAR100(*args, root=root, **kwargs))
 
 
-class CIFAR10JointNodes(datasets.CIFAR10):
+class JointNodesDataset(Dataset):
 
-    def __init__(self, root='./data', *args,
-            path_tree='./data/cifar10/tree.xml',
-            path_wnids='./data/cifar10/wnids.txt', **kwargs):
-        super().__init__(root=root, *args, **kwargs)
-        self.nodes = Node.get_nodes(path_tree, path_wnids, self.classes)
-
+    def __init__(self, path_tree, path_wnids, dataset):
+        super().__init__()
+        self.nodes = Node.get_nodes(path_tree, path_wnids, dataset.classes)
+        self.dataset = dataset
         # NOTE: the below is used for computing num_classes, which is ignored
         # anyways. Also, this will break the confusion matrix code
-        self.original_classes = self.classes
+        self.original_classes = dataset.classes
         self.classes = self.nodes[0].classes
 
     def __getitem__(self, i):
-        sample, old_label = super().__getitem__(i)
+        sample, old_label = self.dataset[i]
         new_label = torch.Tensor([
             node.mapping[old_label] for node in self.nodes
         ]).long()
         return sample, new_label
+
+    def __len__(self):
+        return len(self.dataset)
+
+
+class CIFAR10JointNodes(JointNodesDataset):
+
+    def __init__(self, *args, root='./data', **kwargs):
+        super().__init__(DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR100_TREE,
+            dataset=datasets.CIFAR10(*args, root=root, **kwargs))
+
+
+class CIFAR100JointNodes(JointNodesDataset):
+
+    def __init__(self, *args, root='./data', **kwargs):
+        super().__init__(DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+            dataset=datasets.CIFAR100(*args, root=root, **kwargs))
 
 
 class CIFAR10PathSanity(datasets.CIFAR10):

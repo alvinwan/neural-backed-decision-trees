@@ -16,6 +16,11 @@ import torch.nn.init as init
 CIFAR10NODE = 'CIFAR10Node'
 CIFAR10PATHSANITY = 'CIFAR10PathSanity'
 
+DEFAULT_CIFAR10_TREE = './data/CIFAR10/tree.xml'
+DEFAULT_CIFAR10_WNIDS = './data/CIFAR10/wnids.txt'
+DEFAULT_CIFAR100_TREE = './data/CIFAR100/tree.xml'
+DEFAULT_CIFAR100_WNIDS = './data/CIFAR100/wnids.txt'
+
 
 def get_mean_and_std(dataset):
     '''Compute the mean and std value of dataset.'''
