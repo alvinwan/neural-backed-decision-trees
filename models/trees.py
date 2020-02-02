@@ -9,7 +9,7 @@ from utils.utils import (
 )
 
 __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
-           'CIFAR100Tree', 'CIFAR100JointNodes')
+           'CIFAR100Tree', 'CIFAR100JointNodes', 'CIFAR100JointTree')
 
 
 def load_checkpoint(net, path):
@@ -25,10 +25,12 @@ def load_checkpoint(net, path):
 class Tree(nn.Module):
     """returns samples from all node classifiers"""
 
-    def __init__(self, path_tree, path_wnids, *args,
+    def __init__(self,
+            dataset,
+            path_tree,
+            path_wnids,
             pretrained=True,
-            num_classes=10,
-            **kwargs):
+            num_classes=10):
         super().__init__()
 
         self.nodes = Node.get_nodes(path_tree, path_wnids)
@@ -42,7 +44,7 @@ class Tree(nn.Module):
         net = models.ResNet10(num_classes=node.num_classes)
 
         if pretrained:
-            load_checkpoint(net, f'./checkpoint/ckpt-CIFAR10Node-ResNet10-{node.wnid}.pth')
+            load_checkpoint(net, f'./checkpoint/ckpt-{dataset}Node-ResNet10-{node.wnid}.pth')
         return net
 
     def get_input_dim(self):
@@ -61,14 +63,14 @@ class Tree(nn.Module):
 class CIFAR10Tree(Tree):
 
     def __init__(self, *args, pretrained=True, num_classes=10, **kwargs):
-        super().__init__(DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
+        super().__init__('CIFAR10', DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
             pretrained=pretrained, num_classes=num_classes, **kwargs)
 
 
 class CIFAR100Tree(Tree):
 
     def __init__(self, *args, pretrained=True, num_classes=100, **kwargs):
-        super().__init__(DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+        super().__init__('CIFAR100', DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
             pretrained=pretrained, num_classes=num_classes, **kwargs)
 
 
@@ -135,23 +137,25 @@ class CIFAR100JointNodes(JointNodes):
         super().__init__(DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS)
 
 
-class CIFAR10JointTree(nn.Module):
+class JointTree(nn.Module):
     """
     Final classifier for the nodes trained jointly above, in the
-    CIFAR10JointNodes model
+    JointNodes model
     """
 
-    def __init__(self, *args,
-            path_tree='./data/cifar10/tree.xml',
-            path_wnids='./data/cifar10/wnids.txt',
+    def __init__(self,
+            dataset,
+            path_tree,
+            path_wnids,
+            net,
             num_classes=10,
-            pretrained=True,
-            **kwargs):
+            pretrained=True):
         super().__init__()
 
-        self.net = CIFAR10JointNodes(*args, path_tree, path_wnids, **kwargs)
+        self.net = net
         if pretrained:
-            load_checkpoint(self.net, './checkpoint/ckpt-CIFAR10JointNodes-CIFAR10JointNodes.pth')
+            # TODO: should use generate_fname
+            load_checkpoint(self.net, f'./checkpoint/ckpt-{dataset}JointNodes-{dataset}JointNodes.pth')
         self.linear = nn.Linear(Node.dim(self.net.nodes), num_classes)
 
     def forward(self, x):
@@ -160,3 +164,19 @@ class CIFAR10JointTree(nn.Module):
         x = torch.cat(x, dim=1)
         x = self.linear(x)
         return x
+
+
+class CIFAR10JointTree(JointTree):
+
+    def __init__(self, num_classes=10, pretrained=True):
+        super().__init__('CIFAR10', DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
+            net=CIFAR10JointNodes(), num_classes=num_classes,
+            pretrained=pretrained)
+
+
+class CIFAR100JointTree(JointTree):
+
+    def __init__(self, num_classes=100, pretrained=True):
+        super().__init__('CIFAR100', DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100JointNodes(), num_classes=num_classes,
+            pretrained=pretrained)
