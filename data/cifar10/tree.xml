@@ -1,10 +1,7 @@
 <ImageNetStructure>
 	<synset gloss="ImageNet 2011 Fall Release." wnid="fall11" words="ImageNet 2011 Fall Release">
 <synset gloss="an artifact (or system of artifacts) that is instrumental in accomplishing some end" wnid="n03575240" words="instrumentality, instrumentation">
-<synset gloss="a self-propelled wheeled vehicle that does not run on rails" wnid="n03791235" words="motor vehicle, automotive vehicle">
-<synset gloss="a motor vehicle with four wheels; usually propelled by an internal combustion engine; &quot;he needs a car to get to work&quot;" wnid="n02958343" words="car, auto, automobile, machine, motorcar">
-</synset><synset gloss="an automotive vehicle suitable for hauling" wnid="n04490091" words="truck, motortruck">
-</synset></synset><synset gloss="a conveyance that transports people or objects" wnid="n04524313" words="vehicle">
+<synset gloss="a conveyance that transports people or objects" wnid="n04524313" words="vehicle">
 <synset gloss="a self-propelled wheeled vehicle that does not run on rails" wnid="n03791235" words="motor vehicle, automotive vehicle">
 <synset gloss="a motor vehicle with four wheels; usually propelled by an internal combustion engine; &quot;he needs a car to get to work&quot;" wnid="n02958343" words="car, auto, automobile, machine, motorcar">
 </synset><synset gloss="an automotive vehicle suitable for hauling" wnid="n04490091" words="truck, motortruck">

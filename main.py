@@ -106,7 +106,7 @@ else:
     dataset = getattr(torchvision.datasets, args.dataset)
 
 dataset_args = ()
-if args.dataset == CIFAR10NODE:
+if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
 
 trainset = dataset(*dataset_args, root='./data', train=True, download=True, transform=transform_train)

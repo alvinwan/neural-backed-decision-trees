@@ -4,9 +4,17 @@ import xml.etree.ElementTree as ET
 from utils.xmlutils import get_leaves, remove
 import torch
 import numpy as np
+from torch.utils.data import Dataset
 
 
-__all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity')
+__all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
+                   'CIFAR100Node')
+
+
+DEFAULT_CIFAR10_TREE = './data/CIFAR10/tree.xml'
+DEFAULT_CIFAR10_WNIDS = './data/CIFAR10/wnids.txt'
+DEFAULT_CIFAR100_TREE = './data/CIFAR100/tree.xml'
+DEFAULT_CIFAR100_WNIDS = './data/CIFAR100/wnids.txt'
 
 
 class TinyImagenetDataset(datasets.ImageFolder):
@@ -28,8 +36,8 @@ class TinyImagenetDataset(datasets.ImageFolder):
 class Node:
 
     def __init__(self, wnid,
-            path_tree='./data/cifar10/tree.xml',
-            path_wnids='./data/cifar10/wnids.txt',
+            path_tree=DEFAULT_CIFAR10_TREE,
+            path_wnids=DEFAULT_CIFAR10_WNIDS,
             classes=()):
         self.wnid = wnid
         self.original_classes = classes
@@ -39,12 +47,11 @@ class Node:
         self.num_original_classes = len(wnids)
 
         tree = ET.parse(path_tree)
-        # handle multiple paths issue with hack -- remove other path
-        remove(tree, tree.find('.//synset[@wnid="n03791235"]'))
 
         # generate mapping from wnid to class
         self.mapping = {}
         node = tree.find('.//synset[@wnid="{}"]'.format(wnid))
+        assert node is not None, f'Failed to find node with wnid {wnid}'
         children = node.getchildren()
         n = len(children)
         assert n > 0, 'Cannot build dataset for leaf node.'
@@ -95,23 +102,50 @@ class Node:
         return sum([node.num_classes for node in nodes])
 
 
-class CIFAR10Node(datasets.CIFAR10):
+class NodeDataset(Dataset):
     """Creates dataset for a specific node in the CIFAR10 wordnet tree
 
     wnids.txt is needed to map wnids to class indices
     """
 
-    def __init__(self, wnid, root='./data', *args,
-            path_tree='./data/cifar10/tree.xml',
-            path_wnids='./data/cifar10/wnids.txt', **kwargs):
-        super().__init__(root=root, *args, **kwargs)
-        self.node = Node(wnid, path_tree, path_wnids, self.classes)
-        self.original_classes = self.classes
+    needs_wnid = True
+
+    def __init__(self, wnid, path_tree, path_wnids, dataset):
+        super().__init__()
+
+        self.dataset = dataset
+        self.node = Node(wnid, path_tree, path_wnids, dataset.classes)
+        self.original_classes = dataset.classes
         self.classes = self.node.classes
 
     def __getitem__(self, i):
-        sample, old_label = super().__getitem__(i)
+        sample, old_label = self.dataset[i]
         return sample, self.node.mapping[old_label]
+
+    def __len__(self):
+        return len(self.dataset)
+
+
+class CIFAR10Node(NodeDataset):
+
+    def __init__(self, wnid, *args,
+            root='./data',
+            path_tree=DEFAULT_CIFAR10_TREE,
+            path_wnids=DEFAULT_CIFAR10_WNIDS,
+            **kwargs):
+        super().__init__(wnid, path_tree, path_wnids,
+            dataset=datasets.CIFAR10(*args, root=root, **kwargs))
+
+
+class CIFAR100Node(NodeDataset):
+
+    def __init__(self, wnid, *args,
+            root='./data',
+            path_tree=DEFAULT_CIFAR100_TREE,
+            path_wnids=DEFAULT_CIFAR100_WNIDS,
+            **kwargs):
+        super().__init__(wnid, path_tree, path_wnids,
+            dataset=datasets.CIFAR100(*args, root=root, **kwargs))
 
 
 class CIFAR10JointNodes(datasets.CIFAR10):
@@ -142,9 +176,7 @@ class CIFAR10PathSanity(datasets.CIFAR10):
             path_tree='./data/cifar10/tree.xml',
             path_wnids='./data/cifar10/wnids.txt', **kwargs):
         super().__init__(root=root, *args, **kwargs)
-        wnid_to_node = Node.get_wnid_to_node(path_tree, path_wnids, self.classes)
-        wnids = sorted(wnid_to_node)
-        self.nodes = [wnid_to_node[wnid] for wnid in wnids]
+        self.nodes = Node.get_nodes(path_tree, path_wnids, self.classes)
 
     def get_sample(self, node, old_label):
         new_label = node.mapping[old_label]
