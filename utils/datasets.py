@@ -127,7 +127,7 @@ class NodeDataset(Dataset):
 class CIFAR10Node(NodeDataset):
 
     def __init__(self, wnid, *args, root='./data', **kwargs):
-        super().__init__(wnid, DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR100_TREE,
+        super().__init__(wnid, DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
             dataset=datasets.CIFAR10(*args, root=root, **kwargs))
 
 
@@ -163,7 +163,7 @@ class JointNodesDataset(Dataset):
 class CIFAR10JointNodes(JointNodesDataset):
 
     def __init__(self, *args, root='./data', **kwargs):
-        super().__init__(DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR100_TREE,
+        super().__init__(DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
             dataset=datasets.CIFAR10(*args, root=root, **kwargs))
 
 
