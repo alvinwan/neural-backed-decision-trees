@@ -98,7 +98,7 @@ class JointNodes(nn.Module):
         """With some probability, drop over-represented classes"""
         loss = 0
         for output, target, node in zip(outputs, targets.T, self.nodes):
-            random = torch.rand(target.size())
+            random = torch.rand(target.size()).to(target.device)
 
             if node.probabilities.device != target.device:
                 node.probabilities = node.probabilities.to(target.device)
