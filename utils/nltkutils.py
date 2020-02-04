@@ -14,7 +14,8 @@ def wnid_to_synset(wnid):
 
 
 def build_minimal_wordnet_tree(wnids):
-    root = Element('synset', {'wnid': 'fall11'})
+    tree = Element('tree')
+    root = SubElement(tree, 'synset', {'wnid': 'fall11'})
     wnid_to_node = {'fall11': root}
     wnid_to_parent = {}
 
@@ -47,7 +48,7 @@ def build_minimal_wordnet_tree(wnids):
                 parent = SubElement(parent, 'synset', {'wnid': id})
                 wnid_to_node[id] = parent
 
-        node = root.find('.//synset[@wnid="{}"]'.format(wnid))
+        node = root.find(f'.//synset[@wnid="{wnid}"]')
         assert node is not None, (
             f'Could not find {wnid} in built tree, with wnids '
             f'{[node.get("wnid") for node in root.iter()]}'
@@ -58,7 +59,7 @@ def build_minimal_wordnet_tree(wnids):
             f'{[child.get("wnid") for child in node.getchildren()]}'
         )
 
-    return ElementTree(root)
+    return ElementTree(tree)
 
 
 def get_leaves(tree):
