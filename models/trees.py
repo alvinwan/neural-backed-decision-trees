@@ -100,6 +100,8 @@ class JointNodes(nn.Module):
         for output, target, node in zip(outputs, targets.T, self.nodes):
             selector = [
                 random.random() < node.probabilities[label] for label in target]
+            if not any(selector):
+                continue
             output = output[selector]
             target = target[selector]
             loss += criterion(output, target)
