@@ -5,6 +5,7 @@ from utils.xmlutils import get_leaves, remove
 import torch
 import numpy as np
 from torch.utils.data import Dataset
+from collections import defaultdict
 from utils.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
     DEFAULT_CIFAR100_WNIDS
@@ -36,7 +37,12 @@ class Node:
     def __init__(self, wnid,
             path_tree=DEFAULT_CIFAR10_TREE,
             path_wnids=DEFAULT_CIFAR10_WNIDS,
-            classes=()):
+            classes=(),
+            imbalance_threshold=5):
+        """
+        Set imbalance_threshold to infinity `num_classes` to effectively undo
+        class resampling during training
+        """
         self.wnid = wnid
         self.original_classes = classes
 
@@ -68,15 +74,38 @@ class Node:
             if old_index not in self.mapping:
                 self.mapping[old_index] = n
 
+        self.new_to_old = [[] for _ in range(self.num_classes)]
+        for old_index in range(self.num_original_classes):
+            new_index = self.mapping[old_index]
+            self.new_to_old[new_index].append(old_index)
+
         self.classes = []
         if self.original_classes:
-            classes = [[] for _ in range(n + 1)]
-            for old_index in range(self.num_original_classes):
-                original_class = self.original_classes[old_index]
-                new_index = self.mapping[old_index]
-                classes[new_index].append(original_class)
+            self.classes = [','.join(
+                [self.original_classes[old_index] for old_index in old_indices])
+                for old_indices in self.new_to_old
+            ]
+        self.imbalance_threshold = imbalance_threshold
 
-            self.classes = [','.join(names) for names in classes if names]
+    @property
+    def class_counts(self):
+        """Number of old classes in each new class"""
+        return [len(old_indices) for old_indices in self.new_to_old]
+
+    @property
+    def probabilities(self):
+        """Calculates probability of training on the ith class.
+
+        If the class contains more than `resample_threshold` samples, the
+        probability is lower, as it is likely to cause severe class imbalance
+        issues.
+        """
+        underrepresented = [c for c in self.class_counts if c < self.imbalance_threshold]
+        probabilities = [
+            min(1, np.mean(underrepresented) / len(old_indices))
+            for old_indices in self.new_to_old
+        ]
+        return probabilities
 
     @staticmethod
     def get_wnid_to_node(path_tree, path_wnids, classes=()):

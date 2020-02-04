@@ -1,6 +1,7 @@
 from utils.datasets import Node
 import torch
 import torch.nn as nn
+import random
 import os
 
 from utils.utils import (
@@ -94,8 +95,13 @@ class JointNodes(nn.Module):
         ])
 
     def custom_loss(self, criterion, outputs, targets):
+        """With some probability, drop over-represented classes"""
         loss = 0
-        for output, target in zip(outputs, targets.T):
+        for output, target, node in zip(outputs, targets.T, self.nodes):
+            selector = [
+                random.random() < node.probabilities[label] for label in target]
+            output = output[selector]
+            target = target[selector]
             loss += criterion(output, target)
         return loss
 
