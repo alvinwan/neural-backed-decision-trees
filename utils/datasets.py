@@ -37,12 +37,7 @@ class Node:
     def __init__(self, wnid,
             path_tree=DEFAULT_CIFAR10_TREE,
             path_wnids=DEFAULT_CIFAR10_WNIDS,
-            classes=(),
-            imbalance_threshold=5):
-        """
-        Set imbalance_threshold to infinity `num_classes` to effectively undo
-        class resampling during training
-        """
+            classes=()):
         self.wnid = wnid
         self.original_classes = classes
 
@@ -85,7 +80,6 @@ class Node:
                 [self.original_classes[old_index] for old_index in old_indices])
                 for old_indices in self.new_to_old
             ]
-        self.imbalance_threshold = imbalance_threshold
         self._probabilities = None
 
     @property
@@ -102,8 +96,7 @@ class Node:
         issues.
         """
         if self._probabilities is None:
-            rare = [c for c in self.class_counts if c < self.imbalance_threshold]
-            reference = np.mean(rare) if rare else min(self.class_counts)
+            reference = min(self.class_counts)
             self._probabilities = torch.Tensor([
                 min(1, reference / len(old_indices))
                 for old_indices in self.new_to_old
