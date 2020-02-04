@@ -101,7 +101,7 @@ class JointNodes(nn.Module):
             random = torch.rand(target.size())
 
             if node.probabilities.device != target.device:
-                probabilities = node.probabilities.to(target.device)
+                node.probabilities = node.probabilities.to(target.device)
 
             selector = (random < node.probabilities[target]).bool()
             if not selector.any():

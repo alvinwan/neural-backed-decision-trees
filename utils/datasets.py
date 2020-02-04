@@ -110,6 +110,10 @@ class Node:
             ])
         return self._probabilities
 
+    @probabilities.setter
+    def probabilities(self, probabilities):
+        self._probabilities = probabilities
+
     @staticmethod
     def get_wnid_to_node(path_tree, path_wnids, classes=()):
         tree = ET.parse(path_tree)
