@@ -35,10 +35,10 @@ class Tree(nn.Module):
 
         self.nodes = Node.get_nodes(path_tree, path_wnids)
         self.nets = nn.ModuleList([
-            self.get_net_for_node(node, pretrained) for node in self.nodes])
+            self.get_net_for_node(dataset, node, pretrained) for node in self.nodes])
         self.linear = nn.Linear(self.get_input_dim(), num_classes)
 
-    def get_net_for_node(self, node, pretrained):
+    def get_net_for_node(self, dataset, node, pretrained):
         import models
         # TODO: WARNING: the model and paths are hardcoded
         net = models.ResNet10(num_classes=node.num_classes)

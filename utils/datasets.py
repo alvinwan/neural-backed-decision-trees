@@ -54,13 +54,15 @@ class Node:
         n = len(children)
         assert n > 0, 'Cannot build dataset for leaf node.'
         self.num_children = n
-        self.num_classes = self.num_children + 1
+        self.num_classes = n
 
         for new_index, child in enumerate(children):
             for leaf in get_leaves(child):
                 wnid = leaf.get('wnid')
                 old_index = wnids.index(wnid)
                 self.mapping[old_index] = new_index
+        if len(self.mapping) < self.num_original_classes:
+            self.num_classes += 1
 
         for old_index in range(self.num_original_classes):
             if old_index not in self.mapping:
