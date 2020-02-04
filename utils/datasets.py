@@ -86,6 +86,7 @@ class Node:
                 for old_indices in self.new_to_old
             ]
         self.imbalance_threshold = imbalance_threshold
+        self._probabilities = None
 
     @property
     def class_counts(self):
@@ -100,13 +101,14 @@ class Node:
         probability is lower, as it is likely to cause severe class imbalance
         issues.
         """
-        rare = [c for c in self.class_counts if c < self.imbalance_threshold]
-        reference = np.mean(rare) if rare else min(self.class_counts)
-        probabilities = [
-            min(1, reference / len(old_indices))
-            for old_indices in self.new_to_old
-        ]
-        return probabilities
+        if self._probabilities is None:
+            rare = [c for c in self.class_counts if c < self.imbalance_threshold]
+            reference = np.mean(rare) if rare else min(self.class_counts)
+            self._probabilities = torch.Tensor([
+                min(1, reference / len(old_indices))
+                for old_indices in self.new_to_old
+            ])
+        return self._probabilities
 
     @staticmethod
     def get_wnid_to_node(path_tree, path_wnids, classes=()):
