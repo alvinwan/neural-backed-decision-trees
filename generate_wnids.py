@@ -3,6 +3,7 @@
 import argparse
 import torchvision
 from nltk.corpus import wordnet as wn
+from utils.nltkutils import synset_to_wnid
 from pathlib import Path
 import os
 
@@ -22,6 +23,7 @@ failures = []
 
 hardcoded_mapping = {
     'aquarium_fish': wn.synsets('fingerling', pos=wn.NOUN)[0],
+    'castle': wn.synsets('castle', pos=wn.NOUN)[1],
     'flatfish': wn.synsets('flatfish', pos=wn.NOUN)[1],
     'leopard': wn.synsets('leopard', pos=wn.NOUN)[1],
     'lobster': wn.synsets('lobster', pos=wn.NOUN)[1],
@@ -50,7 +52,7 @@ for cls in dataset.classes:
             failures.append(cls)
             continue
         synset = synsets[0]
-    wnid = f'{synset.pos()}0{synset.offset()}'
+    wnid = synset_to_wnid(synset)
     print(f'{wnid}: ({cls}) {synset.definition()}')
     wnids.append(wnid)
 
