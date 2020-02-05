@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-import utils.datasets as CIFARdatasets
+import utils.datasets as custom_datasets
 
 import torchvision
 import torchvision.transforms as transforms
@@ -19,7 +19,7 @@ from utils.utils import progress_bar, initialize_confusion_matrix, \
     set_np_printoptions, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY
 
 
-datasets = ('CIFAR10', 'CIFAR100') + CIFARdatasets.names
+datasets = ('CIFAR10', 'CIFAR100') + custom_datasets.names
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
@@ -50,7 +50,7 @@ args = parser.parse_args()
 if args.test:
     import xml.etree.ElementTree as ET
 
-    dataset = CIFARdatasets.CIFAR10PathSanity()
+    dataset = custom_datasets.CIFAR10PathSanity()
     print(dataset[0][0])
 
     for wnid, text in (
@@ -58,7 +58,7 @@ if args.test:
             ('n03575240', 'instrument'),
             ('n03791235', 'motor vehicle'),
             ('n02370806', 'hoofed mammal')):
-        dataset = CIFARdatasets.CIFAR10Node(wnid)
+        dataset = custom_datasets.CIFAR10Node(wnid)
 
         print(text)
         print(dataset.node.mapping)
@@ -97,13 +97,22 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
+root_train = './data'
+root_test = './data'
+
+if args.dataset == 'TinyImagenet200':
+    root_train = './data/tiny-imagenet-200/train'
+    root_test = './data/tiny-imagenet-200/val'
+    transform_train = custom_datasets.TinyImagenet200.transform_train
+    transform_test = custom_datasets.TinyImagenet200.transform_val
+
 if args.test_path_sanity or args.test_path:
     assert args.dataset == CIFAR10PATHSANITY
 if args.model == 'CIFAR10JointNodes':
     assert args.dataset == 'CIFAR10JointNodes'
 
-if args.dataset in CIFARdatasets.names:
-    dataset = getattr(CIFARdatasets, args.dataset)
+if args.dataset in custom_datasets.names:
+    dataset = getattr(custom_datasets, args.dataset)
 else:
     dataset = getattr(torchvision.datasets, args.dataset)
 
@@ -111,8 +120,8 @@ dataset_args = ()
 if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
 
-trainset = dataset(*dataset_args, root='./data', train=True, download=True, transform=transform_train)
-testset = dataset(*dataset_args, root='./data', train=False, download=True, transform=transform_test)
+trainset = dataset(*dataset_args, root=root_train, train=True, download=True, transform=transform_train)
+testset = dataset(*dataset_args, root=root_test, train=False, download=True, transform=transform_test)
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)

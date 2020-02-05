@@ -13,23 +13,29 @@ from utils.utils import (
 
 
 __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
-                   'CIFAR100Node', 'CIFAR100JointNodes')
+                   'CIFAR100Node', 'CIFAR100JointNodes',
+                   'TinyImagenet200')
 
 
-class TinyImagenetDataset(datasets.ImageFolder):
+class TinyImagenet200(datasets.ImageFolder):
     """Tiny imagenet dataloader"""
 
-    def __init__(self, path='data/tiny-imagenet-200/train', *args,
-            transform=transforms.ToTensor(), **kwargs):
-        super(path, *args, transform=transform, **kwargs)
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(64, padding=8),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize([0.4802, 0.4481, 0.3975], [0.2302, 0.2265, 0.2262]),
+    ])
 
-    @staticmethod
-    def transforms_train():
-        return transforms.ToTensor()
+    transform_val = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize([0.4802, 0.4481, 0.3975], [0.2302, 0.2265, 0.2262]),
+    ])
 
-    @staticmethod
-    def transforms_val():
-        return transforms.ToTensor()
+    # TODO: train, download are just ignoredd
+    def __init__(self, root='./data', *args, transform=transforms.ToTensor(),
+            train=None, download=None, **kwargs):
+        super().__init__(root, *args, transform=transform, **kwargs)
 
 
 class Node:
