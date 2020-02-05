@@ -9,8 +9,8 @@ from utils.utils import (
     DEFAULT_CIFAR100_WNIDS
 )
 
-__all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
-           'CIFAR100Tree', 'CIFAR100JointNodes', 'CIFAR100JointTree')
+__all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree', 'CIFAR10JointDecisionTree',
+           'CIFAR100Tree', 'CIFAR100JointNodes', 'CIFAR100JointTree', 'CIFAR100JointDecisionTree')
 
 
 def load_checkpoint(net, path):
@@ -187,6 +187,75 @@ class CIFAR10JointTree(JointTree):
 
 
 class CIFAR100JointTree(JointTree):
+
+    def __init__(self, num_classes=100, pretrained=True):
+        super().__init__('CIFAR100', DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100JointNodes(), num_classes=num_classes,
+            pretrained=pretrained)
+
+class JointDecisionTree(nn.Module):
+    """
+    Decision tree based inference method using jointly trained nodes
+    """
+
+    def __init__(self,
+            dataset,
+            path_tree,
+            path_wnids,
+            net,
+            num_classes=10,
+            pretrained=True):
+        super().__init__()
+
+        self.num_classes = num_classes
+        if pretrained:
+            # TODO: should use generate_fname
+            load_checkpoint(net, f'./checkpoint/ckpt-{dataset}JointNodes-{dataset}JointNodes.pth')
+        self.net = net.net
+        self.nodes = net.nodes
+        self.heads = net.heads
+        self.wnids = [node.wnid for node in self.nodes]
+
+        root_node_wnid = Node.get_root_node_wnid(path_tree)
+        self.root_node = self.nodes[self.wnids.index(root_node_wnid)]
+
+    def forward(self, x):
+        assert hasattr(self.net, 'featurize')
+        x = self.net.featurize(x)
+
+        outputs = torch.zeros(x.shape[0], self.num_classes)
+        for i in range(len(x)):
+            curr_node = self.root_node
+            pred_old_index = -1
+            while curr_node:
+                node_index = self.wnids.index(curr_node.wnid)
+                head = self.heads[node_index]
+                output = head(x[i:i+1])[0]
+                _, pred_new_index = output.max(dim=0)
+                if pred_new_index == curr_node.num_children:
+                    break
+                else:
+                    next_wnid = curr_node.children_wnids[pred_new_index]
+                    if next_wnid in self.wnids:
+                        next_node_index = self.wnids.index(next_wnid)
+                        curr_node = self.nodes[next_node_index]
+                    else:
+                        pred_old_index = curr_node.new_to_old[pred_new_index][0]
+                        curr_node = None
+            if pred_old_index >= 0:
+                outputs[i,pred_old_index] = 1
+            else:
+                outputs[i,:] = -1
+        return outputs.to(x.device)
+
+class CIFAR10JointDecisionTree(JointDecisionTree):
+
+    def __init__(self, num_classes=10, pretrained=True):
+        super().__init__('CIFAR10', DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
+            net=CIFAR10JointNodes(), num_classes=num_classes,
+            pretrained=pretrained)
+
+class CIFAR100JointDecisionTree(JointDecisionTree):
 
     def __init__(self, num_classes=100, pretrained=True):
         super().__init__('CIFAR100', DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
