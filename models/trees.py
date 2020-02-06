@@ -1,4 +1,4 @@
-from utils.datasets import Node
+from utils.nmn_datasets import Node
 import torch
 import torch.nn as nn
 import random

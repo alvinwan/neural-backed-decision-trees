@@ -1,3 +1,4 @@
+import torchvision.datasets as datasets
 import xml.etree.ElementTree as ET
 from utils.xmlutils import get_leaves, remove
 import torch
