@@ -175,7 +175,8 @@ class JointTree(nn.Module):
     """
 
     def __init__(self,
-            dataset,
+            model_name,
+            dataset_name,
             path_tree,
             path_wnids,
             net,
@@ -186,7 +187,7 @@ class JointTree(nn.Module):
         self.net = net
         if pretrained:
             # TODO: should use generate_fname
-            load_checkpoint(self.net, f'./checkpoint/ckpt-{dataset}JointNodes-{dataset}JointNodes.pth')
+            load_checkpoint(self.net, f'./checkpoint/ckpt-{model_name}-{dataset_name}.pth')
         self.linear = nn.Linear(Node.dim(self.net.nodes), num_classes)
 
     def forward(self, x):
@@ -200,7 +201,8 @@ class JointTree(nn.Module):
 class CIFAR10JointTree(JointTree):
 
     def __init__(self, num_classes=10, pretrained=True):
-        super().__init__('CIFAR10', DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
+        super().__init__('CIFAR10JointNodes', 'CIFAR10JointNodes',
+            DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
             net=CIFAR10JointNodes(), num_classes=num_classes,
             pretrained=pretrained)
 
@@ -208,6 +210,25 @@ class CIFAR10JointTree(JointTree):
 class CIFAR100JointTree(JointTree):
 
     def __init__(self, num_classes=100, pretrained=True):
-        super().__init__('CIFAR100', DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+        super().__init__('CIFAR100JointNodes', 'CIFAR100JointNodes',
+            DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
             net=CIFAR100JointNodes(), num_classes=num_classes,
+            pretrained=pretrained)
+
+
+class CIFAR10BalancedJointTree(JointTree):
+
+    def __init__(self, num_classes=10, pretrained=True):
+        super().__init__('CIFAR10BalancedJointNodes', 'CIFAR10JointNodes',
+            DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
+            net=CIFAR10BalancedJointNodes(), num_classes=num_classes,
+            pretrained=pretrained)
+
+
+class CIFAR100BalancedJointTree(JointTree):
+
+    def __init__(self, num_classes=100, pretrained=True):
+        super().__init__('CIFAR100BalancedJointNodes', 'CIFAR100JointNodes',
+            DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100BalancedJointNodes(), num_classes=num_classes,
             pretrained=pretrained)
