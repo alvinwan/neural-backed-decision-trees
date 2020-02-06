@@ -10,7 +10,8 @@ from utils.utils import (
 )
 
 __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
-           'CIFAR100Tree', 'CIFAR100JointNodes', 'CIFAR100JointTree')
+           'CIFAR100Tree', 'CIFAR100JointNodes', 'CIFAR100JointTree',
+           'CIFAR10BalancedJointNodes', 'CIFAR100BalancedJointNodes')
 
 
 def load_checkpoint(net, path):
@@ -81,7 +82,7 @@ class JointNodes(nn.Module):
     except all nodes share convolutions. Thus, all nodes are trained jointly.
     """
 
-    def __init__(self, path_tree, path_wnids):
+    def __init__(self, path_tree, path_wnids, balance_classes=False):
         super().__init__()
 
         import models
@@ -94,20 +95,24 @@ class JointNodes(nn.Module):
             for node in self.nodes
         ])
 
+        self.balance_classes = balance_classes
+
     def custom_loss(self, criterion, outputs, targets):
         """With some probability, drop over-represented classes"""
         loss = 0
         for output, target, node in zip(outputs, targets.T, self.nodes):
-            random = torch.rand(target.size()).to(target.device)
 
-            if node.probabilities.device != target.device:
-                node.probabilities = node.probabilities.to(target.device)
+            if self.balance_classes:
+                random = torch.rand(target.size()).to(target.device)
 
-            selector = (random < node.probabilities[target]).bool()
-            if not selector.any():
-                continue
-            output = output[selector]
-            target = target[selector]
+                if node.probabilities.device != target.device:
+                    node.probabilities = node.probabilities.to(target.device)
+
+                selector = (random < node.probabilities[target]).bool()
+                if not selector.any():
+                    continue
+                output = output[selector]
+                target = target[selector]
             loss += criterion(output, target)
         return loss
 
@@ -147,6 +152,20 @@ class CIFAR100JointNodes(JointNodes):
 
     def __init__(self, num_classes=None):
         super().__init__(DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS)
+
+
+class CIFAR10BalancedJointNodes(JointNodes):
+
+    def __init__(self, num_classes=None):
+        super().__init__(DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
+            balance_classes=True)
+
+
+class CIFAR100BalancedJointNodes(JointNodes):
+
+    def __init__(self, num_classes=None):
+        super().__init__(DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+            balance_classes=True)
 
 
 class JointTree(nn.Module):
