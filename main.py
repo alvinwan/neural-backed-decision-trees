@@ -164,7 +164,6 @@ def adjust_learning_rate(epoch, lr):
 
 # Training
 def train(epoch):
-    return
     lr = adjust_learning_rate(epoch, args.lr)
     optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
 
