@@ -11,7 +11,8 @@ from utils.utils import (
 
 __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
            'CIFAR100Tree', 'CIFAR100JointNodes', 'CIFAR100JointTree',
-           'CIFAR10BalancedJointNodes', 'CIFAR100BalancedJointNodes')
+           'CIFAR10BalancedJointNodes', 'CIFAR100BalancedJointNodes',
+           'CIFAR10BalancedJointTree', 'CIFAR100BalancedJointTree')
 
 
 def load_checkpoint(net, path):
