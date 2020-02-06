@@ -97,12 +97,7 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
-root_train = './data'
-root_test = './data'
-
 if args.dataset == 'TinyImagenet200':
-    root_train = './data/tiny-imagenet-200/train'
-    root_test = './data/tiny-imagenet-200/val'
     transform_train = custom_datasets.TinyImagenet200.transform_train
     transform_test = custom_datasets.TinyImagenet200.transform_val
 
@@ -120,8 +115,10 @@ dataset_args = ()
 if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
 
-trainset = dataset(*dataset_args, root=root_train, train=True, download=True, transform=transform_train)
-testset = dataset(*dataset_args, root=root_test, train=False, download=True, transform=transform_test)
+trainset = dataset(*dataset_args, root='./data', train=True, download=True, transform=transform_train)
+testset = dataset(*dataset_args, root='./data', train=False, download=True, transform=transform_test)
+
+assert trainset.classes == testset.classes, (trainset.classes, testset.classes)
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
@@ -167,6 +164,7 @@ def adjust_learning_rate(epoch, lr):
 
 # Training
 def train(epoch):
+    return
     lr = adjust_learning_rate(epoch, args.lr)
     optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
 
