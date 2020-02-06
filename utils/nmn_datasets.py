@@ -7,12 +7,15 @@ from torch.utils.data import Dataset
 from collections import defaultdict
 from utils.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
-    DEFAULT_CIFAR100_WNIDS
+    DEFAULT_CIFAR100_WNIDS, DEFAULT_TINYIMAGENET200_TREE,
+    DEFAULT_TINYIMAGENET200_WNIDS
 )
+from . import custom_datasets
 
 
 __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
-                   'CIFAR100Node', 'CIFAR100JointNodes')
+                   'CIFAR100Node', 'CIFAR100JointNodes',
+                   'TinyImagenet200JointNodes')
 
 
 class Node:
@@ -186,6 +189,13 @@ class CIFAR100JointNodes(JointNodesDataset):
     def __init__(self, *args, root='./data', **kwargs):
         super().__init__(DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
             dataset=datasets.CIFAR100(*args, root=root, **kwargs))
+
+
+class TinyImagenet200JointNodes(JointNodesDataset):
+
+    def __init__(self, *args, root='./data', **kwargs):
+        super().__init__(DEFAULT_TINYIMAGENET200_TREE, DEFAULT_TINYIMAGENET200_WNIDS,
+            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs))
 
 
 class CIFAR10PathSanity(datasets.CIFAR10):
