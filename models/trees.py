@@ -188,7 +188,7 @@ class JointTree(nn.Module):
         self.net = net
         if pretrained:
             # TODO: should use generate_fname
-            load_checkpoint(self.net, f'./checkpoint/ckpt-{model_name}-{dataset_name}.pth')
+            load_checkpoint(self.net, f'./checkpoint/ckpt-{dataset_name}-{model_name}.pth')
         self.linear = nn.Linear(Node.dim(self.net.nodes), num_classes)
 
     def forward(self, x):
