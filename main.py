@@ -252,8 +252,10 @@ def test(epoch, print_confusion_matrix, checkpoint=True):
 
     if print_confusion_matrix:
         set_np_printoptions()
-        for row, cls in zip(confusion_matrix_recall(confusion_matrix), trainset.classes):
+        recall = confusion_matrix_recall(confusion_matrix)
+        for row, cls in zip(recall, trainset.classes):
             print(row, cls)
+        print(recall.diagonal())
 
 
 if args.eval:
