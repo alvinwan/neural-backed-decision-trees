@@ -4,7 +4,10 @@ import torchvision.models as models
 import torchvision.transforms as transforms
 from utils import custom_datasets, nmn_datasets
 import numpy as np
+import operator
+import xml.etree.ElementTree as ET
 
+from sklearn.cluster import KMeans
 
 # hacky way of "removing" layer in pytorch
 class Identity(torch.nn.Module):
@@ -13,6 +16,39 @@ class Identity(torch.nn.Module):
         
     def forward(self, x):
         return x
+
+
+# n_classes - number of nodes at current level, since we are building bottom up
+# feature_set - np array of feature maps from each image
+# tree_map - mapping (using list) from feature_set to node, which node does each image belong to
+# tree_structure - list of nodes at this level -> tuple of (node label, [children])
+def kmeans_cluster(n_classes, feature_set, tree_map, tree_structure):
+	if n_classes == 1:
+		return tree_structure
+
+	n_clusters = max(2, n_classes // 2)
+
+	kmeans = KMeans(n_clusters = n_clusters).fit(feature_set)
+	cluster_labels = kmeans.labels_
+
+	# count occurrences
+	cluster_count = {treenode:{i: 0 for i in range(n_clusters)} for treenode in set(tree_map)}
+	for cluster_label, treenode in zip(cluster_labels, tree_map):
+		cluster_count[treenode][cluster_label] += 1
+
+	cluster_belong = {}
+	new_tree_structure  = {}
+	# get cluster to which each node belongs in
+	for treenode in tree_structure:
+		cluster = max(cluster_count[treenode[0]].items(), key=operator.itemgetter(1))[0]
+		cluster_belong[treenode[0]] = cluster
+
+		if cluster not in new_tree_cluster:
+			new_tree_structure[cluster] = [treenode]
+		else:
+			new_tree_structure[cluster].append(treenode)
+
+	return kmeans_cluster()
 
 
 import argparse
@@ -28,6 +64,7 @@ if __name__ == '__main__':
 	                    help='Batch size used for pulling data')
 	parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
 	                    default='fall11')
+	parser.add_argument('--sample', default=1.0, type=float, help='How much of the dataset to sample')
 	args = parser.parse_args()
 
 	device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -78,15 +115,24 @@ if __name__ == '__main__':
 
 		feature_set.append(outputs)
 		label_set.append(labels)
-		i += 1
-		if i == 10:
+
+		i += args.batch_size
+		if i > args.sample * len(trainset):
 			break
 
 	feature_set = np.concatenate(feature_set)
 	label_set = np.concatenate(label_set)
+	print("Number of samples: %d" % len(feature_set))
 
-	print(feature_set.shape)
-	print(label_set.shape)
+	#############################################
+	#	Feature maps set up, time to cluster    #
+	#############################################
+	label_to_leaf_map = {}
+
+	# pass to clustering algo
+	kmeans_cluster(len(np.unique(label_set)), feature_set, label_set)
+
+	
 
 
 		
