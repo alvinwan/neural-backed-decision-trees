@@ -202,7 +202,8 @@ class JointTree(nn.Module):
             path_wnids,
             net,
             num_classes=10,
-            pretrained=True):
+            pretrained=True,
+            softmax=False):
         super().__init__()
 
         self.net = net
@@ -211,12 +212,22 @@ class JointTree(nn.Module):
             load_checkpoint(self.net, f'./checkpoint/ckpt-{dataset_name}-{model_name}.pth')
         self.linear = nn.Linear(Node.dim(self.net.nodes), num_classes)
 
+        self.softmax = nn.Softmax(dim=1)
+        self._softmax = softmax
+
     def forward(self, x):
         with torch.no_grad():
             x = self.net(x)
+            if self._softmax:
+                x = self.softmax(x)
         x = torch.cat(x, dim=1)
         x = self.linear(x)
         return x
+
+    def softmax(self, x):
+        # not helpful -- dropped jointTree from 68% to 60%, balancedJointTree
+        # from 64% to 31%
+        return [self.softmax(xi) for xi in x]
 
 
 class CIFAR10JointTree(JointTree):
