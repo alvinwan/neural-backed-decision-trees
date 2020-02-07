@@ -16,7 +16,7 @@ import numpy as np
 import models
 from utils.utils import progress_bar, initialize_confusion_matrix, \
     update_confusion_matrix, confusion_matrix_recall, confusion_matrix_precision, \
-    set_np_printoptions, get_fname, CIFAR10NODE, CIFAR10PATHSANITY
+    set_np_printoptions, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY
 
 
 datasets = ('CIFAR10', 'CIFAR100') + custom_datasets.names + nmn_datasets.names
@@ -145,15 +145,26 @@ if args.test_path_sanity or args.test_path:
 if args.test_path_sanity:
     net.set_weight(trainset.get_weights())
 
-if args.resume or args.backbone:
+if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    fname = get_fname(args)
+    fname = generate_fname(args)
     checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
+
+if args.backbone:
+    print('==> Loading backbone..')
+    try:
+        checkpoint = torch.load(args.backbone)
+        net.load_state_dict(checkpoint['net'])
+    except:
+        if hasattr(net, 'load_backbone'):
+            net.load_backbone(args.backbone)
+        else:
+            print('==> FAILED to load backbone. No `load_backbone` provided for model.')
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)

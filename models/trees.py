@@ -128,6 +128,10 @@ class JointNodes(nn.Module):
         predicted = torch.cat(preds, dim=1)
         return predicted
 
+    def load_backbone(self, path):
+        checkpoint = torch.load(path)
+        self.net.load_state_dict(checkpoint['net'])
+
     def forward(self, x):
         """Note this returns unconventional output.
 
