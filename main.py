@@ -102,7 +102,7 @@ if args.dataset == 'TinyImagenet200':
     transform_test = custom_datasets.TinyImagenet200.transform_val
 
 if args.test_path_sanity or args.test_path:
-    assert args.dataset == CIFAR10PATHSANITY
+    assert 'PathSanity' in args.dataset
 if args.model == 'CIFAR10JointNodes':
     assert args.dataset == 'CIFAR10JointNodes'
 
