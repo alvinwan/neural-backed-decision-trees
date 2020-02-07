@@ -16,7 +16,7 @@ import numpy as np
 import models
 from utils.utils import progress_bar, initialize_confusion_matrix, \
     update_confusion_matrix, confusion_matrix_recall, confusion_matrix_precision, \
-    set_np_printoptions, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY
+    set_np_printoptions, get_fname, CIFAR10NODE, CIFAR10PATHSANITY
 
 
 datasets = ('CIFAR10', 'CIFAR100') + custom_datasets.names + nmn_datasets.names
@@ -33,6 +33,8 @@ parser.add_argument('--dataset', default='CIFAR10', choices=datasets)
 parser.add_argument('--model', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
+parser.add_argument('--backbone', '-b',
+                    help='Path to backbone network parameters to restore from')
 
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
@@ -143,11 +145,11 @@ if args.test_path_sanity or args.test_path:
 if args.test_path_sanity:
     net.set_weight(trainset.get_weights())
 
-if args.resume:
+if args.resume or args.backbone:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    fname = generate_fname(args)
+    fname = get_fname(args)
     checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']

@@ -167,6 +167,16 @@ def set_np_printoptions():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
 
+def get_fname(args):
+    assert not (args.resume and args.backbone), (
+        'Can only specify loading from backbone architecture or a previous '
+        'checkpoint. Specifying both will result in overriding.'
+    )
+    if args.backbone:
+        return args.backbone
+    return generate_fname(args)
+
+
 def generate_fname(args):
     fname = 'ckpt'
     fname += '-' + args.dataset
