@@ -161,8 +161,8 @@ if args.backbone:
         checkpoint = torch.load(args.backbone)
         net.load_state_dict(checkpoint['net'])
     except:
-        if hasattr(net, 'load_backbone'):
-            net.load_backbone(args.backbone)
+        if hasattr(get_net(), 'load_backbone'):
+            get_net().load_backbone(args.backbone)
         else:
             print('==> FAILED to load backbone. No `load_backbone` provided for model.')
 
