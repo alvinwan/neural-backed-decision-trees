@@ -130,7 +130,13 @@ class JointNodes(nn.Module):
 
     def load_backbone(self, path):
         checkpoint = torch.load(path)
-        self.net.load_state_dict(checkpoint['net'])
+        state_dict = {
+            key.replace('module.', '', 1): value
+            for key, value in checkpoint['net'].items()
+        }
+        state_dict.pop('linear.weight')
+        state_dict.pop('linear.bias')
+        self.net.load_state_dict(state_dict, strict=False)
 
     def forward(self, x):
         """Note this returns unconventional output.
