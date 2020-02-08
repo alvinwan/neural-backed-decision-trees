@@ -155,6 +155,11 @@ if args.resume:
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
 
+def get_net():
+    if device == 'cuda':
+        return net.module
+    return net
+
 if args.backbone:
     print('==> Loading backbone..')
     try:
@@ -202,11 +207,6 @@ def train(epoch):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
-
-def get_net():
-    if device == 'cuda':
-        return net.module
-    return net
 
 def get_prediction(outputs):
     if hasattr(get_net(), 'custom_prediction'):
