@@ -14,9 +14,13 @@ import argparse
 import numpy as np
 
 import models
-from utils.utils import progress_bar, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY
+from utils.utils import (
+    progress_bar, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY,
+    set_np_printoptions
+)
 
 
+set_np_printoptions()
 datasets = ('CIFAR10', 'CIFAR100') + custom_datasets.names + nmn_datasets.names
 
 
