@@ -44,7 +44,6 @@ parser.add_argument('--test-path', action='store_true',
                     help='test path classifier with random init')
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
-parser.add_argument('--print-confusion-matrix', action='store_true')
 
 args = parser.parse_args()
 
