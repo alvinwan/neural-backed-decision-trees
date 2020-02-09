@@ -19,7 +19,9 @@ __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
            'TinyImagenet200JointTree', 'TinyImagenet200BalancedJointTree',
            'CIFAR10FreezeJointNodes', 'CIFAR100FreezeJointNodes',
            'TinyImagenet200FreezeJointNodes', 'CIFAR10FreezeJointTree',
-           'CIFAR100FreezeJointTree', 'TinyImagenet200FreezeJointTree')
+           'CIFAR100FreezeJointTree', 'TinyImagenet200FreezeJointTree',
+           'CIFAR100BalancedFreezeJointNodes',
+           'CIFAR100BalancedFreezeJointTree')
 
 
 @contextmanager
@@ -234,6 +236,13 @@ class TinyImagenet200BalancedJointNodes(JointNodes):
             balance_classes=True)
 
 
+class CIFAR100BalancedFreezeJointNodes(JointNodes):
+
+    def __init__(self, num_classes=None):
+        super().__init__(DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+            balance_classes=True, freeze_backbone=True)
+
+
 class JointTree(nn.Module):
     """
     Final classifier for the nodes trained jointly above, in the
@@ -344,6 +353,15 @@ class CIFAR100FreezeJointTree(JointTree):
         super().__init__('CIFAR100FreezeJointNodes', 'CIFAR100JointNodes',
             DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
             net=CIFAR100FreezeJointNodes(), num_classes=num_classes,
+            pretrained=pretrained)
+
+
+class CIFAR100BalancedFreezeJointTree(JointTree):
+
+    def __init__(self, num_classes=100, pretrained=True):
+        super().__init__('CIFAR100BalancedFreezeJointNodes', 'CIFAR100JointNodes',
+            DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100BalancedFreezeJointNodes(), num_classes=num_classes,
             pretrained=pretrained)
 
 
