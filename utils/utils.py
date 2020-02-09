@@ -136,33 +136,6 @@ def format_time(seconds):
     return f
 
 
-def initialize_confusion_matrix(k):
-    return np.zeros((k, k))
-
-
-def update_confusion_matrix(confusion_matrix, preds, labels):
-    preds = tuple(preds)
-    labels = tuple(labels)
-
-    for pred, label in zip(preds, labels):
-        confusion_matrix[label, pred] += 1
-    return confusion_matrix
-
-
-def normalize_confusion_matrix(confusion_matrix, axis):
-    total = confusion_matrix.astype(np.float).sum(axis=axis)
-    total = total[:, None] if axis == 1 else total[None]
-    return confusion_matrix / total
-
-
-def confusion_matrix_recall(confusion_matrix):
-    return normalize_confusion_matrix(confusion_matrix, 1)
-
-
-def confusion_matrix_precision(confusion_matrix):
-    return normalize_confusion_matrix(confusion_matrix, 0)
-
-
 def set_np_printoptions():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 

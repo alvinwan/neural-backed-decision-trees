@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-from utils import custom_datasets, nmn_datasets
+from utils import custom_datasets, nmn_datasets, analysis
 
 import torchvision
 import torchvision.transforms as transforms
@@ -14,9 +14,7 @@ import argparse
 import numpy as np
 
 import models
-from utils.utils import progress_bar, initialize_confusion_matrix, \
-    update_confusion_matrix, confusion_matrix_recall, confusion_matrix_precision, \
-    set_np_printoptions, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY
+from utils.utils import progress_bar, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY
 
 
 datasets = ('CIFAR10', 'CIFAR100') + custom_datasets.names + nmn_datasets.names
@@ -44,6 +42,8 @@ parser.add_argument('--test-path-sanity', action='store_true',
                     help='test path classifier with oracle fc')
 parser.add_argument('--test-path', action='store_true',
                     help='test path classifier with random init')
+parser.add_argument('--analysis', choices=analysis.names,
+                    help='Run analysis after each epoch')
 parser.add_argument('--print-confusion-matrix', action='store_true')
 
 args = parser.parse_args()
@@ -183,7 +183,8 @@ def adjust_learning_rate(epoch, lr):
       return lr/100
 
 # Training
-def train(epoch):
+def train(epoch, analyzer):
+    analyzer.start_train(epoch)
     lr = adjust_learning_rate(epoch, args.lr)
     optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
 
@@ -205,8 +206,12 @@ def train(epoch):
         total += np.prod(targets.size())
         correct += predicted.eq(targets).sum().item()
 
+        analyzer.update_batch(predicted, targets)
+
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+
+    analyzer.end_train(epoch)
 
 def get_prediction(outputs):
     if hasattr(get_net(), 'custom_prediction'):
@@ -219,13 +224,14 @@ def get_loss(criterion, outputs, targets):
         return get_net().custom_loss(criterion, outputs, targets)
     return criterion(outputs, targets)
 
-def test(epoch, print_confusion_matrix, checkpoint=True):
+def test(epoch, analyzer, checkpoint=True):
+    analyzer.start_test(epoch)
+
     global best_acc
     net.eval()
     test_loss = 0
     correct = 0
     total = 0
-    confusion_matrix = initialize_confusion_matrix(len(trainset.classes))
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
@@ -241,10 +247,7 @@ def test(epoch, print_confusion_matrix, checkpoint=True):
                 predicted = predicted.cpu()
                 targets = targets.cpu()
 
-            if len(predicted.shape) == 1:
-                predicted = predicted.numpy().ravel()
-                targets = targets.numpy().ravel()
-                confusion_matrix = update_confusion_matrix(confusion_matrix, predicted, targets)
+            analyzer.update_batch(predicted, targets)
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
@@ -265,21 +268,22 @@ def test(epoch, print_confusion_matrix, checkpoint=True):
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
 
-    if print_confusion_matrix:
-        set_np_printoptions()
-        recall = confusion_matrix_recall(confusion_matrix)
-        for row, cls in zip(recall, trainset.classes):
-            print(row, cls)
-        print(recall.diagonal())
+    analyzer.end_test(epoch)
 
+
+generate = getattr(analysis, args.analysis) if args.analysis else analysis.Noop
+analyzer = generate(trainset, testset)
 
 if args.eval:
     if not args.resume:
         print(' * Warning: Model is not loaded from checkpoint. Use --resume')
-    test(0, args.print_confusion_matrix, checkpoint=False)
+
+    analyzer.start_epoch(0)
+    test(0, analyzer, checkpoint=False)
     exit()
 
-
 for epoch in range(start_epoch, args.epochs):
-    train(epoch)
-    test(epoch, args.print_confusion_matrix)
+    analyzer.start_epoch(epoch)
+    train(epoch, analyzer)
+    test(epoch, analyzer)
+    analyzer.end_epoch(epoch)
