@@ -236,7 +236,6 @@ def test(epoch, analyzer, checkpoint=True):
     correct = 0
     total = 0
     ignored = 0
-    confusion_matrix = initialize_confusion_matrix(len(trainset.classes))
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
