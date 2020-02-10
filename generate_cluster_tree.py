@@ -73,8 +73,7 @@ def kmeans_cluster(feature_set, tree_map, debug=False):
 
 		if cluster not in new_node_dict:
 			new_node_dict[cluster] = TreeNode(cluster)
-		else:
-			new_node_dict[cluster].children.append(treenode)
+		new_node_dict[cluster].children.append(treenode)
 
 	# setup new tree map
 	if debug:
