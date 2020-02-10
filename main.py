@@ -37,7 +37,6 @@ parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--backbone', '-b',
                     help='Path to backbone network parameters to restore from')
-parser.add_argument('--backtracking', action='store_true', help='Use backtracking in decision tree')
 
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
@@ -174,9 +173,6 @@ if args.backbone:
             get_net().load_backbone(args.backbone)
         else:
             print('==> FAILED to load backbone. No `load_backbone` provided for model.')
-
-if args.backtracking:
-    net.backtracking = args.backtracking
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
