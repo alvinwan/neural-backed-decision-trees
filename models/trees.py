@@ -204,10 +204,10 @@ class JointDecisionTree(nn.Module):
             path_wnids,
             net,
             num_classes=10,
-            pretrained=True):
+            pretrained=True,
+            backtracking=False):
         super().__init__()
 
-        self.num_classes = num_classes
         if pretrained:
             # TODO: should use generate_fname
             load_checkpoint(net, f'./checkpoint/ckpt-{dataset}JointNodes-{dataset}JointNodes.pth')
@@ -219,27 +219,53 @@ class JointDecisionTree(nn.Module):
         root_node_wnid = Node.get_root_node_wnid(path_tree)
         self.root_node = self.nodes[self.wnids.index(root_node_wnid)]
 
+        self.num_classes = num_classes
+        self.backtracking = backtracking
+
     def forward(self, x):
         assert hasattr(self.net, 'featurize')
         x = self.net.featurize(x)
 
         outputs = torch.zeros(x.shape[0], self.num_classes)
         for i in range(len(x)):
-            curr_node = self.root_node
             pred_old_index = -1
+            curr_node = self.root_node
+            # Keep track of current path in decision tree for backtracking
+            # and how many children have backtracked for each node in path
+            curr_path = [self.root_node]
+            path_child_backtracks = [0]
             while curr_node:
                 node_index = self.wnids.index(curr_node.wnid)
                 head = self.heads[node_index]
                 output = head(x[i:i+1])[0]
-                _, pred_new_index = output.max(dim=0)
-                if pred_new_index == curr_node.num_children:
+                # If all children have backtracked, ignore sample
+                if path_child_backtracks[-1] == curr_node.num_classes:
                     break
+                # Else take next highest probability child
+                else:
+                    pred_new_index = sorted(range(len(a)), key=lambda x: -output[x])[path_child_backtracks[-1]]
+                # If "other" predicted, either backtrack or ignore sample
+                if pred_new_index == curr_node.num_children:
+                    if self.backtracking:
+                        # Pop current node from path
+                        curr_path.pop()
+                        path_child_backtracks.pop()
+                        # Increment path_child_backtracks
+                        path_child_backtracks[-1] += 1
+                        # Replace curr_node with parent
+                        curr_node = curr_path[-1]
+                    else:
+                        break
                 else:
                     next_wnid = curr_node.children_wnids[pred_new_index]
                     if next_wnid in self.wnids:
+                        # Explore highest probability child
                         next_node_index = self.wnids.index(next_wnid)
                         curr_node = self.nodes[next_node_index]
+                        curr_path.append(curr_node)
+                        path_child_backtracks.append(0)
                     else:
+                        # Return leaf node
                         pred_old_index = curr_node.new_to_old[pred_new_index][0]
                         curr_node = None
             if pred_old_index >= 0:
