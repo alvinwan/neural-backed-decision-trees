@@ -243,7 +243,7 @@ class JointDecisionTree(nn.Module):
                     break
                 # Else take next highest probability child
                 else:
-                    pred_new_index = sorted(range(len(a)), key=lambda x: -output[x])[path_child_backtracks[-1]]
+                    pred_new_index = sorted(range(len(output)), key=lambda x: -output[x])[path_child_backtracks[-1]]
                 # If "other" predicted, either backtrack or ignore sample
                 if pred_new_index == curr_node.num_children:
                     if self.backtracking:
