@@ -1,5 +1,4 @@
 import torchvision.datasets as datasets
-import torchvision.transforms as transforms
 import xml.etree.ElementTree as ET
 from utils.xmlutils import get_leaves, remove
 import torch
@@ -8,28 +7,16 @@ from torch.utils.data import Dataset
 from collections import defaultdict
 from utils.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
-    DEFAULT_CIFAR100_WNIDS
+    DEFAULT_CIFAR100_WNIDS, DEFAULT_TINYIMAGENET200_TREE,
+    DEFAULT_TINYIMAGENET200_WNIDS
 )
+from . import custom_datasets
 
 
 __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
-                   'CIFAR100Node', 'CIFAR100JointNodes')
-
-
-class TinyImagenetDataset(datasets.ImageFolder):
-    """Tiny imagenet dataloader"""
-
-    def __init__(self, path='data/tiny-imagenet-200/train', *args,
-            transform=transforms.ToTensor(), **kwargs):
-        super(path, *args, transform=transform, **kwargs)
-
-    @staticmethod
-    def transforms_train():
-        return transforms.ToTensor()
-
-    @staticmethod
-    def transforms_val():
-        return transforms.ToTensor()
+                   'CIFAR100Node', 'CIFAR100JointNodes',
+                   'TinyImagenet200JointNodes', 'CIFAR100PathSanity',
+                   'TinyImagenet200PathSanity')
 
 
 class Node:
@@ -216,14 +203,21 @@ class CIFAR100JointNodes(JointNodesDataset):
             dataset=datasets.CIFAR100(*args, root=root, **kwargs))
 
 
-class CIFAR10PathSanity(datasets.CIFAR10):
+class TinyImagenet200JointNodes(JointNodesDataset):
+
+    def __init__(self, *args, root='./data', **kwargs):
+        super().__init__(DEFAULT_TINYIMAGENET200_TREE, DEFAULT_TINYIMAGENET200_WNIDS,
+            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs))
+
+
+class PathSanityDataset(Dataset):
     """returns samples that assume all node classifiers are perfect"""
 
-    def __init__(self, root='./data', *args,
-            path_tree='./data/cifar10/tree.xml',
-            path_wnids='./data/cifar10/wnids.txt', **kwargs):
-        super().__init__(root=root, *args, **kwargs)
-        self.nodes = Node.get_nodes(path_tree, path_wnids, self.classes)
+    def __init__(self, path_tree, path_wnids, dataset):
+        super().__init__()
+        self.nodes = Node.get_nodes(path_tree, path_wnids, dataset.classes)
+        self.dataset = dataset
+        self.classes = dataset.classes
 
     def get_sample(self, node, old_label):
         new_label = node.mapping[old_label]
@@ -233,7 +227,7 @@ class CIFAR10PathSanity(datasets.CIFAR10):
 
     def _get_node_weights(self, node):
         n = node.num_classes
-        k = 10
+        k = len(self.dataset.classes)
 
         A = np.zeros((n, k))
         for new_index, cls in enumerate(node.classes):
@@ -254,7 +248,7 @@ class CIFAR10PathSanity(datasets.CIFAR10):
         return Node.dim(self.nodes)
 
     def __getitem__(self, i):
-        _, old_label = super().__getitem__(i)
+        _, old_label = self.dataset[i]
 
         sample = []
         for dataset in self.nodes:
@@ -262,3 +256,27 @@ class CIFAR10PathSanity(datasets.CIFAR10):
         sample = torch.Tensor(sample)
 
         return sample, old_label
+
+    def __len__(self):
+        return len(self.dataset)
+
+
+class CIFAR10PathSanity(PathSanityDataset):
+
+    def __init__(self, *args, root='./data', **kwargs):
+        super().__init__(DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
+            dataset=datasets.CIFAR10(*args, root=root, **kwargs))
+
+
+class CIFAR100PathSanity(PathSanityDataset):
+
+    def __init__(self, *args, root='./data', **kwargs):
+        super().__init__(DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+            dataset=datasets.CIFAR100(*args, root=root, **kwargs))
+
+
+class TinyImagenet200PathSanity(PathSanityDataset):
+
+    def __init__(self, *args, root='./data', **kwargs):
+        super().__init__(DEFAULT_TINYIMAGENET200_TREE, DEFAULT_TINYIMAGENET200_WNIDS,
+            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs))

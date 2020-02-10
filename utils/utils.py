@@ -20,6 +20,8 @@ DEFAULT_CIFAR10_TREE = './data/CIFAR10/tree.xml'
 DEFAULT_CIFAR10_WNIDS = './data/CIFAR10/wnids.txt'
 DEFAULT_CIFAR100_TREE = './data/CIFAR100/tree.xml'
 DEFAULT_CIFAR100_WNIDS = './data/CIFAR100/wnids.txt'
+DEFAULT_TINYIMAGENET200_TREE = './data/tiny-imagenet-200/tree.xml'
+DEFAULT_TINYIMAGENET200_WNIDS = './data/tiny-imagenet-200/wnids.txt'
 
 
 def get_mean_and_std(dataset):
@@ -52,8 +54,12 @@ def init_params(net):
                 init.constant(m.bias, 0)
 
 
-_, term_width = os.popen('stty size', 'r').read().split()
-term_width = int(term_width)
+try:
+    _, term_width = os.popen('stty size', 'r').read().split()
+    term_width = int(term_width)
+except Exception as e:
+    print(e)
+    term_width = 50
 
 TOTAL_BAR_LENGTH = 65.
 last_time = time.time()
@@ -134,35 +140,18 @@ def format_time(seconds):
     return f
 
 
-def initialize_confusion_matrix(k):
-    return np.zeros((k, k))
-
-
-def update_confusion_matrix(confusion_matrix, preds, labels):
-    preds = tuple(preds)
-    labels = tuple(labels)
-
-    for pred, label in zip(preds, labels):
-        confusion_matrix[label, pred] += 1
-    return confusion_matrix
-
-
-def normalize_confusion_matrix(confusion_matrix, axis):
-    total = confusion_matrix.astype(np.float).sum(axis=axis)
-    total = total[:, None] if axis == 1 else total[None]
-    return confusion_matrix / total
-
-
-def confusion_matrix_recall(confusion_matrix):
-    return normalize_confusion_matrix(confusion_matrix, 1)
-
-
-def confusion_matrix_precision(confusion_matrix):
-    return normalize_confusion_matrix(confusion_matrix, 0)
-
-
 def set_np_printoptions():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
+
+
+def get_fname(args):
+    assert not (args.resume and args.backbone), (
+        'Can only specify loading from backbone architecture or a previous '
+        'checkpoint. Specifying both will result in overriding.'
+    )
+    if args.backbone:
+        return args.backbone
+    return generate_fname(args)
 
 
 def generate_fname(args):
