@@ -1,7 +1,7 @@
 import numpy as np
 
 
-__all__ = names = ('Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes')
+__all__ = names = ('Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes', 'IgnoredSamples')
 
 
 class Noop:
@@ -50,7 +50,7 @@ class ConfusionMatrix(Noop):
         self.m = np.zeros((self.k, self.k))
 
     def update_batch(self, outputs, predicted, targets):
-        super().update_batch(predicted, targets)
+        super().update_batch(outputs, predicted, targets)
         if len(predicted.shape) == 1:
             predicted = predicted.numpy().ravel()
             targets = targets.numpy().ravel()
@@ -132,7 +132,7 @@ class IgnoredSamples(Noop):
         self.ignored = 0
 
     def update_batch(self, outputs, predicted, targets):
-        super().update_batch(predicted, targets)
+        super().update_batch(output, predicted, targets)
         self.ignored += outputs[:,0].eq(-1).sum().item()
 
     def end_test(self, epoch):
