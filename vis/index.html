@@ -6,7 +6,11 @@
     <title>Tree Example</title>
 
     <style>
-     
+
+     :root {
+       --path-color: #709176;
+     }
+
      .node {
        cursor: pointer;
      }
@@ -43,7 +47,8 @@
     
     <script>
 
-
+     // colors
+     var pathColor = "#709176";
 
      // set the dimensions and margins of the diagram
      var margin = {top: 20, right: 90, bottom: 30, left: 90},
@@ -60,6 +65,7 @@
      function showTree(error, stats, treeData) {
        if (error) throw error;
        console.log(treeData);
+
 
        //  assigns the data to a hierarchy using parent-child relationships
        var nodes = d3.hierarchy(treeData, function(d) {
@@ -99,7 +105,7 @@
                    .enter().append("g")
                    .attr("class", function(d) { 
                      return "node" + 
-               (d.children ? " node--internal" : " node--leaf"); })
+                (d.children ? " node--internal" : " node--leaf"); })
                    .attr("transform", function(d) { 
                      return "translate(" + d.y + "," + d.x + ")"; });
 
@@ -116,8 +122,20 @@
            .text(function(d) { return d.data.leaf == "True" ? d.data.name : d.data.name; });
        // TODO change text to class name at leaf
 
+
+       var index = 0; // image index, can change later
+       var stat = data[index]
+       console.log(stat["path"])
+       var currNode = stat["path"][0] // start from root
+       for (var i=1; i < stat["path"].length; i++) {
+         var link = g.select("." + stat["path"][i])
+                     .attr("stroke", pathColor);
+       }
+
+
+
      }
-//   });
+     //   });
 
 
      var data = {};
