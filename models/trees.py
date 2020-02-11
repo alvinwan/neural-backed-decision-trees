@@ -315,7 +315,7 @@ class JointDecisionTree(nn.Module):
             net,
             num_classes=10,
             pretrained=True,
-            backtracking=False):
+            backtracking=True):
         super().__init__()
 
         if pretrained:
@@ -331,6 +331,12 @@ class JointDecisionTree(nn.Module):
 
         self.num_classes = num_classes
         self.backtracking = backtracking
+
+    def custom_prediction(self, outputs):
+        _, predicted = outputs.max(1)
+        ignored_idx = outputs[:,0] == -1
+        predicted[ignored_idx] = -1
+        return predicted
 
     def forward(self, x):
         assert hasattr(self.net, 'featurize')

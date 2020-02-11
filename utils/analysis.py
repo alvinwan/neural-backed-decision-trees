@@ -18,7 +18,7 @@ class Noop:
     def start_train(self, epoch):
         assert epoch == self.epoch
 
-    def update_batch(self, predicted, targets):
+    def update_batch(self, outputs, predicted, targets):
         pass
 
     def end_train(self, epoch):
@@ -49,7 +49,7 @@ class ConfusionMatrix(Noop):
         super().start_test(epoch)
         self.m = np.zeros((self.k, self.k))
 
-    def update_batch(self, predicted, targets):
+    def update_batch(self, outputs, predicted, targets):
         super().update_batch(predicted, targets)
         if len(predicted.shape) == 1:
             predicted = predicted.numpy().ravel()
@@ -101,7 +101,7 @@ class ConfusionMatrixJointNodes(ConfusionMatrix):
             for node in self.nodes
         ]
 
-    def update_batch(self, predicted, targets):
+    def update_batch(self, outputs, predicted, targets):
         for m, pred, targ in zip(self.ms, predicted.T, targets.T):
             pred = pred.numpy().ravel()
             targ = targ.numpy().ravel()
@@ -119,3 +119,22 @@ class ConfusionMatrixJointNodes(ConfusionMatrix):
         min_node = self.nodes[mean_accs.index(min_acc)]
         print(f'Node ({min_node.wnid}) with lowest accuracy ({min(mean_accs)}%)'
               f' (sorted accuracies): {sorted(mean_accs)}')
+
+class IgnoredSamples(Noop):
+    """ Counter for number of ignored samples in decision tree """
+
+    def __init__(self, trainset, testset):
+        super().__init__(trainset, testset)
+        self.ignored = None
+
+    def start_test(self, epoch):
+        super().start_test(epoch)
+        self.ignored = 0
+
+    def update_batch(self, outputs, predicted, targets):
+        super().update_batch(predicted, targets)
+        self.ignored += outputs[:,0].eq(-1).sum().item()
+
+    def end_test(self, epoch):
+        super().end_test(epoch)
+        print("Ignored Samples: {}".format(self.ignored))

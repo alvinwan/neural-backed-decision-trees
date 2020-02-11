@@ -235,17 +235,11 @@ def test(epoch, analyzer, checkpoint=True):
     test_loss = 0
     correct = 0
     total = 0
-    ignored = 0
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
-            loss = get_loss(criterion, outputs, targets)
-
-            ignored += outputs[:,0].eq(-1).sum().item()
-            valid_idx = outputs[:,0] != -1
-            outputs = outputs[valid_idx]
-            targets = targets[valid_idx]            
+            loss = get_loss(criterion, outputs, targets)          
 
             test_loss += loss.item()
             predicted = get_prediction(outputs)
@@ -256,15 +250,13 @@ def test(epoch, analyzer, checkpoint=True):
                 predicted = predicted.cpu()
                 targets = targets.cpu()
 
-            analyzer.update_batch(predicted, targets)
+            analyzer.update_batch(outputs, predicted, targets)
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
     # Save checkpoint.
     acc = 100.*correct/total
-    print("Accuracy: {}, {}/{}".format(acc, correct, total))
-    print("Ignored: {}".format(ignored))
     if acc > best_acc and checkpoint:
         print('Saving..')
         state = {
