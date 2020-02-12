@@ -48,7 +48,9 @@
     <script>
 
      // colors
-     var pathColor = "#709176";
+     var forwardPathColor = "#709176";
+     var backwardPathColor = "#ad343e";
+     var originalLinkColor = "#ccc";
 
      // set the dimensions and margins of the diagram
      var margin = {top: 20, right: 90, bottom: 30, left: 90},
@@ -89,9 +91,8 @@
        var link = g.selectAll(".link")
                    .data( nodes.descendants().slice(1))
                    .enter().append("path")
-                   .attr("class", function(d) {
-                     return "link " + d.data.name;
-                   })
+                   .attr("class", function (d) {
+                     return "link originalLink " + d.data.name})
                    .attr("d", function(d) {
                      return "M" + d.y + "," + d.x
                           + "C" + (d.y + d.parent.y) / 2 + "," + d.x
@@ -103,10 +104,10 @@
        var node = g.selectAll(".node")
                    .data(nodes.descendants())
                    .enter().append("g")
-                   .attr("class", function(d) { 
-                     return "node" + 
-                (d.children ? " node--internal" : " node--leaf"); })
-                   .attr("transform", function(d) { 
+                   .attr("class", function(d) {
+                     return "node" +
+                                               (d.children ? " node--internal" : " node--leaf")})
+                   .attr("transform", function(d) {
                      return "translate(" + d.y + "," + d.x + ")"; });
 
        // adds the circle to the node
@@ -117,21 +118,62 @@
        node.append("text")
            .attr("dy", ".35em")
            .attr("x", function(d) { return d.children ? -13 : 13; })
-           .style("text-anchor", function(d) { 
+           .style("text-anchor", function(d) {
              return d.children ? "end" : "start"; })
            .text(function(d) { return d.data.leaf == "True" ? d.data.name : d.data.name; });
        // TODO change text to class name at leaf
 
+       var offset = 10; // number pixels offset for links in path from original links
 
-       var index = 0; // image index, can change later
+       var index = 70; // image index, can change later
        var stat = data[index]
        console.log(stat["path"])
-       var currNode = stat["path"][0] // start from root
-       for (var i=1; i < stat["path"].length; i++) {
-         var link = g.select("." + stat["path"][i])
-                     .attr("stroke", pathColor);
+
+
+
+       var backtrackEnd = null;
+       var backtracking = false;
+
+       // check if backtracking will start from root
+       if (stat["path"].lastIndexOf(stat["path"][0]) != 0) {
+         backtrackEnd = stat["path"].lastIndexOf(stat["path"][0]);
+         backtracking = true;
        }
 
+       for (var i=1; i < stat["path"].length; i++) {
+         var currNode = stat["path"][i]
+         var link = g.select("." + currNode)
+
+         if (backtracking && backtrackEnd == i) {
+           backtracking = false;
+         }
+
+         if (backtracking) {
+           link.style("stroke", backwardPathColor)
+               .style("stroke-dasharray", ("3,3"))
+         } else {
+           link.style("stroke", forwardPathColor);
+
+           // check if need to start backtracking
+           if (stat["path"].lastIndexOf(currNode) != i) {
+             backtracking = true;
+             backtrackEnd = stat["path"].lastIndexOf(currNode);
+           }
+         }
+
+
+       }
+
+       //resetLink(index);
+
+       function resetLink(index) {
+         var stat = data[index];
+         for (var i=1; i < stat["path"].length; i++) {
+           var link = g.select("." + stat["path"][i])
+                       .style("stroke", originalLinkColor)
+
+         }
+       };
 
 
      }
