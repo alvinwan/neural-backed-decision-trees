@@ -330,6 +330,7 @@ class JointDecisionTree(nn.Module):
         root_node_wnid = Node.get_root_node_wnid(path_tree)
         self.root_node = self.nodes[self.wnids.index(root_node_wnid)]
 
+        self.dataset = dataset
         self.num_classes = num_classes
         self.backtracking = backtracking
 
@@ -342,7 +343,8 @@ class JointDecisionTree(nn.Module):
                              'nodes_explored' : nodes_explored,
                              'node_backtracks' : node_backtracks})
 
-    def save_metrics(self, gt_classes, save_path='./output/decision_tree_metrics.csv'):
+    def save_metrics(self, gt_classes, save_dir='./output'):
+        save_path = os.path.join(save_dir, self.dataset.lower() + '_decision_tree_metrics.csv')
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         with open(save_path, mode='w') as f:
             metrics_writer = csv.writer(f, delimiter='\t')
