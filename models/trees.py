@@ -349,13 +349,13 @@ class JointDecisionTree(nn.Module):
             metrics_writer.writerow(['Index', 'GT Class', 'Pred Class', 'Path', 'Path Probs', 'Num Nodes Explored', 'Node Backtracks'])
             for i in range(len(gt_classes)):
                 row = []
-                row += str(i)
-                row += str(gt_classes[i])
-                row += str(self.metrics[i]['pred_class'])
-                row += str(self.metrics[i]['path'])
-                row += str(self.metrics[i]['path_probs'])
-                row += str(self.metrics[i]['nodes_explored'])
-                row += str(self.metrics[i]['node_backtracks'])
+                row.append(str(i))
+                row.append(str(gt_classes[i]))
+                row.append(str(self.metrics[i]['pred_class']))
+                row.append(str(self.metrics[i]['path']))
+                row.append(str(self.metrics[i]['path_probs']))
+                row.append(str(self.metrics[i]['nodes_explored']))
+                row.append(str(self.metrics[i]['node_backtracks']))
                 metrics_writer.writerow(row)
 
 
