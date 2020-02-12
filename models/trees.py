@@ -338,14 +338,14 @@ class JointDecisionTree(nn.Module):
     def add_sample_metrics(self, pred_class, path, path_probs, nodes_explored, node_backtracks):
         self.metrics.append({'pred_class' : pred_class,
                              'path' : [node.wnid for node in path],
-                             'path_probs' : [prob.item() for prob in path_probs],
+                             'path_probs' : [round(prob.item(), 4) for prob in path_probs],
                              'nodes_explored' : nodes_explored,
                              'node_backtracks' : node_backtracks})
 
     def save_metrics(self, gt_classes, save_path='./output/decision_tree_metrics.csv'):
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         with open(save_path, mode='w') as f:
-            metrics_writer = csv.writer(f, delimiter=',')
+            metrics_writer = csv.writer(f, delimiter='\t')
             metrics_writer.writerow(['Index', 'GT Class', 'Pred Class', 'Path', 'Path Probs', 'Num Nodes Explored', 'Node Backtracks'])
             for i in range(len(gt_classes)):
                 row = []
@@ -357,8 +357,6 @@ class JointDecisionTree(nn.Module):
                 row.append(str(self.metrics[i]['nodes_explored']))
                 row.append(str(self.metrics[i]['node_backtracks']))
                 metrics_writer.writerow(row)
-
-
 
     def custom_prediction(self, outputs):
         _, predicted = outputs.max(1)
