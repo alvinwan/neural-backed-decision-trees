@@ -415,7 +415,7 @@ class JointDecisionTree(nn.Module):
                         curr_node = self.nodes[next_node_index]
                         curr_path.append(curr_node)
                         path_child_backtracks.append(0)
-                        nodes_explore += 1
+                        nodes_explored += 1
                     else:
                         # Return leaf node
                         pred_old_index = curr_node.new_to_old[pred_new_index][0]
