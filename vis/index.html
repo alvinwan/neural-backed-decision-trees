@@ -7,22 +7,13 @@
 
     <style>
 
-     :root {
-       --path-color: #709176;
-     }
-
      .node {
        cursor: pointer;
      }
 
      .node circle {
-       fill: #fff;
        stroke: steelblue;
        stroke-width: 3px;
-     }
-
-     .node--leaf circle {
-       fill: #cfdbd5;
      }
 
      .node text {
@@ -48,9 +39,14 @@
     <script>
 
      // colors
-     var forwardPathColor = "#709176";
-     var backwardPathColor = "#ad343e";
+     var pathColor = "steelblue";
+     //     var forwardPathColor = "#709176";
+     //     var backwardPathColor = "#ad343e";
      var originalLinkColor = "#ccc";
+     var correctPredColor = "#709176";
+     var incorrectPredColor = "#ad343e";
+     var baseNodeColor = "#fff";
+     var leafColor = "#cfdbd5";
 
      // set the dimensions and margins of the diagram
      var margin = {top: 20, right: 90, bottom: 30, left: 90},
@@ -62,12 +58,10 @@
                      .size([height, width]);
 
      // use data to make visualization
-     //d3.json("new_cifar10_d3.json", function(error, treeData) {
 
-     function showTree(error, stats, treeData) {
+     function showTree(error, stats, treeData, wnidToClass, indexToWnid) {
        if (error) throw error;
        console.log(treeData);
-
 
        //  assigns the data to a hierarchy using parent-child relationships
        var nodes = d3.hierarchy(treeData, function(d) {
@@ -105,14 +99,17 @@
                    .data(nodes.descendants())
                    .enter().append("g")
                    .attr("class", function(d) {
-                     return "node" +
-                                               (d.children ? " node--internal" : " node--leaf")})
+                     return "node" +  (d.children ? " node--internal" : " node--leaf")
+                          + " node--" + d.data.name})
                    .attr("transform", function(d) {
                      return "translate(" + d.y + "," + d.x + ")"; });
 
        // adds the circle to the node
        node.append("circle")
-           .attr("r", 10);
+           .attr("r", 10)
+           .style("fill", function (d) {
+             return d.data.leaf == "True" ? leafColor : baseNodeColor;
+           });
 
        // adds the text to the node
        node.append("text")
@@ -120,16 +117,12 @@
            .attr("x", function(d) { return d.children ? -13 : 13; })
            .style("text-anchor", function(d) {
              return d.children ? "end" : "start"; })
-           .text(function(d) { return d.data.leaf == "True" ? d.data.name : d.data.name; });
-       // TODO change text to class name at leaf
+           .text(function(d) { return d.data.leaf == "True" ? wnidToClass[d.data.name] : d.data.name; });
 
-       var offset = 10; // number pixels offset for links in path from original links
 
-       var index = 70; // image index, can change later
+       var index = 52; // image index, can change later
        var stat = data[index]
        console.log(stat["path"])
-
-
 
        var backtrackEnd = null;
        var backtracking = false;
@@ -149,10 +142,10 @@
          }
 
          if (backtracking) {
-           link.style("stroke", backwardPathColor)
+           link.style("stroke", pathColor)
                .style("stroke-dasharray", ("3,3"))
          } else {
-           link.style("stroke", forwardPathColor);
+           link.style("stroke", pathColor);
 
            // check if need to start backtracking
            if (stat["path"].lastIndexOf(currNode) != i) {
@@ -161,6 +154,24 @@
            }
          }
 
+         if (i == stat["path"].length - 1) {
+
+           // color nodes according to predictions
+           node.selectAll("circle")
+               .style("fill", function(d) {
+                 console.log(d);
+
+                 if (d.data.name == currNode && stat["correct"] == "TRUE") {return correctPredColor}
+                 if (d.data.name == currNode && stat["correct"] == "FALSE") {return incorrectPredColor}
+                 else if (d.data.name == indexToWnid[Number(stat["target index"])]) {                  console.log(stat["target index"]); console.log(wnidToClass[d.data.name]);  return correctPredColor}
+                 else {return baseNodeColor}
+               });
+
+         }
+         console.log(wnidToClass);
+         console.log(Number(stat["target index"]));
+         console.log(indexToWnid[Number(stat["target index"])]);
+         console.log(wnidToClass[indexToWnid[Number(stat["target index"])]]);
 
        }
 
@@ -180,21 +191,32 @@
      //   });
 
 
-     var data = {};
-     var parseTsv = function(row){
-       data[Number(row["image index"])] = {
-         "predicted index": Number(row["predicted index"]),
-         "correct": row["correct"],
-         "path": row["path"].match(/(n\d+)+/g),
-         "probs": row["path probability"].match(/(\d\.\d*)+/g),
-         "path length": Number(row["path length"])
-       }
-     };
+           var data = {};
+           var parseTsv = function(row){
+             data[Number(row["image index"])] = {
+               "predicted index": Number(row["predicted index"]),
+               "target index": Number(row["target index"]),
+               "correct": row["correct"],
+               "path": row["path"].match(/(n\d+)+/g),
+               "probs": row["path probability"].match(/(\d\.\d*)+/g),
+               "path length": Number(row["path length"])
+             }
+           };
 
-     d3.queue()
-       .defer(d3.tsv, "cifar10stats.tsv", parseTsv)
-       .defer(d3.json, "new_cifar10_d3.json")
-       .await(showTree);
+
+           var classes = {}; // mapping from wnid to human interpretable label
+           var parseImagenetClassIndex = function(classIndex) {
+             for (key in classIndex) {
+               classes[classIndex[key][0]] = classIndex[key][1]
+             };
+           };
+
+           d3.queue()
+             .defer(d3.tsv, "cifar10stats.tsv", parseTsv)
+             .defer(d3.json, "new_cifar10_d3.json")
+             .defer(d3.json, "cifar10_class_index.json")
+             .defer(d3.json, "cifar10_index_to_wnid.json")
+             .await(showTree);
 
     </script>
   </body>
