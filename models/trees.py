@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import random
 import os
+import csv
 
 from utils.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
@@ -332,6 +333,33 @@ class JointDecisionTree(nn.Module):
         self.num_classes = num_classes
         self.backtracking = backtracking
 
+        self.metrics = []
+
+    def add_sample_metrics(self, pred_class, path, path_probs, nodes_explored, node_backtracks):
+        self.metrics.append({'pred_class' : pred_class,
+                             'path' : path,
+                             'path_probs' : path_probs,
+                             'nodes_explored' : nodes_explored,
+                             'node_backtracks' : node_backtracks})
+
+    def save_metrics(self, gt_classes, save_path='./output/decision_tree_metrics.csv'):
+        os.makedirs(os.dirname(save_path), exist_ok=True)
+        with open(save_path, mode='w') as f:
+            metrics_writer = csv.writer(f, delimiter=',')
+            metrics_writer.writerow(['Index', 'GT Class', 'Pred Class', 'Path', 'Path Probs', 'Num Nodes Explored', 'Node Backtracks'])
+            for i in range(len(gt_classes)):
+                row = []
+                row += str(i)
+                row += str(gt_classes[i])
+                row += str(self.metrics[i]['pred_class'])
+                row += str(self.metrics[i]['path'])
+                row += str(self.metrics[i]['path_probs'])
+                row += str(self.metrics[i]['nodes_explored'])
+                row += str(self.metrics[i]['node_backtracks'])
+                metrics_writer.writerow(row)
+
+
+
     def custom_prediction(self, outputs):
         _, predicted = outputs.max(1)
         ignored_idx = outputs[:,0] == -1
@@ -350,6 +378,9 @@ class JointDecisionTree(nn.Module):
             # and how many children have backtracked for each node in path
             curr_path = [self.root_node]
             path_child_backtracks = [0]
+            path_probs = []
+            nodes_explored = 1
+            node_backtracks = {}
             while curr_node:
                 node_index = self.wnids.index(curr_node.wnid)
                 head = self.heads[node_index]
@@ -363,9 +394,12 @@ class JointDecisionTree(nn.Module):
                 # If "other" predicted, either backtrack or ignore sample
                 if pred_new_index == curr_node.num_children:
                     if self.backtracking:
+                        # Store node backtrack metric
+                        node_backtracks[curr_node.wnid] = node_backtracks.get(curr_node.wnid, 0) + 1
                         # Pop current node from path
                         curr_path.pop()
                         path_child_backtracks.pop()
+                        path_probs.pop()
                         # Increment path_child_backtracks
                         path_child_backtracks[-1] += 1
                         # Replace curr_node with parent
@@ -373,6 +407,7 @@ class JointDecisionTree(nn.Module):
                     else:
                         break
                 else:
+                    path_probs.append(nn.functional.softmax(output)[pred_new_index])
                     next_wnid = curr_node.children_wnids[pred_new_index]
                     if next_wnid in self.wnids:
                         # Explore highest probability child
@@ -380,6 +415,7 @@ class JointDecisionTree(nn.Module):
                         curr_node = self.nodes[next_node_index]
                         curr_path.append(curr_node)
                         path_child_backtracks.append(0)
+                        nodes_explore += 1
                     else:
                         # Return leaf node
                         pred_old_index = curr_node.new_to_old[pred_new_index][0]
@@ -388,6 +424,7 @@ class JointDecisionTree(nn.Module):
                 outputs[i,pred_old_index] = 1
             else:
                 outputs[i,:] = -1
+            self.add_sample_metrics(pred_class, curr_path, path_probs, nodes_explored, node_backtracks)
         return outputs.to(x.device)
 
 class CIFAR10JointDecisionTree(JointDecisionTree):
