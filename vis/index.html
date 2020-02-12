@@ -32,6 +32,11 @@
 
   <body>
 
+    <label for="image index"
+           style="display: inline-block; width: 240px; text-align: right">
+      Image index = <span id="imageIndex-value"></span> </label>
+    <input type="number" min="0" max="9999" step="1" value="0" id="imageIndex">
+
     <!-- load the d3.js library -->	
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script> -->
     <script src="https://d3js.org/d3.v4.min.js"></script>
@@ -120,70 +125,70 @@
            .text(function(d) { return d.data.leaf == "True" ? wnidToClass[d.data.name] : d.data.name; });
 
 
-       var index = 52; // image index, can change later
-       var stat = data[index]
-       console.log(stat["path"])
+       d3.select("#imageIndex").on("input", function () {
+         update(this.value);
+       });
 
-       var backtrackEnd = null;
-       var backtracking = false;
+       //var index = 52; // image index, can change later
 
-       // check if backtracking will start from root
-       if (stat["path"].lastIndexOf(stat["path"][0]) != 0) {
-         backtrackEnd = stat["path"].lastIndexOf(stat["path"][0]);
-         backtracking = true;
-       }
+       function update(index) {
+         reset();
+         var stat = data[index]
+         console.log(stat["path"])
 
-       for (var i=1; i < stat["path"].length; i++) {
-         var currNode = stat["path"][i]
-         var link = g.select("." + currNode)
+         var backtrackEnd = null;
+         var backtracking = false;
 
-         if (backtracking && backtrackEnd == i) {
-           backtracking = false;
+         // check if backtracking will start from root
+         if (stat["path"].lastIndexOf(stat["path"][0]) != 0) {
+           backtrackEnd = stat["path"].lastIndexOf(stat["path"][0]);
+           backtracking = true;
          }
 
-         if (backtracking) {
-           link.style("stroke", pathColor)
-               .style("stroke-dasharray", ("3,3"))
-         } else {
-           link.style("stroke", pathColor);
+         for (var i=1; i < stat["path"].length; i++) {
+           var currNode = stat["path"][i]
+           var link = g.select("." + currNode)
 
-           // check if need to start backtracking
-           if (stat["path"].lastIndexOf(currNode) != i) {
-             backtracking = true;
-             backtrackEnd = stat["path"].lastIndexOf(currNode);
+           if (backtracking && backtrackEnd == i) {
+             backtracking = false;
+           }
+
+           if (backtracking) {
+             link.style("stroke", pathColor)
+                 .style("stroke-dasharray", ("3,3"))
+           } else {
+             link.style("stroke", pathColor);
+
+             // check if need to start backtracking
+             if (stat["path"].lastIndexOf(currNode) != i) {
+               backtracking = true;
+               backtrackEnd = stat["path"].lastIndexOf(currNode);
+             }
+           }
+
+           if (i == stat["path"].length - 1) {
+
+             // color nodes according to predictions
+             node.selectAll("circle")
+                 .style("fill", function(d) {
+                   console.log(d);
+
+                   if (d.data.name == currNode && stat["correct"] == "TRUE") {return correctPredColor}
+                   if (d.data.name == currNode && stat["correct"] == "FALSE") {return incorrectPredColor}
+                   else if (d.data.name == indexToWnid[Number(stat["target index"])]) {return correctPredColor}
+                   else {return baseNodeColor}
+                 });
            }
          }
 
-         if (i == stat["path"].length - 1) {
-
-           // color nodes according to predictions
-           node.selectAll("circle")
-               .style("fill", function(d) {
-                 console.log(d);
-
-                 if (d.data.name == currNode && stat["correct"] == "TRUE") {return correctPredColor}
-                 if (d.data.name == currNode && stat["correct"] == "FALSE") {return incorrectPredColor}
-                 else if (d.data.name == indexToWnid[Number(stat["target index"])]) {                  console.log(stat["target index"]); console.log(wnidToClass[d.data.name]);  return correctPredColor}
-                 else {return baseNodeColor}
-               });
-
-         }
-         console.log(wnidToClass);
-         console.log(Number(stat["target index"]));
-         console.log(indexToWnid[Number(stat["target index"])]);
-         console.log(wnidToClass[indexToWnid[Number(stat["target index"])]]);
-
        }
 
-       //resetLink(index);
 
-       function resetLink(index) {
-         var stat = data[index];
-         for (var i=1; i < stat["path"].length; i++) {
-           var link = g.select("." + stat["path"][i])
-                       .style("stroke", originalLinkColor)
-
-         }
+       function reset() {
+         g.selectAll(".link")
+          .style("stroke", originalLinkColor);
+         node.selectAll("circle")
+             .style("fill", baseNodeColor);
        };
 
 
@@ -191,32 +196,32 @@
      //   });
 
 
-           var data = {};
-           var parseTsv = function(row){
-             data[Number(row["image index"])] = {
-               "predicted index": Number(row["predicted index"]),
-               "target index": Number(row["target index"]),
-               "correct": row["correct"],
-               "path": row["path"].match(/(n\d+)+/g),
-               "probs": row["path probability"].match(/(\d\.\d*)+/g),
-               "path length": Number(row["path length"])
-             }
-           };
+     var data = {};
+     var parseTsv = function(row){
+       data[Number(row["image index"])] = {
+         "predicted index": Number(row["predicted index"]),
+         "target index": Number(row["target index"]),
+         "correct": row["correct"],
+         "path": row["path"].match(/(n\d+)+/g),
+         "probs": row["path probability"].match(/(\d\.\d*)+/g),
+         "path length": Number(row["path length"])
+       }
+     };
 
 
-           var classes = {}; // mapping from wnid to human interpretable label
-           var parseImagenetClassIndex = function(classIndex) {
-             for (key in classIndex) {
-               classes[classIndex[key][0]] = classIndex[key][1]
-             };
-           };
+     var classes = {}; // mapping from wnid to human interpretable label
+     var parseImagenetClassIndex = function(classIndex) {
+       for (key in classIndex) {
+         classes[classIndex[key][0]] = classIndex[key][1]
+       };
+     };
 
-           d3.queue()
-             .defer(d3.tsv, "cifar10stats.tsv", parseTsv)
-             .defer(d3.json, "new_cifar10_d3.json")
-             .defer(d3.json, "cifar10_class_index.json")
-             .defer(d3.json, "cifar10_index_to_wnid.json")
-             .await(showTree);
+     d3.queue()
+       .defer(d3.tsv, "cifar10stats.tsv", parseTsv)
+       .defer(d3.json, "new_cifar10_d3.json")
+       .defer(d3.json, "cifar10_class_index.json")
+       .defer(d3.json, "cifar10_index_to_wnid.json")
+       .await(showTree);
 
     </script>
   </body>
