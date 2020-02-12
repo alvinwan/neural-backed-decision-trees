@@ -337,13 +337,13 @@ class JointDecisionTree(nn.Module):
 
     def add_sample_metrics(self, pred_class, path, path_probs, nodes_explored, node_backtracks):
         self.metrics.append({'pred_class' : pred_class,
-                             'path' : path,
-                             'path_probs' : path_probs,
+                             'path' : [node.wnid for node in path],
+                             'path_probs' : [prob.item() for prob in path_probs],
                              'nodes_explored' : nodes_explored,
                              'node_backtracks' : node_backtracks})
 
     def save_metrics(self, gt_classes, save_path='./output/decision_tree_metrics.csv'):
-        os.makedirs(os.dirname(save_path), exist_ok=True)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         with open(save_path, mode='w') as f:
             metrics_writer = csv.writer(f, delimiter=',')
             metrics_writer.writerow(['Index', 'GT Class', 'Pred Class', 'Path', 'Path Probs', 'Num Nodes Explored', 'Node Backtracks'])
@@ -424,7 +424,7 @@ class JointDecisionTree(nn.Module):
                 outputs[i,pred_old_index] = 1
             else:
                 outputs[i,:] = -1
-            self.add_sample_metrics(pred_class, curr_path, path_probs, nodes_explored, node_backtracks)
+            self.add_sample_metrics(pred_old_index, curr_path, path_probs, nodes_explored, node_backtracks)
         return outputs.to(x.device)
 
 class CIFAR10JointDecisionTree(JointDecisionTree):

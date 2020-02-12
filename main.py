@@ -272,11 +272,11 @@ def test(epoch, analyzer, checkpoint=True):
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
 
-    if hasattr(net, 'save_metrics'):
+    if hasattr(get_net(), 'save_metrics'):
         gt_classes = []
         for _, targets in testloader:
             gt_classes.extend(targets.tolist())
-        net.save_metrics(gt_classes)
+        get_net().save_metrics(gt_classes)
 
     analyzer.end_test(epoch)
 
