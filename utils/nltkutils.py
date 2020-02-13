@@ -1,6 +1,7 @@
 from xml.etree.ElementTree import Element, SubElement, ElementTree
 import nltk
 from nltk.corpus import wordnet as wn
+import random
 
 
 def synset_to_wnid(synset):
@@ -67,3 +68,60 @@ def get_leaves(tree):
     for node in tree.iter():
         if not node.getchildren():
             yield node
+
+
+def build_random_tree(wnids, seed=0):
+    random.seed(seed)
+
+    tree = Element('tree')
+    root = SubElement(tree, 'synset', {'wnid': 'fall11'})
+    wnid_to_node = {'fall11': root}
+
+    random.shuffle(wnids)
+    current = None
+    remaining = wnids
+
+    # build the tree from the leaves up
+    while len(remaining) > 1:
+        current, remaining = remaining, []
+        while current:
+            nodes, current = current[:2], current[2:]
+            remaining.append(nodes)
+
+    # construct the xml tree from the root down
+    next = [(remaining[0], root)]
+    i = 0
+    while next:
+        group, parent = next.pop(0)
+        if len(group) == 1:
+            if isinstance(group[0], str):
+                leaf = SubElement(parent, 'synset', {'wnid': group[0]})
+                i += 1
+            else:
+                next.append((group[0], parent))
+            continue
+        left, right = group
+
+        is_leaf_left = not isinstance(left, list)
+        wnid_left = left if is_leaf_left else str(i)
+        node_left = SubElement(parent, 'synset', {'wnid': wnid_left})
+        i += 1
+
+        is_leaf_right = not isinstance(right, list)
+        wnid_right = right if is_leaf_right else str(i)
+        node_right = SubElement(parent, 'synset', {'wnid': wnid_right})
+        i += 1
+
+        if not is_leaf_left:
+            next.append((left, node_left))
+
+        if not is_leaf_right:
+            next.append((right, node_right))
+
+        node = root.find(f'.//synset[@wnid="{wnid_left}"]')
+        assert node is not None, (
+            f'Could not find {wnid_left} in built tree, with wnids '
+            f'{[node.get("wnid") for node in root.iter()]}'
+        )
+
+    return ElementTree(tree)
