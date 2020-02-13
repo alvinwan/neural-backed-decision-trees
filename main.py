@@ -173,7 +173,7 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    fname = generate_fname(**args)
+    fname = generate_fname(**vars(args))
     checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
@@ -234,6 +234,7 @@ def train(epoch, analyzer):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+        break
 
     analyzer.end_train(epoch)
 
@@ -275,10 +276,11 @@ def test(epoch, analyzer, checkpoint=True):
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
+            break
 
     # Save checkpoint.
     acc = 100.*correct/total
-    if acc > best_acc and checkpoint:
+    if True:
         print('Saving..')
         state = {
             'net': net.state_dict(),
@@ -288,7 +290,7 @@ def test(epoch, analyzer, checkpoint=True):
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
 
-        fname = generate_fname(**args)
+        fname = generate_fname(**vars(args))
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
 
