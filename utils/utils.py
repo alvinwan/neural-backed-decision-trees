@@ -16,11 +16,11 @@ import torch.nn.init as init
 CIFAR10NODE = 'CIFAR10Node'
 CIFAR10PATHSANITY = 'CIFAR10PathSanity'
 
-DEFAULT_CIFAR10_TREE = './data/CIFAR10/tree.xml'
+DEFAULT_CIFAR10_TREE = './data/CIFAR10/tree-build.xml'
 DEFAULT_CIFAR10_WNIDS = './data/CIFAR10/wnids.txt'
-DEFAULT_CIFAR100_TREE = './data/CIFAR100/tree.xml'
+DEFAULT_CIFAR100_TREE = './data/CIFAR100/tree-build.xml'
 DEFAULT_CIFAR100_WNIDS = './data/CIFAR100/wnids.txt'
-DEFAULT_TINYIMAGENET200_TREE = './data/tiny-imagenet-200/tree.xml'
+DEFAULT_TINYIMAGENET200_TREE = './data/tiny-imagenet-200/tree-build.xml'
 DEFAULT_TINYIMAGENET200_WNIDS = './data/tiny-imagenet-200/wnids.txt'
 
 
@@ -162,4 +162,6 @@ def generate_fname(args):
         fname += '-' + args.wnid
     if args.name:
         fname += '-' + args.name
+    if args.path_tree:
+        fname += '-' + args.path_tree.replace('tree-', '', 1)
     return fname
