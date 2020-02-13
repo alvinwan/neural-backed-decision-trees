@@ -158,6 +158,8 @@ class CIFAR100Node(NodeDataset):
 
 class JointNodesDataset(Dataset):
 
+    accepts_path_tree = True
+
     def __init__(self, path_tree, path_wnids, dataset):
         super().__init__()
         self.nodes = Node.get_nodes(path_tree, path_wnids, dataset.classes)
@@ -180,22 +182,37 @@ class JointNodesDataset(Dataset):
 
 class CIFAR10JointNodes(JointNodesDataset):
 
-    def __init__(self, *args, root='./data', **kwargs):
-        super().__init__(DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
+    def __init__(self,
+            *args,
+            path_tree=DEFAULT_CIFAR10_TREE,
+            path_wnids=DEFAULT_CIFAR10_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_tree, path_wnids,
             dataset=datasets.CIFAR10(*args, root=root, **kwargs))
 
 
 class CIFAR100JointNodes(JointNodesDataset):
 
-    def __init__(self, *args, root='./data', **kwargs):
-        super().__init__(DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+    def __init__(self,
+            *args,
+            path_tree=DEFAULT_CIFAR100_TREE,
+            path_wnids=DEFAULT_CIFAR100_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_tree, path_wnids,
             dataset=datasets.CIFAR100(*args, root=root, **kwargs))
 
 
 class TinyImagenet200JointNodes(JointNodesDataset):
 
-    def __init__(self, *args, root='./data', **kwargs):
-        super().__init__(DEFAULT_TINYIMAGENET200_TREE, DEFAULT_TINYIMAGENET200_WNIDS,
+    def __init__(self,
+            *args,
+            path_tree=DEFAULT_TINYIMAGENET200_TREE,
+            path_wnids=DEFAULT_TINYIMAGENET200_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_tree, path_wnids,
             dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs))
 
 

@@ -38,6 +38,7 @@ parser.add_argument('--resume', '-r', action='store_true', help='resume from che
 parser.add_argument('--backbone', '-b',
                     help='Path to backbone network parameters to restore from')
 
+parser.add_argument('--path-tree', help='Path to tree-?.xml file.')
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
 parser.add_argument('--eval', help='eval only', action='store_true')
@@ -119,11 +120,14 @@ else:
     dataset = getattr(torchvision.datasets, args.dataset)
 
 dataset_args = ()
+dataset_kwargs = {}
 if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
+if getattr(dataset, 'accepts_path_tree', False) and args.path_tree is not None:
+    dataset_kwargs['path_tree'] = args.path_tree
 
-trainset = dataset(*dataset_args, root='./data', train=True, download=True, transform=transform_train)
-testset = dataset(*dataset_args, root='./data', train=False, download=True, transform=transform_test)
+trainset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
+testset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
 
 assert trainset.classes == testset.classes, (trainset.classes, testset.classes)
 
