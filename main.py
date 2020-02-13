@@ -123,8 +123,12 @@ dataset_args = ()
 dataset_kwargs = {}
 if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
-if getattr(dataset, 'accepts_path_tree', False) and args.path_tree is not None:
+if getattr(dataset, 'accepts_path_tree', False) and args.path_tree:
     dataset_kwargs['path_tree'] = args.path_tree
+elif args.path_tree:
+    print(
+        f' => Warning: Dataset {args.dataset} does not support custom '
+        f'tree paths: {args.path_tree}')
 
 trainset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
 testset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
@@ -138,8 +142,21 @@ print(f'Training with dataset {args.dataset} and classes {trainset.classes}')
 
 # Model
 print('==> Building model..')
-net = getattr(models, args.model)(
-    num_classes=len(trainset.classes)
+model = getattr(models, args.model)
+
+# TODO(alvin): should dataset trees be passed to models, isntead of re-passing
+# the tree path?
+model_kwargs = {}
+if getattr(model, 'accepts_path_tree', False) and args.path_tree:
+    model_kwargs['path_tree'] = args.path_tree
+elif args.path_tree:
+    print(
+        f' => Warning: Model {args.model} does not support custom '
+        f'tree paths: {args.path_tree}')
+
+net = model(
+    num_classes=len(trainset.classes),
+    **model_kwargs
 )
 net = net.to(device)
 if device == 'cuda':
