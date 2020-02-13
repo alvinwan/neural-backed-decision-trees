@@ -234,7 +234,6 @@ def train(epoch, analyzer):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
-        break
 
     analyzer.end_train(epoch)
 
@@ -276,11 +275,10 @@ def test(epoch, analyzer, checkpoint=True):
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
-            break
 
     # Save checkpoint.
     acc = 100.*correct/total
-    if True:
+    if acc > best_acc and checkpoint:
         print('Saving..')
         state = {
             'net': net.state_dict(),
