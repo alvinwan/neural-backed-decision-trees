@@ -11,6 +11,7 @@ import numpy as np
 
 import torch.nn as nn
 import torch.nn.init as init
+from pathlib import Path
 
 
 CIFAR10NODE = 'CIFAR10Node'
@@ -154,14 +155,15 @@ def get_fname(args):
     return generate_fname(args)
 
 
-def generate_fname(args):
+def generate_fname(dataset, model, path_tree, wnid=None, name='', **kwargs):
     fname = 'ckpt'
-    fname += '-' + args.dataset
-    fname += '-' + args.model
-    if args.dataset == CIFAR10NODE:
-        fname += '-' + args.wnid
-    if args.name:
-        fname += '-' + args.name
-    if args.path_tree:
-        fname += '-' + args.path_tree.replace('tree-', '', 1)
+    fname += '-' + dataset
+    fname += '-' + model
+    if dataset == CIFAR10NODE:
+        fname += '-' + wnid
+    if name:
+        fname += '-' + name
+    if path_tree:
+        path = Path(path_tree)
+        fname += '-' + path.stem.replace('tree-', '', 1)
     return fname
