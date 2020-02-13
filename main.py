@@ -48,6 +48,7 @@ parser.add_argument('--test-path', action='store_true',
                     help='test path classifier with random init')
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
+print(analysis.names)
 
 args = parser.parse_args()
 
@@ -209,7 +210,7 @@ def train(epoch, analyzer):
         total += np.prod(targets.size())
         correct += predicted.eq(targets).sum().item()
 
-        analyzer.update_batch(outputs, predicted, targets)
+        analyzer.update_batch(predicted, targets)
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
@@ -250,7 +251,7 @@ def test(epoch, analyzer, checkpoint=True):
                 predicted = predicted.cpu()
                 targets = targets.cpu()
 
-            analyzer.update_batch(outputs, predicted, targets)
+            analyzer.update_batch(predicted, targets)
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
