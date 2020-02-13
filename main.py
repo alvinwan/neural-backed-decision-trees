@@ -288,7 +288,7 @@ def test(epoch, analyzer, checkpoint=True):
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
 
-        fname = generate_fname(args)
+        fname = generate_fname(**args)
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
 
