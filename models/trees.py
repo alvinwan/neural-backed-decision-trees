@@ -315,7 +315,7 @@ class TinyImagenet200JointTree(JointTree):
     def __init__(self, path_tree=DEFAULT_TINYIMAGENET200_TREE, num_classes=200, pretrained=True):
         super().__init__('TinyImagenet200JointNodes', 'TinyImagenet200JointNodes',
             path_tree, DEFAULT_TINYIMAGENET200_WNIDS,
-            net=TinyImagenet200JointNodes(), num_classes=num_classes,
+            net=TinyImagenet200JointNodes(path_tree), num_classes=num_classes,
             pretrained=pretrained)
 
 
