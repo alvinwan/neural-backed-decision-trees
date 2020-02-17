@@ -65,17 +65,7 @@ python main.py --model=CIFAR10Tree --dataset=CIFAR10 --batch-size=512 --epochs=2
 
 These inference modes do not require the second fully-connected layer training. Instead, inference is run directly on the outputted tree.
 
-## Results
-
-| Dataset | ResNet10 | ResNet18 | ResNet101 | ResNet10 Tree | ResNet10 JointTree | ResNet10 FJointTree |
-| --- | --- | --- | --- | --- | --- | --- |
-| *batch size* | 512 | 512 | 128 | 512 | 512 | 512 |
-| CIFAR10 | 93.64% | 94.92% | 95.31% | 93.75% | 93.11% | 93.75% |
-| CIFAR100 | 73.66% | 75.92% | 79.46% | - | 68.24% | 72.92% |
-| TinyImagenet200 | 61.05% | 64.10% | - | - | - | 60.63% |
-
-- The ResNet10Tree and the ResNet101 models have comparable complexity -- former with 9 gflops, 135 mb params and the latter with 8 gflops, 155 mb params.
-- The ResNet10JointTree and the ResNet10 models have comparable complexity
+https://docs.google.com/spreadsheets/d/1xFTubRU3J6e8XLSgzZHURQAp66UtaCqNS5ehCd-K9jI/edit#gid=0
 
 -----------------
 
