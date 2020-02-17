@@ -33,9 +33,12 @@ class TreeNode:
             child.print(ntabs + 3)
 
 # creates ETree recursively from node
+index_node = 0
 def extendTree(cur_element, node):
+    global index_node
+    index_node += 1
     print("Extending to %d" % node.label)
-    new_element = ET.SubElement(cur_element, "synset")
+    new_element = ET.SubElement(cur_element, "synset", {'_wnid': index_node})
     for child in node.children:
         extendTree(new_element, child)
 
