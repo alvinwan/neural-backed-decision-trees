@@ -174,11 +174,14 @@ if args.resume:
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
     fname = generate_fname(**vars(args))
-    checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
-    net.load_state_dict(checkpoint['net'])
-    best_acc = checkpoint['acc']
-    start_epoch = checkpoint['epoch']
-
+    try:
+        checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
+        net.load_state_dict(checkpoint['net'])
+        best_acc = checkpoint['acc']
+        start_epoch = checkpoint['epoch']
+    except FileNotFoundError as e:
+        print('==> No checkpoint found. Skipping...')
+        print(e)
 def get_net():
     if device == 'cuda':
         return net.module
