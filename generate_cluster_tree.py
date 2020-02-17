@@ -35,7 +35,7 @@ class TreeNode:
 # creates ETree recursively from node
 def extendTree(cur_element, node):
     print("Extending to %d" % node.label)
-    new_element = ET.SubElement(cur_element, "cluster" + str(node.label))
+    new_element = ET.SubElement(cur_element, "synset")
     for child in node.children:
         extendTree(new_element, child)
 
@@ -189,7 +189,7 @@ if __name__ == '__main__':
         leaf.attrib['wnid'] = wnid_dict[int(re.search(r'\d+$', leaf.tag).group())]
 
     directory = os.path.join('data', args.dataset)
-    path = os.path.join(directory, 'clustered_tree_raw.xml')
+    path = os.path.join(directory, 'tree-image.xml')
     tree = ET.ElementTree(element=root)
     tree = prune_single_child_nodes(tree)
     tree = prune_single_child_nodes(tree)
