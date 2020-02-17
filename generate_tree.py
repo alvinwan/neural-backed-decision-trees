@@ -8,7 +8,7 @@ tiny-imagenet-200/wnids.txt and their ancestors are included.
 from utils.xmlutils import keep_matched_nodes_and_ancestors, count_nodes, \
     compute_depth, compute_num_children, prune_single_child_nodes, \
     prune_duplicate_leaves
-from utils.nltkutils import build_minimal_wordnet_tree
+from utils.nltkutils import build_minimal_wordnet_tree, build_random_tree
 import xml.etree.ElementTree as ET
 import argparse
 import os
@@ -19,9 +19,10 @@ parser.add_argument('--dataset',
     help='Must be a folder data/{dataset} containing a wnids.txt',
     choices=('tiny-imagenet-200', 'CIFAR10', 'CIFAR100'),
     default='CIFAR10')
-parser.add_argument('--method', choices=('prune', 'build'),
+parser.add_argument('--method', choices=('prune', 'build', 'random'),
     help='structure_released.xml apparently is missing many CIFAR100 classes. '
-    'As a result, pruning does not work for CIFAR100',
+    'As a result, pruning does not work for CIFAR100. Random will randomly '
+    'join clusters together, iteratively, to make a roughly-binary tree.',
     default='build')
 
 args = parser.parse_args()
@@ -43,6 +44,10 @@ if args.method == 'prune':
     ])
 elif args.method == 'build':
     tree = build_minimal_wordnet_tree(wnids)
+elif args.method == 'random':
+    tree = build_random_tree(wnids)
+else:
+    raise NotImplementedError(f'Method "{args.method}" not yet handled.')
 
 print_tree_stats(tree, 'matched')
 # lol
@@ -60,7 +65,7 @@ num_children = compute_num_children(tree)
 print(' => {} max number of children'.format(max(num_children)))
 
 print(num_children)
-path = os.path.join(directory, 'tree.xml')
+path = os.path.join(directory, f'tree-{args.method}.xml')
 tree.write(path)
 
 print('Wrote final pruned tree to {}'.format(path))
