@@ -2,7 +2,7 @@ from torchvision import datasets
 import torch
 import torchvision.models as models
 import torchvision.transforms as transforms
-from utils import custom_datasets, nmn_datasets
+from utils import custom_datasets
 import numpy as np
 import operator
 import xml.etree.ElementTree as ET
@@ -17,7 +17,7 @@ from sklearn.cluster import KMeans
 class Identity(torch.nn.Module):
     def __init__(self):
         super(Identity, self).__init__()
-        
+
     def forward(self, x):
         return x
 
@@ -93,15 +93,13 @@ import argparse
 
 if __name__ == '__main__':
 
-    dataset_choices = ('CIFAR10', 'CIFAR100') + custom_datasets.names + nmn_datasets.names
+    dataset_choices = ('CIFAR10', 'CIFAR100') + custom_datasets.names
 
     parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
     parser.add_argument('--dataset', default='CIFAR100', choices=dataset_choices)
     parser.add_argument('--model', default='ResNet18')
     parser.add_argument('--batch-size', default=64, type=int,
                         help='Batch size used for pulling data')
-    parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
-                        default='fall11')
     parser.add_argument('--sample', default=1.0, type=float, help='How much of the dataset to sample')
     args = parser.parse_args()
 
@@ -116,9 +114,7 @@ if __name__ == '__main__':
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 
-    if args.dataset in nmn_datasets.names:
-        dataset = getattr(nmn_datasets, args.dataset)
-    elif args.dataset in custom_datasets.names:
+    if args.dataset in custom_datasets.names:
         dataset = getattr(custom_datasets, args.dataset)
     else:
         dataset = getattr(datasets, args.dataset)
@@ -143,7 +139,7 @@ if __name__ == '__main__':
 
     feature_set = []
     label_set = []
-    
+
     i = 0
     for batch_idx, (inputs, labels) in enumerate(trainloader):
         inputs = inputs.to(device)
@@ -191,7 +187,7 @@ if __name__ == '__main__':
     for leaf in get_leaves(root):
         leaf.attrib['label'] = idx_to_label_dict[int(re.search(r'\d+$', leaf.tag).group())]
         leaf.attrib['wnid'] = wnid_dict[int(re.search(r'\d+$', leaf.tag).group())]
-    
+
     directory = os.path.join('data', args.dataset)
     path = os.path.join(directory, 'clustered_tree_raw.xml')
     tree = ET.ElementTree(element=root)
@@ -204,8 +200,3 @@ if __name__ == '__main__':
     tree.write(path)
 
     print('Wrote clustered tree to {}'.format(path))
-
-        
-
-
-
