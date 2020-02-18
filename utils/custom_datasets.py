@@ -30,7 +30,6 @@ class TinyImagenet200(Dataset):
 
     dataset = None
 
-    # TODO: download is just ignoredd
     def __init__(self, root='./data',
             *args, train=True, download=False, **kwargs):
         super().__init__()
