@@ -1,4 +1,4 @@
-for dataset in CIFAR10 CIFAR100 tiny-imagenet-200;
+for dataset in CIFAR10 CIFAR100 TinyImagenet200;
   do
     for method in build random;
       do
