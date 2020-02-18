@@ -124,8 +124,8 @@ def kmeans_cluster_means(feature_set, tree_map, debug=False):
         new_node_dict[cluster].children.append(treenode)
 
     new_tree_map = []
-    for old_node in tree_map:
-        new_tree_map.append(new_node_dict[cluster_belong[old_node]])
+    for new_node in set(new_node_dict.values()):
+        new_tree_map.append(new_node)
     return new_tree_map
 
 
