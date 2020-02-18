@@ -26,13 +26,47 @@ python generate_tree.py --dataset=CIFAR100 --method=build
 from http://image-net.org/download-toolbox. This is no longer used but the code
 is still in the codebase.
 
+### Test Tree
+
 Finally, check the tree is somewhat sane.
 
 ```
 python test_generated_tree.py --dataset=CIFAR100 --method=build
 ```
 
-You may use any of the `CIFAR10`, `CIFAR100`, `TinyImagenet200` datasets. Additionally, use `--method` to randomly generate a binary-ish tree. Randomness is seeded.
+Make sure that your output ends with `==> All checks pass!`.
+
+### Visualize Tree
+
+Run the visualization generation script to obtain both the JSON representing
+the tree and the HTML file containing a d3 visualization.
+
+```
+python generate_vis.py --dataset=CIFAR100 --method=build
+```
+
+The above script will output the following.
+
+```
+==> Reading from data/CIFAR100/tree-build-branch3.xml
+Files already downloaded and verified
+==> Wrote JSON tree to data/CIFAR100/tree-build-d3.json
+==> Wrote HTML tree to out/tree-build.html
+```
+
+Open up `out/tree-build.html` in your browser to view the d3 visualization.
+
+<img width="1409" alt="Screen Shot 2020-02-18 at 2 47 03 PM" src="https://user-images.githubusercontent.com/2068077/74784796-94cb2980-525d-11ea-8aa8-c5f82c58c708.png">
+
+### Random Trees
+
+Use `--method=random` to randomly generate a binary-ish tree. Additionally,
+random trees feature two more flags:
+
+- `--seed` to generate random leaf orderings and
+- `--branching-factor` to generate trees with different branching factors.
+
+For all of the above calls, you may use any of the `CIFAR10`, `CIFAR100`, `TinyImagenet200` datasets.
 
 ## Training
 

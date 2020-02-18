@@ -102,7 +102,19 @@ if isinstance(root['synset'], dict):
 
 tree_data = format_tree(root, 'root')
 # put new tree in file
-outfile = os.path.join(directory, f'{fname}-d3.json')
-json.dump(tree_data, open(outfile, 'w'))
+path_json = os.path.join(directory, f'{fname}-d3.json')
+json.dump(tree_data, open(path_json, 'w'))
 
-print('\033[92m==> Wrote JSON tree to {}\033[0m'.format(outfile))
+print('\033[92m==> Wrote JSON tree to {}\033[0m'.format(path_json))
+
+with open('vis/tree-template.html') as f:
+    html = f.read().replace(
+        "'TREE_DATA_CONSTANT_TO_BE_REPLACED'",
+        json.dumps(tree_data))
+
+os.makedirs('out', exist_ok=True)
+path_html = f'out/{fname}.html'
+with open(path_html, 'w') as f:
+    f.write(html)
+
+print('\033[92m==> Wrote HTML tree to {}\033[0m'.format(path_html))
