@@ -262,7 +262,9 @@ if __name__ == '__main__':
 
     # we now have the tree set up. Recursively create the tree, using our data struct
     root = ET.Element('tree')
-    root.set('wnid', '-1')
+    root = SubElement(root, "synset", {
+        "wnid": "-1"
+    })
     for node in set(tree_map):
         node.print()
         extendTree(root, node)
