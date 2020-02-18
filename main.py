@@ -234,7 +234,7 @@ def train(epoch, analyzer):
         total += np.prod(targets.size())
         correct += predicted.eq(targets).sum().item()
 
-        analyzer.update_batch(predicted, targets)
+        analyzer.update_batch(outputs, predicted, targets)
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
@@ -275,7 +275,7 @@ def test(epoch, analyzer, checkpoint=True):
                 predicted = predicted.cpu()
                 targets = targets.cpu()
 
-            analyzer.update_batch(predicted, targets)
+            analyzer.update_batch(outputs, predicted, targets)
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
