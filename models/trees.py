@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import random
 import os
+import csv
 
 from utils.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
@@ -14,6 +15,7 @@ from utils.utils import (
 
 __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
            'CIFAR100Tree', 'CIFAR100JointNodes', 'CIFAR100JointTree',
+           'CIFAR10JointDecisionTree', 'CIFAR100JointDecisionTree',
            'CIFAR10BalancedJointNodes', 'CIFAR100BalancedJointNodes',
            'CIFAR10BalancedJointTree', 'CIFAR100BalancedJointTree',
            'TinyImagenet200JointNodes', 'TinyImagenet200BalancedJointNodes',
@@ -31,6 +33,7 @@ def noop():
 
 
 def load_checkpoint(net, path):
+    path = path.replace('-build', '')
     if not os.path.exists(path):
         print(f' * Failed to load model. No such path found: {path}')
         return
@@ -379,4 +382,165 @@ class TinyImagenet200FreezeJointTree(JointTree):
         super().__init__('TinyImagenet200FreezeJointNodes', 'TinyImagenet200JointNodes',
             path_tree, DEFAULT_TINYIMAGENET200_WNIDS,
             net=TinyImagenet200FreezeJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained)
+
+class JointDecisionTree(nn.Module):
+    """
+    Decision tree based inference method using jointly trained nodes
+    """
+
+    def __init__(self,
+            model_name,
+            dataset_name,
+            path_tree,
+            path_wnids,
+            net,
+            num_classes=10,
+            pretrained=True,
+            backtracking=True):
+        super().__init__()
+
+        if pretrained:
+            fname = generate_fname(
+                dataset=dataset_name,
+                model=model_name,
+                path_tree=path_tree
+            )
+            print(fname)
+            load_checkpoint(net, f'./checkpoint/{fname}.pth')
+        self.net = net.net
+        self.nodes = net.nodes
+        self.heads = net.heads
+        self.wnids = [node.wnid for node in self.nodes]
+
+        root_node_wnid = Node.get_root_node_wnid(path_tree)
+        self.root_node = self.nodes[self.wnids.index(root_node_wnid)]
+
+        self.dataset_name = dataset_name.replace('JointNodes', '').lower()
+        self.num_classes = num_classes
+        self.backtracking = backtracking
+
+        self.metrics = []
+
+    def add_sample_metrics(self, pred_class, path, path_probs,
+                           nodes_explored, nodes_backtracked, node_probs):
+        self.metrics.append({'pred_class' : pred_class,
+                             'path' : path,
+                             'path_probs' : [round(prob.item(), 4) for prob in path_probs],
+                             'nodes_explored' : nodes_explored,
+                             'nodes_backtracked' : nodes_backtracked,
+                             'node_probs' : node_probs})
+
+    def save_metrics(self, gt_classes, save_dir='./output'):
+        save_path = os.path.join(save_dir, self.dataset_name + '_decision_tree_metrics.tsv')
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        with open(save_path, mode='w') as f:
+            metrics_writer = csv.writer(f, delimiter='\t')
+            metrics_writer.writerow(['Index', 'GT Class', 'Pred Class', 'Correct', 'Path',
+                                     'Path Probs', 'Num Nodes Explored',
+                                     'Nodes Backtracked', 'Num Node Backtracks', 'Node Probs'])
+            for i in range(len(gt_classes)):
+                row = []
+                row.append(str(i))
+                row.append(str(gt_classes[i]))
+                row.append(str(self.metrics[i]['pred_class']))
+                row.append(str(self.metrics[i]['pred_class'] == gt_classes[i]))
+                row.append(str(self.metrics[i]['path']))
+                row.append(str(self.metrics[i]['path_probs']))
+                row.append(str(self.metrics[i]['nodes_explored']))
+                row.append(str(self.metrics[i]['nodes_backtracked']))
+                row.append(str(len(self.metrics[i]['nodes_backtracked'])))
+                row.append(str(self.metrics[i]['node_probs']))
+                metrics_writer.writerow(row)
+
+    def custom_prediction(self, outputs):
+        _, predicted = outputs.max(1)
+        ignored_idx = outputs[:,0] == -1
+        predicted[ignored_idx] = -1
+        return predicted
+
+    def forward(self, x):
+        assert hasattr(self.net, 'featurize')
+        x = self.net.featurize(x)
+
+        outputs = torch.zeros(x.shape[0], self.num_classes)
+        for i in range(len(x)):
+            pred_old_index = -1
+            curr_node = self.root_node
+            # Keep track of current path in decision tree for backtracking
+            # and how many children have backtracked for each node in path
+            curr_path = [self.root_node]
+            global_path = [self.root_node.wnid]
+            path_child_backtracks = [0]
+            path_probs = []
+            global_path_probs = []
+            nodes_explored = 1
+            nodes_backtracked = []
+            node_probs = {}
+            while curr_node:
+                # If all children have backtracked, ignore sample
+                if path_child_backtracks[-1] == curr_node.num_classes:
+                    break
+                # Else take next highest probability child
+                node_index = self.wnids.index(curr_node.wnid)
+                head = self.heads[node_index]
+                output = head(x[i:i+1])[0]
+                node_probs[curr_node.wnid] = nn.functional.softmax(output).tolist()
+                pred_new_index = sorted(range(len(output)), key=lambda x: -output[x])[path_child_backtracks[-1]]
+                global_path_probs.append(nn.functional.softmax(output)[pred_new_index])
+                # If "other" predicted, either backtrack or ignore sample
+                if pred_new_index == curr_node.num_children:
+                    if self.backtracking:
+                        # Store node backtrack metric
+                        nodes_backtracked.append(curr_node.wnid)
+                        # Pop current node from path
+                        curr_path.pop()
+                        global_path.append(curr_path[-1].wnid)
+                        path_child_backtracks.pop()
+                        path_probs.pop()
+                        # Increment path_child_backtracks
+                        path_child_backtracks[-1] += 1
+                        # Replace curr_node with parent
+                        curr_node = curr_path[-1]
+                        nodes_explored += 1
+                    else:
+                        break
+                else:
+                    # Store path probability metric
+                    path_probs.append(nn.functional.softmax(output)[pred_new_index])
+                    next_wnid = curr_node.children_wnids[pred_new_index]
+                    global_path.append(next_wnid)
+                    if next_wnid in self.wnids:
+                        # Explore highest probability child
+                        next_node_index = self.wnids.index(next_wnid)
+                        curr_node = self.nodes[next_node_index]
+                        curr_path.append(curr_node)
+                        path_child_backtracks.append(0)
+                        nodes_explored += 1
+                    else:
+                        # Return leaf node
+                        pred_old_index = curr_node.new_to_old[pred_new_index][0]
+                        curr_node = None
+            if pred_old_index >= 0:
+                outputs[i,pred_old_index] = 1
+            else:
+                outputs[i,:] = -1
+            self.add_sample_metrics(pred_old_index, global_path, global_path_probs,
+                                    nodes_explored, nodes_backtracked, node_probs)
+        return outputs.to(x.device)
+
+class CIFAR10JointDecisionTree(JointDecisionTree):
+
+    def __init__(self, num_classes=10, pretrained=True):
+        super().__init__('CIFAR10JointNodes', 'CIFAR10JointNodes',
+            DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
+            net=CIFAR10JointNodes(), num_classes=num_classes,
+            pretrained=pretrained)
+
+class CIFAR100JointDecisionTree(JointDecisionTree):
+
+    def __init__(self, num_classes=100, pretrained=True):
+        super().__init__('CIFAR100JointNodes', 'CIFAR100JointNodes',
+            DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100JointNodes(), num_classes=num_classes,
             pretrained=pretrained)

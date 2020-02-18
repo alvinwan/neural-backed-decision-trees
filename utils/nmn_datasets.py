@@ -69,6 +69,8 @@ class Node:
             ]
         self._probabilities = None
 
+        self.children_wnids = [child.get('wnid') for child in children]
+
     @property
     def class_counts(self):
         """Number of old classes in each new class"""
@@ -112,6 +114,15 @@ class Node:
         wnids = sorted(wnid_to_node)
         nodes = [wnid_to_node[wnid] for wnid in wnids]
         return nodes
+
+    @staticmethod
+    def get_root_node_wnid(path_tree):
+        tree = ET.parse(path_tree)
+        for node in tree.iter():
+            wnid = node.get('wnid')
+            if wnid is not None:
+                return wnid
+        return None
 
     @staticmethod
     def dim(nodes):

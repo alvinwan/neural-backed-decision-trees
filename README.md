@@ -1,9 +1,14 @@
 ## Setup
 
-- downloaded `structure_released.xml` from http://image-net.org/download-toolbox
-- downloaded tiny-imagenet-200 from https://tiny-imagenet.herokuapp.com/
+To get started,
+
+1. Generate the tree, per the section below.
+2. Then, launch training scripts, which use those trees.
 
 ## Tree
+
+> Too lazy? Run `bash scripts/generate_trees.sh` to generate trees for all
+datasets with all methods.
 
 First, generate the wnids. All the Imagenet datasets come with wnids. This is only needed for CIFAR{10,100}.
 
@@ -15,6 +20,16 @@ Next, build the tree. By default, the tree uses wordnet hierarchy and is built f
 
 ```
 python generate_tree.py --dataset=CIFAR100 --method=build
+```
+
+> One of the old methods `prune` would prune the `structure_released.xml` from
+from http://image-net.org/download-toolbox. This is no longer used but the code
+is still in the codebase.
+
+Finally, check the tree is somewhat sane.
+
+```
+python test_generated_tree.py --dataset=CIFAR100 --method=build
 ```
 
 You may use any of the `CIFAR10`, `CIFAR100`, `TinyImagenet200` datasets. Additionally, use `--method` to randomly generate a binary-ish tree. Randomness is seeded.
@@ -65,7 +80,9 @@ python main.py --model=CIFAR10Tree --dataset=CIFAR10 --batch-size=512 --epochs=2
 
 These inference modes do not require the second fully-connected layer training. Instead, inference is run directly on the outputted tree.
 
-https://docs.google.com/spreadsheets/d/1xFTubRU3J6e8XLSgzZHURQAp66UtaCqNS5ehCd-K9jI/edit#gid=0
+## Results
+
+https://docs.google.com/spreadsheets/d/1DrvP4msf8Bn0dF1qnpdI5fjLgEp8K6xFbxXntSn1j2s/edit#gid=0
 
 -----------------
 

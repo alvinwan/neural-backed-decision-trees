@@ -4,7 +4,7 @@ Constructs minimal tree such that all wnids contained in
 tiny-imagenet-200/wnids.txt and their ancestors are included.
 """
 
-
+from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from utils.xmlutils import keep_matched_nodes_and_ancestors, count_nodes, \
     compute_depth, compute_num_children, prune_single_child_nodes, \
     prune_duplicate_leaves
@@ -17,23 +17,31 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset',
     help='Must be a folder data/{dataset} containing a wnids.txt',
-    choices=('tiny-imagenet-200', 'CIFAR10', 'CIFAR100'),
+    choices=DATASETS,
     default='CIFAR10')
-parser.add_argument('--method', choices=('prune', 'build', 'random'),
+parser.add_argument('--method', choices=METHODS,
     help='structure_released.xml apparently is missing many CIFAR100 classes. '
     'As a result, pruning does not work for CIFAR100. Random will randomly '
     'join clusters together, iteratively, to make a roughly-binary tree.',
     default='build')
+parser.add_argument('--verbose', action='store_true')
 
 args = parser.parse_args()
 
-directory = os.path.join('data', args.dataset)
+folder = DATASET_TO_FOLDER_NAME[args.dataset]
+directory = os.path.join('data', folder)
 with open(os.path.join(directory, 'wnids.txt')) as f:
     wnids = [wnid.strip() for wnid in f.readlines()]
 
 def print_tree_stats(tree, name):
-    print(' => {} nodes in {} tree'.format(count_nodes(tree), name))
-    print(' => {} depth for {} tree'.format(compute_depth(tree), name))
+    num_children = compute_num_children(tree)
+    print('[{}] \t Nodes: {} \t Depth: {} \t Max Children: {}'.format(
+        name,
+        count_nodes(tree),
+        compute_depth(tree),
+        max(num_children)))
+    if args.verbose:
+        print('[{}]'.format(name), num_children)
 
 if args.method == 'prune':
     tree = ET.parse('structure_released.xml')
@@ -58,17 +66,11 @@ tree = prune_single_child_nodes(tree)
 # prune duplicate leaves
 tree = prune_duplicate_leaves(tree)
 
-
 print_tree_stats(tree, 'pruned')
-
-num_children = compute_num_children(tree)
-print(' => {} max number of children'.format(max(num_children)))
-
-print(num_children)
 path = os.path.join(directory, f'tree-{args.method}.xml')
 tree.write(path)
 
-print('Wrote final pruned tree to {}'.format(path))
+print('\033[92m==> Wrote tree to {}\033[0m'.format(path))
 
 wnids_set = {node.get('wnid') for node in tree.iter()}
 assert all(wnid.strip() in wnids_set for wnid in wnids), \

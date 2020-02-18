@@ -38,7 +38,7 @@ parser.add_argument('--resume', '-r', action='store_true', help='resume from che
 parser.add_argument('--backbone', '-b',
                     help='Path to backbone network parameters to restore from')
 
-parser.add_argument('--path-tree', help='Path to tree-?.xml file.')
+parser.add_argument('--path-tree', help='Path to tree-?.xml file.')  # WARNING: hard-coded suffix -build in generate_fname
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
 parser.add_argument('--eval', help='eval only', action='store_true')
@@ -49,6 +49,7 @@ parser.add_argument('--test-path', action='store_true',
                     help='test path classifier with random init')
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
+print(analysis.names)
 
 args = parser.parse_args()
 
@@ -233,7 +234,7 @@ def train(epoch, analyzer):
         total += np.prod(targets.size())
         correct += predicted.eq(targets).sum().item()
 
-        analyzer.update_batch(predicted, targets)
+        analyzer.update_batch(outputs, predicted, targets)
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
@@ -274,13 +275,14 @@ def test(epoch, analyzer, checkpoint=True):
                 predicted = predicted.cpu()
                 targets = targets.cpu()
 
-            analyzer.update_batch(predicted, targets)
+            analyzer.update_batch(outputs, predicted, targets)
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
     # Save checkpoint.
     acc = 100.*correct/total
+    print("Accuracy: {}, {}/{}".format(acc, correct, total))
     if acc > best_acc and checkpoint:
         print('Saving..')
         state = {
@@ -294,6 +296,12 @@ def test(epoch, analyzer, checkpoint=True):
         fname = generate_fname(**vars(args))
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
+
+    if hasattr(get_net(), 'save_metrics'):
+        gt_classes = []
+        for _, targets in testloader:
+            gt_classes.extend(targets.tolist())
+        get_net().save_metrics(gt_classes)
 
     analyzer.end_test(epoch)
 
