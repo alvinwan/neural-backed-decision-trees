@@ -164,7 +164,8 @@ def get_fname(args):
     return generate_fname(args)
 
 
-def generate_fname(dataset, model, path_tree, wnid=None, name='', **kwargs):
+def generate_fname(dataset, model, path_tree, wnid=None, name='',
+        trainset=None, **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
     fname += '-' + model
@@ -175,4 +176,6 @@ def generate_fname(dataset, model, path_tree, wnid=None, name='', **kwargs):
     if path_tree:
         path = Path(path_tree)
         fname += '-' + path.stem.replace('tree-', '', 1)
+    else:
+        fname += '-build'  # WARNING: hard-coded
     return fname

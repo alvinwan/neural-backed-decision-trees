@@ -38,7 +38,7 @@ parser.add_argument('--resume', '-r', action='store_true', help='resume from che
 parser.add_argument('--backbone', '-b',
                     help='Path to backbone network parameters to restore from')
 
-parser.add_argument('--path-tree', help='Path to tree-?.xml file.')
+parser.add_argument('--path-tree', help='Path to tree-?.xml file.')  # WARNING: hard-coded suffix -build in generate_fname
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
 parser.add_argument('--eval', help='eval only', action='store_true')
@@ -264,7 +264,7 @@ def test(epoch, analyzer, checkpoint=True):
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
-            loss = get_loss(criterion, outputs, targets)          
+            loss = get_loss(criterion, outputs, targets)
 
             test_loss += loss.item()
             predicted = get_prediction(outputs)
