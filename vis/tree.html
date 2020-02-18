@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title>Tree Example</title>
+
+    <style>
+
+	.node {
+		cursor: pointer;
+	}
+
+	.node circle {
+	  fill: #fff;
+	  stroke: steelblue;
+	  stroke-width: 3px;
+	}
+
+	.node text {
+	  font: 12px sans-serif;
+	}
+
+	.link {
+	  fill: none;
+	  stroke: #ccc;
+	  stroke-width: 2px;
+	}
+
+    </style>
+
+  </head>
+
+  <body>
+
+<!-- load the d3.js library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+
+<script>
+
+// I copy-pasta from new_CIFAR100-image_d3.json
+// the code in this file from https://bl.ocks.org/d3noob/8375092
+var treeData = [{"children": [{"children": [{"name": "n02881193", "parent": "1", "leaf": "True"}, {"name": "n07794452", "parent": "1", "leaf": "True"}, {"children": [{"name": "n12582231", "parent": "2", "leaf": "True"}, {"name": "n01944390", "parent": "2", "leaf": "True"}], "parent": "1", "name": "2", "leaf": "False"}, {"children": [{"name": "n13001041", "parent": "5", "leaf": "True"}, {"name": "n12752205", "parent": "5", "leaf": "True"}, {"name": "n02437136", "parent": "5", "leaf": "True"}, {"name": "n02233338", "parent": "5", "leaf": "True"}], "parent": "1", "name": "5", "leaf": "False"}, {"children": [{"name": "n02481823", "parent": "10", "leaf": "True"}, {"name": "n11439690", "parent": "10", "leaf": "True"}, {"name": "n12041446", "parent": "10", "leaf": "True"}, {"name": "n12268246", "parent": "10", "leaf": "True"}, {"name": "n12901264", "parent": "10", "leaf": "True"}, {"name": "n02346627", "parent": "10", "leaf": "True"}, {"name": "n02818832", "parent": "10", "leaf": "True"}, {"name": "n01772222", "parent": "10", "leaf": "True"}, {"name": "n04233124", "parent": "10", "leaf": "True"}, {"name": "n02980441", "parent": "10", "leaf": "True"}, {"name": "n02924116", "parent": "10", "leaf": "True"}, {"name": "n11608250", "parent": "10", "leaf": "True"}, {"name": "n04550184", "parent": "10", "leaf": "True"}, {"name": "n01982650", "parent": "10", "leaf": "True"}, {"name": "n04335435", "parent": "10", "leaf": "True"}, {"name": "n07747607", "parent": "10", "leaf": "True"}, {"name": "n07739125", "parent": "10", "leaf": "True"}, {"name": "n07767847", "parent": "10", "leaf": "True"}, {"name": "n04401088", "parent": "10", "leaf": "True"}], "parent": "1", "name": "10", "leaf": "False"}], "parent": "-1", "name": "1", "leaf": "False"}, {"children": [{"children": [{"name": "n12454159", "parent": "35", "leaf": "True"}, {"name": "n11900569", "parent": "35", "leaf": "True"}, {"name": "n02206856", "parent": "35", "leaf": "True"}], "parent": "34", "name": "35", "leaf": "False"}, {"children": [{"name": "n02118333", "parent": "39", "leaf": "True"}, {"name": "n02129604", "parent": "39", "leaf": "True"}, {"name": "n01674464", "parent": "39", "leaf": "True"}, {"name": "n01922303", "parent": "39", "leaf": "True"}, {"name": "n02834778", "parent": "39", "leaf": "True"}, {"name": "n02114100", "parent": "39", "leaf": "True"}, {"name": "n02164464", "parent": "39", "leaf": "True"}], "parent": "34", "name": "39", "leaf": "False"}, {"children": [{"name": "n01877134", "parent": "47", "leaf": "True"}, {"name": "n09426788", "parent": "47", "leaf": "True"}, {"name": "n01697178", "parent": "47", "leaf": "True"}, {"name": "n01482330", "parent": "47", "leaf": "True"}, {"name": "n03614007", "parent": "47", "leaf": "True"}, {"name": "n09393605", "parent": "47", "leaf": "True"}], "parent": "34", "name": "47", "leaf": "False"}, {"children": [{"name": "n02503517", "parent": "54", "leaf": "True"}, {"name": "n03046257", "parent": "54", "leaf": "True"}, {"name": "n04379243", "parent": "54", "leaf": "True"}, {"name": "n02129165", "parent": "54", "leaf": "True"}, {"name": "n02274259", "parent": "54", "leaf": "True"}, {"name": "n11978233", "parent": "54", "leaf": "True"}, {"name": "n10285313", "parent": "54", "leaf": "True"}, {"name": "n12620196", "parent": "54", "leaf": "True"}, {"name": "n02324045", "parent": "54", "leaf": "True"}, {"name": "n03544360", "parent": "54", "leaf": "True"}, {"name": "n03636248", "parent": "54", "leaf": "True"}, {"name": "n01976957", "parent": "54", "leaf": "True"}, {"name": "n10129825", "parent": "54", "leaf": "True"}, {"name": "n06277280", "parent": "54", "leaf": "True"}, {"name": "n04465501", "parent": "54", "leaf": "True"}, {"name": "n04099429", "parent": "54", "leaf": "True"}, {"name": "n02076196", "parent": "54", "leaf": "True"}, {"name": "n02355227", "parent": "54", "leaf": "True"}, {"name": "n02946921", "parent": "54", "leaf": "True"}, {"name": "n02062744", "parent": "54", "leaf": "True"}, {"name": "n01891633", "parent": "54", "leaf": "True"}, {"name": "n09827683", "parent": "54", "leaf": "True"}, {"name": "n01662784", "parent": "54", "leaf": "True"}, {"name": "n04096066", "parent": "54", "leaf": "True"}, {"name": "n03790512", "parent": "54", "leaf": "True"}, {"name": "n01699831", "parent": "54", "leaf": "True"}, {"name": "n14764617", "parent": "54", "leaf": "True"}, {"name": "n03959485", "parent": "54", "leaf": "True"}, {"name": "n03147509", "parent": "54", "leaf": "True"}, {"name": "n02657368", "parent": "54", "leaf": "True"}, {"name": "n03649909", "parent": "54", "leaf": "True"}, {"name": "n04389033", "parent": "54", "leaf": "True"}, {"name": "n02128385", "parent": "54", "leaf": "True"}, {"name": "n01874928", "parent": "54", "leaf": "True"}, {"name": "n02512752", "parent": "54", "leaf": "True"}, {"name": "n12724942", "parent": "54", "leaf": "True"}, {"name": "n02508021", "parent": "54", "leaf": "True"}, {"name": "n02330245", "parent": "54", "leaf": "True"}, {"name": "n04468005", "parent": "54", "leaf": "True"}, {"name": "n10287213", "parent": "54", "leaf": "True"}, {"name": "n04256520", "parent": "54", "leaf": "True"}, {"name": "n02309337", "parent": "54", "leaf": "True"}, {"name": "n03001627", "parent": "54", "leaf": "True"}, {"name": "n02342885", "parent": "54", "leaf": "True"}, {"name": "n02581957", "parent": "54", "leaf": "True"}, {"name": "n10787470", "parent": "54", "leaf": "True"}, {"name": "n02444819", "parent": "54", "leaf": "True"}, {"name": "n09359803", "parent": "54", "leaf": "True"}, {"name": "n08438533", "parent": "54", "leaf": "True"}, {"name": "n02876657", "parent": "54", "leaf": "True"}, {"name": "n07476495", "parent": "54", "leaf": "True"}, {"name": "n03930630", "parent": "54", "leaf": "True"}, {"name": "n01726692", "parent": "54", "leaf": "True"}, {"name": "n02898711", "parent": "54", "leaf": "True"}, {"name": "n02131653", "parent": "54", "leaf": "True"}, {"name": "n01495701", "parent": "54", "leaf": "True"}, {"name": "n02402425", "parent": "54", "leaf": "True"}], "parent": "34", "name": "54", "leaf": "False"}], "parent": "-1", "name": "34", "leaf": "False"}], "parent": "root", "name": "-1", "leaf": "False"}];
+
+
+
+// ************** Generate the tree diagram	 *****************
+var margin = {top: 20, right: 120, bottom: 20, left: 120},
+	width = 960 - margin.right - margin.left,
+	height = 500 - margin.top - margin.bottom;
+
+var i = 0,
+	duration = 750,
+	root;
+
+var tree = d3.layout.tree()
+	.size([height, width]);
+
+var diagonal = d3.svg.diagonal()
+	.projection(function(d) { return [d.y, d.x]; });
+
+var svg = d3.select("body").append("svg")
+	.attr("width", width + margin.right + margin.left)
+	.attr("height", height + margin.top + margin.bottom)
+  .append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+root = treeData[0];
+root.x0 = height / 2;
+root.y0 = 0;
+
+update(root);
+
+d3.select(self.frameElement).style("height", "500px");
+
+function update(source) {
+
+  // Compute the new tree layout.
+  var nodes = tree.nodes(root).reverse(),
+	  links = tree.links(nodes);
+
+  // Normalize for fixed-depth.
+  nodes.forEach(function(d) { d.y = d.depth * 180; });
+
+  // Update the nodes…
+  var node = svg.selectAll("g.node")
+	  .data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+  // Enter any new nodes at the parent's previous position.
+  var nodeEnter = node.enter().append("g")
+	  .attr("class", "node")
+	  .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+	  .on("click", click);
+
+  nodeEnter.append("circle")
+	  .attr("r", 1e-6)
+	  .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+
+  nodeEnter.append("text")
+	  .attr("x", function(d) { return d.children || d._children ? -13 : 13; })
+	  .attr("dy", ".35em")
+	  .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+	  .text(function(d) { return d.name; })
+	  .style("fill-opacity", 1e-6);
+
+  // Transition nodes to their new position.
+  var nodeUpdate = node.transition()
+	  .duration(duration)
+	  .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+  nodeUpdate.select("circle")
+	  .attr("r", 10)
+	  .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+
+  nodeUpdate.select("text")
+	  .style("fill-opacity", 1);
+
+  // Transition exiting nodes to the parent's new position.
+  var nodeExit = node.exit().transition()
+	  .duration(duration)
+	  .attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+	  .remove();
+
+  nodeExit.select("circle")
+	  .attr("r", 1e-6);
+
+  nodeExit.select("text")
+	  .style("fill-opacity", 1e-6);
+
+  // Update the links…
+  var link = svg.selectAll("path.link")
+	  .data(links, function(d) { return d.target.id; });
+
+  // Enter any new links at the parent's previous position.
+  link.enter().insert("path", "g")
+	  .attr("class", "link")
+	  .attr("d", function(d) {
+		var o = {x: source.x0, y: source.y0};
+		return diagonal({source: o, target: o});
+	  });
+
+  // Transition links to their new position.
+  link.transition()
+	  .duration(duration)
+	  .attr("d", diagonal);
+
+  // Transition exiting nodes to the parent's new position.
+  link.exit().transition()
+	  .duration(duration)
+	  .attr("d", function(d) {
+		var o = {x: source.x, y: source.y};
+		return diagonal({source: o, target: o});
+	  })
+	  .remove();
+
+  // Stash the old positions for transition.
+  nodes.forEach(function(d) {
+	d.x0 = d.x;
+	d.y0 = d.y;
+  });
+}
+
+// Toggle children on click.
+function click(d) {
+  if (d.children) {
+	d._children = d.children;
+	d.children = null;
+  } else {
+	d.children = d._children;
+	d._children = null;
+  }
+  update(d);
+}
+
+</script>
+
+  </body>
+</html>
