@@ -4,6 +4,9 @@
 
 ## Tree
 
+> Too lazy? Run `bash scripts/generate_trees.sh` to generate trees for all
+datasets with all methods.
+
 First, generate the wnids. All the Imagenet datasets come with wnids. This is only needed for CIFAR{10,100}.
 
 ```
