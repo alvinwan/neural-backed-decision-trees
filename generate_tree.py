@@ -24,9 +24,19 @@ parser.add_argument('--method', choices=METHODS,
     'As a result, pruning does not work for CIFAR100. Random will randomly '
     'join clusters together, iteratively, to make a roughly-binary tree.',
     default='build')
+parser.add_argument('--seed', type=int, default=0)
 parser.add_argument('--verbose', action='store_true')
 
 args = parser.parse_args()
+
+
+def generate_fname(method, seed=0, **kwargs):
+    fname = f'tree-{method}'
+    if seed != 0:
+        fname += f'-seed{seed}'
+    fname += '.xml'
+    return fname
+
 
 folder = DATASET_TO_FOLDER_NAME[args.dataset]
 directory = os.path.join('data', folder)
@@ -53,7 +63,7 @@ if args.method == 'prune':
 elif args.method == 'build':
     tree = build_minimal_wordnet_tree(wnids)
 elif args.method == 'random':
-    tree = build_random_tree(wnids)
+    tree = build_random_tree(wnids, seed=args.seed)
 else:
     raise NotImplementedError(f'Method "{args.method}" not yet handled.')
 
@@ -67,7 +77,7 @@ tree = prune_single_child_nodes(tree)
 tree = prune_duplicate_leaves(tree)
 
 print_tree_stats(tree, 'pruned')
-path = os.path.join(directory, f'tree-{args.method}.xml')
+path = os.path.join(directory, generate_fname(**vars(args)))
 tree.write(path)
 
 print('\033[92m==> Wrote tree to {}\033[0m'.format(path))
