@@ -48,7 +48,7 @@ def extendTree(cur_element, node):
 # feature_set - np array of feature maps from each image
 # tree_map - mapping (using list) from feature_set to node, which node does each image belong to
 # Note - Looks like etree can only build a tree top down, so we'll use our own structure
-def kmeans_cluster(feature_set, tree_map, debug=False):
+def kmeans_cluster_counts(feature_set, tree_map, debug=False):
     node_set = set(tree_map)   # set of nodes at this level
     n_classes = len(node_set)
 
@@ -95,7 +95,101 @@ def kmeans_cluster(feature_set, tree_map, debug=False):
     return new_tree_map
 
 
+def kmeans_cluster_means(feature_set, tree_map, debug=False):
+    """Take the average of each class to obtain a representative sample.
+
+    Cluster these samples iteratively. Tbh, not a very good idea.
+    """
+    node_set = set(tree_map)   # set of nodes at this level
+    n_classes = len(node_set)
+
+    if debug:
+        print("Clustering for %d" % n_classes)
+
+    n_clusters = max(2, n_classes // 2)
+    kmeans = KMeans(n_clusters = n_clusters).fit(feature_set)
+
+    if debug:
+        print("Clustering finished")
+    cluster_labels = kmeans.labels_
+
+    cluster_belong = {} # maps which label does each node belong to. treenode -> label
+    new_node_dict  = {} # maps new nodes, new node label -> new treenode
+    # get cluster to which each node belongs in
+    for cluster_label, treenode in zip(cluster_labels, tree_map):
+        cluster = cluster_label  # TODO will this cause problems?
+        cluster_belong[treenode] = cluster
+        if cluster not in new_node_dict:
+            new_node_dict[cluster] = TreeNode(cluster)
+        new_node_dict[cluster].children.append(treenode)
+
+    new_tree_map = []
+    for old_node in tree_map:
+        new_tree_map.append(new_node_dict[cluster_belong[old_node]])
+    return new_tree_map
+
+
+def get_feature_label_counts():
+    feature_set = []
+    label_set = []
+
+    i = 0
+    for batch_idx, (inputs, labels) in enumerate(trainloader):
+        inputs = inputs.to(device)
+        outputs = model_ft(inputs).cpu().detach().numpy()
+        labels = labels.cpu().numpy()
+
+        feature_set.append(outputs)
+        label_set.append(labels)
+
+        i += args.batch_size
+        if i > args.sample * len(trainset):
+            break
+
+    feature_set = np.concatenate(feature_set)
+    label_set = np.concatenate(label_set)
+    print("Number of samples: %d" % len(feature_set))
+    return feature_set, label_set
+
+
+def get_feature_label_means():
+    """
+    Instead of obtaining one feature for each sample, obtain an average
+    feature for all samples in a class.
+
+    :return:
+        feature_set array[num_classes, dim]: representatives from each class
+        label_set list: labels, straightforward
+    """
+    d = len(trainset.classes)
+    feature_set = None
+    label_count = np.zeros((d, 1))
+
+    i = 0
+    for batch_idx, (inputs, labels) in enumerate(trainloader):
+        inputs = inputs.to(device)
+        outputs = model_ft(inputs).cpu().detach().numpy()
+        labels = labels.cpu().numpy()
+
+        if feature_set is None:
+            feature_set = np.zeros((d, outputs.shape[1]))
+        for label, output in zip(labels, outputs):  # feature_set[labels] += output doesn't work because labels may repeat
+            feature_set[label] += output
+            label_count[label] += 1
+
+        i += args.batch_size
+        if i > args.sample * len(trainset):
+            break
+
+    feature_set = feature_set / label_count
+    label_set = list(range(d))
+    print("Number of samples: %d" % len(feature_set))
+    return feature_set, label_set
+
+
 import argparse
+
+CHOICES = ('bottom-up-count', 'bottom-up-means')
 
 if __name__ == '__main__':
 
@@ -107,6 +201,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', default=64, type=int,
                         help='Batch size used for pulling data')
     parser.add_argument('--sample', default=1.0, type=float, help='How much of the dataset to sample')
+    parser.add_argument('--method', choices=CHOICES, default=CHOICES[0])
     args = parser.parse_args()
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -143,25 +238,10 @@ if __name__ == '__main__':
         print("Using CUDA")
         model_ft = torch.nn.DataParallel(model_ft)
 
-    feature_set = []
-    label_set = []
-
-    i = 0
-    for batch_idx, (inputs, labels) in enumerate(trainloader):
-        inputs = inputs.to(device)
-        outputs = model_ft(inputs).cpu().detach().numpy()
-        labels = labels.cpu().numpy()
-
-        feature_set.append(outputs)
-        label_set.append(labels)
-
-        i += args.batch_size
-        if i > args.sample * len(trainset):
-            break
-
-    feature_set = np.concatenate(feature_set)
-    label_set = np.concatenate(label_set)
-    print("Number of samples: %d" % len(feature_set))
+    if args.method == CHOICES[0]:
+        feature_set, label_set = get_feature_label_counts()
+    elif args.method == CHOICES[1]:
+        feature_set, label_set = get_feature_label_means()
 
     #############################################
     #   Feature maps set up, time to cluster    #
@@ -175,7 +255,10 @@ if __name__ == '__main__':
         tree_map.append(new_node_dict[label])
     # pass to clustering algo
     while len(set(tree_map)) != 2:
-        tree_map = kmeans_cluster(feature_set, tree_map, debug=True)
+        if args.method == CHOICES[0]:
+            tree_map = kmeans_cluster_counts(feature_set, tree_map, debug=True)
+        elif args.method == CHOICES[1]:
+            tree_map = kmeans_cluster_means(feature_set, tree_map, debug=True)
 
     # we now have the tree set up. Recursively create the tree, using our data struct
     root = ET.Element('tree')
