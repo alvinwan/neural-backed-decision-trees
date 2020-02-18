@@ -178,7 +178,8 @@ if __name__ == '__main__':
         tree_map = kmeans_cluster(feature_set, tree_map, debug=True)
 
     # we now have the tree set up. Recursively create the tree, using our data struct
-    root = ET.Element('root')
+    root = ET.Element('tree')
+    root.set('wnid', '-1')
     for node in set(tree_map):
         node.print()
         extendTree(root, node)
