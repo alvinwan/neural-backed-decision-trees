@@ -90,7 +90,10 @@ json.dump(wnid_names, open(outfile_names, 'w'))
 with open(file) as inFh:
     tree_json = xmltodict.parse(inFh.read())
 
-root = tree_json['tree']['synset']
+root = tree_json['tree']
+
+if isinstance(root['synset'], dict):
+    root = root['synset']
 
 tree_data = format_tree(root, 'root')
 # put new tree in file

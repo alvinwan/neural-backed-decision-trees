@@ -14,7 +14,7 @@ import torch.nn.init as init
 from pathlib import Path
 
 # tree-generation consntants
-METHODS = ('prune', 'build', 'random')
+METHODS = ('prune', 'build', 'random', 'image')
 DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200')
 DATASET_TO_FOLDER_NAME = {
     'CIFAR10': 'CIFAR10',
