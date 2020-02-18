@@ -38,7 +38,10 @@ def extendTree(cur_element, node):
     global index_node
     index_node += 1
     print("Extending to %d" % node.label)
-    new_element = ET.SubElement(cur_element, "synset", {'_wnid': index_node})
+    new_element = ET.SubElement(cur_element, "synset", {
+        '_wnid': str(index_node),
+        '_cluster': str(int(node.label))
+    })
     for child in node.children:
         extendTree(new_element, child)
 
@@ -188,8 +191,9 @@ if __name__ == '__main__':
     print(len(wnid_dict))
     # TODO: add wnids
     for leaf in get_leaves(root):
-        leaf.attrib['label'] = idx_to_label_dict[int(re.search(r'\d+$', leaf.tag).group())]
-        leaf.attrib['wnid'] = wnid_dict[int(re.search(r'\d+$', leaf.tag).group())]
+        index_cluster = int(leaf.get('_cluster'))
+        leaf.attrib['label'] = idx_to_label_dict[index_cluster]
+        leaf.attrib['wnid'] = wnid_dict[index_cluster]
 
     directory = os.path.join('data', args.dataset)
     path = os.path.join(directory, 'tree-image.xml')
