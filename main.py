@@ -49,6 +49,7 @@ parser.add_argument('--test-path', action='store_true',
                     help='test path classifier with random init')
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
+print(analysis.names)
 
 args = parser.parse_args()
 
@@ -263,7 +264,7 @@ def test(epoch, analyzer, checkpoint=True):
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
-            loss = get_loss(criterion, outputs, targets)
+            loss = get_loss(criterion, outputs, targets)          
 
             test_loss += loss.item()
             predicted = get_prediction(outputs)
@@ -281,6 +282,7 @@ def test(epoch, analyzer, checkpoint=True):
 
     # Save checkpoint.
     acc = 100.*correct/total
+    print("Accuracy: {}, {}/{}".format(acc, correct, total))
     if acc > best_acc and checkpoint:
         print('Saving..')
         state = {
@@ -294,6 +296,12 @@ def test(epoch, analyzer, checkpoint=True):
         fname = generate_fname(**vars(args))
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
+
+    if hasattr(get_net(), 'save_metrics'):
+        gt_classes = []
+        for _, targets in testloader:
+            gt_classes.extend(targets.tolist())
+        get_net().save_metrics(gt_classes)
 
     analyzer.end_test(epoch)
 
