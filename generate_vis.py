@@ -6,6 +6,7 @@ import os
 
 from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from utils import custom_datasets
+from generate_tree import generate_fname
 
 
 parser = argparse.ArgumentParser()
@@ -18,12 +19,15 @@ parser.add_argument('--method', choices=METHODS,
     'As a result, pruning does not work for CIFAR100. Random will randomly '
     'join clusters together, iteratively, to make a roughly-binary tree.',
     default='build')
+parser.add_argument('--seed', type=int, default=0)
 
 args = parser.parse_args()
 
 folder = DATASET_TO_FOLDER_NAME[args.dataset]
 directory = os.path.join('data', folder)
-file = os.path.join(directory, 'tree-{}.xml'.format(args.method))
+
+fname = generate_fname(**vars(args))
+file = os.path.join(directory, f'{fname}.xml')
 print('==> Reading from {}'.format(file))
 
 
@@ -97,7 +101,7 @@ if isinstance(root['synset'], dict):
 
 tree_data = format_tree(root, 'root')
 # put new tree in file
-outfile = os.path.join(directory, 'new_{0}-{1}_d3.json'.format(args.dataset, args.method))
+outfile = os.path.join(directory, f'{fname}-d3.json')
 json.dump(tree_data, open(outfile, 'w'))
 
 print('\033[92m==> Wrote JSON tree to {}\033[0m'.format(outfile))

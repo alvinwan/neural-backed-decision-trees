@@ -34,7 +34,6 @@ def generate_fname(method, seed=0, **kwargs):
     fname = f'tree-{method}'
     if seed != 0:
         fname += f'-seed{seed}'
-    fname += '.xml'
     return fname
 
 
@@ -77,7 +76,8 @@ tree = prune_single_child_nodes(tree)
 tree = prune_duplicate_leaves(tree)
 
 print_tree_stats(tree, 'pruned')
-path = os.path.join(directory, generate_fname(**vars(args)))
+fname = generate_fname(**vars(args))
+path = os.path.join(directory, f'{fname}.xml')
 tree.write(path)
 
 print('\033[92m==> Wrote tree to {}\033[0m'.format(path))
