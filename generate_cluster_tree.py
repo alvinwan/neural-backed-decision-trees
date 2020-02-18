@@ -39,8 +39,8 @@ def extendTree(cur_element, node):
     index_node += 1
     print("Extending to %d" % node.label)
     new_element = ET.SubElement(cur_element, "synset", {
-        '_wnid': str(index_node),
-        '_cluster': str(int(node.label))
+        'wnid': str(index_node),
+        'cluster': str(int(node.label))
     })
     for child in node.children:
         extendTree(new_element, child)
@@ -191,7 +191,7 @@ if __name__ == '__main__':
     print(len(wnid_dict))
     # TODO: add wnids
     for leaf in get_leaves(root):
-        index_cluster = int(leaf.get('_cluster'))
+        index_cluster = int(leaf.get('cluster'))
         leaf.attrib['label'] = idx_to_label_dict[index_cluster]
         leaf.attrib['wnid'] = wnid_dict[index_cluster]
 
