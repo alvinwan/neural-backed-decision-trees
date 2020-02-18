@@ -261,8 +261,8 @@ if __name__ == '__main__':
             tree_map = kmeans_cluster_means(feature_set, tree_map, debug=True)
 
     # we now have the tree set up. Recursively create the tree, using our data struct
-    root = ET.Element('tree')
-    root = SubElement(root, "synset", {
+    tree = ET.Element('tree')
+    root = ET.SubElement(tree, "synset", {
         "wnid": "-1"
     })
     for node in set(tree_map):
@@ -283,7 +283,7 @@ if __name__ == '__main__':
 
     directory = os.path.join('data', args.dataset)
     path = os.path.join(directory, 'tree-image.xml')
-    tree = ET.ElementTree(element=root)
+    tree = ET.ElementTree(element=tree)
     tree = prune_single_child_nodes(tree)
     tree = prune_single_child_nodes(tree)
     tree = prune_single_child_nodes(tree)
