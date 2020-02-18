@@ -20,6 +20,7 @@ parser.add_argument('--method', choices=METHODS,
     'join clusters together, iteratively, to make a roughly-binary tree.',
     default='build')
 parser.add_argument('--seed', type=int, default=0)
+parser.add_argument('--branching-factor', type=int, default=2)
 
 args = parser.parse_args()
 
