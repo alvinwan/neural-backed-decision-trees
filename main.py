@@ -38,6 +38,7 @@ parser.add_argument('--resume', '-r', action='store_true', help='resume from che
 parser.add_argument('--backbone', '-b',
                     help='Path to backbone network parameters to restore from')
 
+parser.add_argument('--path-tree', help='Path to tree-?.xml file.')
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
 parser.add_argument('--eval', help='eval only', action='store_true')
@@ -120,11 +121,18 @@ else:
     dataset = getattr(torchvision.datasets, args.dataset)
 
 dataset_args = ()
+dataset_kwargs = {}
 if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
+if getattr(dataset, 'accepts_path_tree', False) and args.path_tree:
+    dataset_kwargs['path_tree'] = args.path_tree
+elif args.path_tree:
+    print(
+        f' => Warning: Dataset {args.dataset} does not support custom '
+        f'tree paths: {args.path_tree}')
 
-trainset = dataset(*dataset_args, root='./data', train=True, download=True, transform=transform_train)
-testset = dataset(*dataset_args, root='./data', train=False, download=True, transform=transform_test)
+trainset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
+testset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
 
 assert trainset.classes == testset.classes, (trainset.classes, testset.classes)
 
@@ -135,8 +143,21 @@ print(f'Training with dataset {args.dataset} and classes {trainset.classes}')
 
 # Model
 print('==> Building model..')
-net = getattr(models, args.model)(
-    num_classes=len(trainset.classes)
+model = getattr(models, args.model)
+
+# TODO(alvin): should dataset trees be passed to models, isntead of re-passing
+# the tree path?
+model_kwargs = {}
+if getattr(model, 'accepts_path_tree', False) and args.path_tree:
+    model_kwargs['path_tree'] = args.path_tree
+elif args.path_tree:
+    print(
+        f' => Warning: Model {args.model} does not support custom '
+        f'tree paths: {args.path_tree}')
+
+net = model(
+    num_classes=len(trainset.classes),
+    **model_kwargs
 )
 net = net.to(device)
 if device == 'cuda':
@@ -153,12 +174,15 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    fname = generate_fname(args)
-    checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
-    net.load_state_dict(checkpoint['net'])
-    best_acc = checkpoint['acc']
-    start_epoch = checkpoint['epoch']
-
+    fname = generate_fname(**vars(args))
+    try:
+        checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
+        net.load_state_dict(checkpoint['net'])
+        best_acc = checkpoint['acc']
+        start_epoch = checkpoint['epoch']
+    except FileNotFoundError as e:
+        print('==> No checkpoint found. Skipping...')
+        print(e)
 def get_net():
     if device == 'cuda':
         return net.module
@@ -269,7 +293,7 @@ def test(epoch, analyzer, checkpoint=True):
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
 
-        fname = generate_fname(args)
+        fname = generate_fname(**vars(args))
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
 
