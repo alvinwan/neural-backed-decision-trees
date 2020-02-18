@@ -16,8 +16,7 @@ parser.add_argument('--method', choices=METHODS,
     'join clusters together, iteratively, to make a roughly-binary tree.',
     default='build')
 
-# args = parser.parse_args()
-# tree = ET.parse('structure_released.xml')
+args = parser.parse_args()
 
 folder = DATASET_TO_FOLDER_NAME[args.dataset]
 directory = os.path.join('data', folder)
@@ -43,17 +42,22 @@ def match_wnid_leaves(wnids, tree, tree_name):
         wnid_set.add(wnid.strip())
 
     leaves_seen = get_seen_wnids(wnid_set, get_leaves(tree))
-
-    print("Total unique leaves in %s: %d" % (tree_name, len(leaves_seen)))
-    print("Number of wnids in wnids.txt not found in leaves of %s: %d" % (tree_name, len(wnid_set)))
+    return leaves_seen, wnid_set
 
 
 def match_wnid_nodes(wnids, tree, tree_name):
     wnid_set = {wnid.strip() for wnid in wnids}
     leaves_seen = get_seen_wnids(wnid_set, tree.iter())
 
-    print("Total unique nodes in %s: %d" % (tree_name, len(leaves_seen)))
-    print("Number of wnids in wnids.txt not found in nodes of %s: %d" % (tree_name, len(wnid_set)))
+    return leaves_seen, wnid_set
+
+
+def print_stats(leaves_seen, wnid_set, tree_name, node_type):
+    print(f"[{tree_name}] \t {node_type}: {len(leaves_seen)} \t WNIDs missing from {node_type}: {len(wnid_set)}")
+    if len(wnid_set):
+        print(f"\033[93m==> Warning: WNIDs in wnid.txt are missing from {tree_name} {node_type}\033[0m")
+
+
 
 # tree_name = 'structure_released.xml'
 # tree = ET.parse(tree_name)
@@ -64,5 +68,12 @@ def match_wnid_nodes(wnids, tree, tree_name):
 
 tree_name = os.path.join(directory, 'tree-{}.xml'.format(args.method))
 tree = ET.parse(tree_name)
-match_wnid_leaves(wnids, tree, tree_name)
-match_wnid_nodes(wnids, tree, tree_name)
+
+leaves_seen, wnid_set1 = match_wnid_leaves(wnids, tree, tree_name)
+print_stats(leaves_seen, wnid_set1, tree_name, 'leaves')
+
+leaves_seen, wnid_set2 = match_wnid_nodes(wnids, tree, tree_name)
+print_stats(leaves_seen, wnid_set2, tree_name, 'nodes')
+
+if len(wnid_set1) == len(wnid_set2) == 0:
+    print("\033[92m==> All checks pass!\033[0m")
