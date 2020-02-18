@@ -1,4 +1,5 @@
 from utils.xmlutils import get_leaves
+from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 import xml.etree.ElementTree as ET
 import argparse
 import os
@@ -7,13 +8,19 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset',
     help='Must be a folder data/{dataset} containing a wnids.txt',
-    choices=('tiny-imagenet-200', 'cifar10', 'CIFAR100'),
-    default='cifar10')
+    choices=DATASETS,
+    default='CIFAR10')
+parser.add_argument('--method', choices=METHODS,
+    help='structure_released.xml apparently is missing many CIFAR100 classes. '
+    'As a result, pruning does not work for CIFAR100. Random will randomly '
+    'join clusters together, iteratively, to make a roughly-binary tree.',
+    default='build')
 
-args = parser.parse_args()
-tree = ET.parse('structure_released.xml')
+# args = parser.parse_args()
+# tree = ET.parse('structure_released.xml')
 
-directory = os.path.join('data', args.dataset)
+folder = DATASET_TO_FOLDER_NAME[args.dataset]
+directory = os.path.join('data', folder)
 with open(os.path.join(directory, 'wnids.txt')) as f:
     wnids = f.readlines()
 
@@ -48,14 +55,14 @@ def match_wnid_nodes(wnids, tree, tree_name):
     print("Total unique nodes in %s: %d" % (tree_name, len(leaves_seen)))
     print("Number of wnids in wnids.txt not found in nodes of %s: %d" % (tree_name, len(wnid_set)))
 
-tree_name = 'structure_released.xml'
-tree = ET.parse(tree_name)
-match_wnid_leaves(wnids, tree, tree_name)
-match_wnid_nodes(wnids, tree, tree_name)
+# tree_name = 'structure_released.xml'
+# tree = ET.parse(tree_name)
+# match_wnid_leaves(wnids, tree, tree_name)
+# match_wnid_nodes(wnids, tree, tree_name)
+#
+# print('='*30)
 
-print('='*30)
-
-tree_name = os.path.join(directory, 'tree.xml')
+tree_name = os.path.join(directory, 'tree-{}.xml'.format(args.method))
 tree = ET.parse(tree_name)
 match_wnid_leaves(wnids, tree, tree_name)
 match_wnid_nodes(wnids, tree, tree_name)

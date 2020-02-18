@@ -13,7 +13,16 @@ import torch.nn as nn
 import torch.nn.init as init
 from pathlib import Path
 
+# tree-generation consntants
+METHODS = ('prune', 'build', 'random')
+DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200')
+DATASET_TO_FOLDER_NAME = {
+    'CIFAR10': 'CIFAR10',
+    'CIFAR100': 'CIFAR100',
+    'TinyImagenet200': 'tiny-imagenet-200'
+}
 
+# main script constants
 CIFAR10NODE = 'CIFAR10Node'
 CIFAR10PATHSANITY = 'CIFAR10PathSanity'
 

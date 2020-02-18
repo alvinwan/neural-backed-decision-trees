@@ -4,7 +4,7 @@ Constructs minimal tree such that all wnids contained in
 tiny-imagenet-200/wnids.txt and their ancestors are included.
 """
 
-
+from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from utils.xmlutils import keep_matched_nodes_and_ancestors, count_nodes, \
     compute_depth, compute_num_children, prune_single_child_nodes, \
     prune_duplicate_leaves
@@ -17,9 +17,9 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset',
     help='Must be a folder data/{dataset} containing a wnids.txt',
-    choices=('tiny-imagenet-200', 'CIFAR10', 'CIFAR100'),
+    choices=DATASETS,
     default='CIFAR10')
-parser.add_argument('--method', choices=('prune', 'build', 'random'),
+parser.add_argument('--method', choices=METHODS,
     help='structure_released.xml apparently is missing many CIFAR100 classes. '
     'As a result, pruning does not work for CIFAR100. Random will randomly '
     'join clusters together, iteratively, to make a roughly-binary tree.',
@@ -27,7 +27,8 @@ parser.add_argument('--method', choices=('prune', 'build', 'random'),
 
 args = parser.parse_args()
 
-directory = os.path.join('data', args.dataset)
+folder = DATASET_TO_FOLDER_NAME[args.dataset]
+directory = os.path.join('data', folder)
 with open(os.path.join(directory, 'wnids.txt')) as f:
     wnids = [wnid.strip() for wnid in f.readlines()]
 
