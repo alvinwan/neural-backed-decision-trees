@@ -1,6 +1,9 @@
 ## Setup
 
-- downloaded tiny-imagenet-200 from https://tiny-imagenet.herokuapp.com/
+To get started,
+
+1. Generate the tree, per the section below.
+2. Then, launch training scripts, which use those trees.
 
 ## Tree
 
@@ -77,7 +80,9 @@ python main.py --model=CIFAR10Tree --dataset=CIFAR10 --batch-size=512 --epochs=2
 
 These inference modes do not require the second fully-connected layer training. Instead, inference is run directly on the outputted tree.
 
-https://docs.google.com/spreadsheets/d/1xFTubRU3J6e8XLSgzZHURQAp66UtaCqNS5ehCd-K9jI/edit#gid=0
+## Results
+
+https://docs.google.com/spreadsheets/d/1DrvP4msf8Bn0dF1qnpdI5fjLgEp8K6xFbxXntSn1j2s/edit#gid=0
 
 -----------------
 
