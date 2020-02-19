@@ -7,6 +7,7 @@ import random
 import os
 import csv
 
+from utils import nmn_datasets as datasets
 from utils.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
     DEFAULT_CIFAR100_WNIDS, DEFAULT_TINYIMAGENET200_TREE,
@@ -24,7 +25,8 @@ __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
            'TinyImagenet200FreezeJointNodes', 'CIFAR10FreezeJointTree',
            'CIFAR100FreezeJointTree', 'TinyImagenet200FreezeJointTree',
            'CIFAR100BalancedFreezeJointNodes',
-           'CIFAR100BalancedFreezeJointTree')
+           'CIFAR100BalancedFreezeJointTree', 'CIFAR10IdInitJointTree',
+           'CIFAR100IdInitJointTree', 'TinyImagenet200IdInitJointTree')
 
 
 @contextmanager
@@ -382,6 +384,48 @@ class TinyImagenet200FreezeJointTree(JointTree):
             path_tree, DEFAULT_TINYIMAGENET200_WNIDS,
             net=TinyImagenet200FreezeJointNodes(path_tree), num_classes=num_classes,
             pretrained=pretrained)
+
+
+class IdInitJointTree(JointTree):
+
+    def __init__(self, *args, initializer=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.initialize_weights(initializer)
+
+    def initialize_weights(self, initializer):
+        if initializer is not None:
+            self.linear.weights = nn.Parameter(initializer.get_weights())
+
+
+class CIFAR10IdInitJointTree(IdInitJointTree):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR10_TREE, num_classes=10, pretrained=True):
+        super().__init__('CIFAR10IdInitJointNodes', 'CIFAR10JointNodes',
+            path_tree, DEFAULT_CIFAR10_WNIDS,
+            net=CIFAR10JointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=datasets.CIFAR10PathSanity())
+
+
+class CIFAR100IdInitJointTree(IdInitJointTree):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR100_TREE, num_classes=10, pretrained=True):
+        super().__init__('CIFAR100IdInitJointNodes', 'CIFAR100JointNodes',
+            path_tree, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100JointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=datasets.CIFAR100PathSanity())
+
+
+class TinyImagenet200IdInitJointTree(IdInitJointTree):
+
+    def __init__(self, path_tree=DEFAULT_TINYIMAGENET200_TREE, num_classes=10, pretrained=True):
+        super().__init__('TinyImagenet200IdInitJointNodes', 'TinyImagenet200JointNodes',
+            path_tree, DEFAULT_TINYIMAGENET200_WNIDS,
+            net=TinyImagenet200JointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=datasets.TinyImagenet200PathSanity())
+
 
 class JointDecisionTree(nn.Module):
     """

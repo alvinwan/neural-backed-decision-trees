@@ -131,6 +131,7 @@ elif args.path_tree:
         f' => Warning: Dataset {args.dataset} does not support custom '
         f'tree paths: {args.path_tree}')
 
+# TODO: if root changes, it needs to be passed to the sanity dataset in IdInitJointTree models
 trainset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
 testset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
 
