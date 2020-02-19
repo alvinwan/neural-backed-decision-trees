@@ -33,7 +33,6 @@ def noop():
 
 
 def load_checkpoint(net, path):
-    path = path.replace('-build', '')
     if not os.path.exists(path):
         print(f' * Failed to load model. No such path found: {path}')
         return
