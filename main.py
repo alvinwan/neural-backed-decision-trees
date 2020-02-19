@@ -180,6 +180,7 @@ if args.resume:
         net.load_state_dict(checkpoint['net'])
         best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
+        print(f'==> Checkpoint found for epoch {epoch} with accuracy {best_acc}')
     except FileNotFoundError as e:
         print('==> No checkpoint found. Skipping...')
         print(e)
