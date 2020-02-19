@@ -4,6 +4,7 @@ import argparse
 import torchvision
 import os
 
+from pathlib import Path
 from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from utils import custom_datasets
 from generate_tree import generate_fname
@@ -21,6 +22,7 @@ parser.add_argument('--method', choices=METHODS,
     default='build')
 parser.add_argument('--seed', type=int, default=0)
 parser.add_argument('--branching-factor', type=int, default=2)
+parser.add_argument('--path-tree', type=str, default='')
 
 args = parser.parse_args()
 
@@ -28,7 +30,10 @@ folder = DATASET_TO_FOLDER_NAME[args.dataset]
 directory = os.path.join('data', folder)
 
 fname = generate_fname(**vars(args))
-file = os.path.join(directory, f'{fname}.xml')
+if args.path_tree:
+    file = args.path_tree
+else:
+    file = os.path.join(directory, f'{fname}.xml')
 print('==> Reading from {}'.format(file))
 
 
@@ -102,6 +107,7 @@ if isinstance(root['synset'], dict):
 
 tree_data = format_tree(root, 'root')
 # put new tree in file
+fname = Path(file).stem
 path_json = os.path.join(directory, f'{fname}-d3.json')
 json.dump(tree_data, open(path_json, 'w'))
 
