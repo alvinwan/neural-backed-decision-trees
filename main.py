@@ -139,7 +139,7 @@ assert trainset.classes == testset.classes, (trainset.classes, testset.classes)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
-print(f'Training with dataset {args.dataset} and classes {trainset.classes}')
+print(f'Training with dataset {args.dataset} and {len(trainset.classes} classes')
 
 # Model
 print('==> Building model..')
@@ -180,7 +180,7 @@ if args.resume:
         net.load_state_dict(checkpoint['net'])
         best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
-        print(f'==> Checkpoint found for epoch {epoch} with accuracy {best_acc}')
+        print(f'==> Checkpoint found for epoch {start_epoch} with accuracy {best_acc}')
     except FileNotFoundError as e:
         print('==> No checkpoint found. Skipping...')
         print(e)
