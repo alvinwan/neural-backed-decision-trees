@@ -203,7 +203,7 @@ if args.backbone:
         else:
             print('==> FAILED to load backbone. No `load_backbone` provided for model.')
 
-criterion = nn.CrossEntropyLoss()
+criterion = nn.CrossEntropyLoss()  # TODO(alvin): WARNING JointNodes custom_loss hard-coded to CrossEntropyLoss
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
 def adjust_learning_rate(epoch, lr):

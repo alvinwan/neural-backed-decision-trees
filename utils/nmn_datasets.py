@@ -68,6 +68,7 @@ class Node:
                 for old_indices in self.new_to_old
             ]
         self._probabilities = None
+        self._class_weights = None
 
         self.children_wnids = [child.get('wnid') for child in children]
 
@@ -95,6 +96,16 @@ class Node:
     @probabilities.setter
     def probabilities(self, probabilities):
         self._probabilities = probabilities
+
+    @property
+    def class_weights(self):
+        if self._class_weights is None:
+            self._class_weights = self.probabilities
+        return self._class_weights
+
+    @class_weights.setter
+    def class_weights(self, class_weights):
+        self._class_weights = class_weights
 
     @staticmethod
     def get_wnid_to_node(path_tree, path_wnids, classes=()):

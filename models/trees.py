@@ -29,7 +29,10 @@ __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
            'CIFAR100BalancedFreezeJointTree', 'CIFAR10IdInitJointTree',
            'CIFAR100IdInitJointTree', 'TinyImagenet200IdInitJointTree',
            'CIFAR10IdInitFreezeJointTree', 'CIFAR100IdInitFreezeJointTree',
-           'TinyImagenet200IdInitFreezeJointTree',)
+           'TinyImagenet200IdInitFreezeJointTree', 'CIFAR10ReweightedJointNodes',
+           'CIFAR100ReweightedJointNodes', 'TinyImagenet200ReweightedJointNodes',
+           'CIFAR10ReweightedJointTree', 'CIFAR100ReweightedJointTree',
+           'TinyImagenet200ReweightedJointTree')
 
 
 @contextmanager
@@ -138,8 +141,10 @@ class JointNodes(nn.Module):
                     continue
             if self.balance_class_weights:
                 weights = self.class_weights(output, target, node)
+                # TODO(alvin): hard-coded loss lol
+                criterion = nn.CrossEntropyLoss(weight=weights)
 
-            loss += (criterion(output, target) * weights)
+            loss += criterion(output, target)
         return loss
 
     def resample_by_class(self, output, target, node):
@@ -157,7 +162,9 @@ class JointNodes(nn.Module):
         return output, target, False
 
     def class_weights(self, _, target, node):
-        return 1.
+        if node.class_weights.device != target.device:
+            node.class_weights = node.class_weights.to(target.device)
+        return node.class_weights
 
     def custom_prediction(self, outputs):
         preds = []
@@ -262,6 +269,30 @@ class TinyImagenet200BalancedJointNodes(JointNodes):
             path_tree,
             DEFAULT_TINYIMAGENET200_WNIDS,
             balance_classes=True,
+            dataset=custom_datasets.TinyImagenet200(root='./data'))
+
+
+class CIFAR10ReweightedJointNodes(JointNodes):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR10_TREE, num_classes=None):
+        super().__init__(path_tree, DEFAULT_CIFAR10_WNIDS,
+            balance_class_weights=True, dataset=datasets.CIFAR10(root='./data'))
+
+
+class CIFAR100ReweightedJointNodes(JointNodes):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR100_TREE, num_classes=None):
+        super().__init__(path_tree, DEFAULT_CIFAR100_WNIDS,
+            balance_class_weights=True, dataset=datasets.CIFAR100(root='./data'))
+
+
+class TinyImagenet200ReweightedJointNodes(JointNodes):
+
+    def __init__(self, path_tree=DEFAULT_TINYIMAGENET200_TREE, num_classes=None):
+        super().__init__(
+            path_tree,
+            DEFAULT_TINYIMAGENET200_WNIDS,
+            balance_class_weights=True,
             dataset=custom_datasets.TinyImagenet200(root='./data'))
 
 
@@ -372,6 +403,33 @@ class TinyImagenet200BalancedJointTree(JointTree):
         super().__init__('TinyImagenet200BalancedJointNodes', 'TinyImagenet200JointNodes',
             path_tree, DEFAULT_TINYIMAGENET200_WNIDS,
             net=TinyImagenet200BalancedJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained)
+
+
+class CIFAR10ReweightedJointTree(JointTree):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR10_TREE, num_classes=10, pretrained=True):
+        super().__init__('CIFAR10ReweightedJointNodes', 'CIFAR10JointNodes',
+            path_tree, DEFAULT_CIFAR10_WNIDS,
+            net=CIFAR10ReweightedJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained)
+
+
+class CIFAR100ReweightedJointTree(JointTree):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR100_TREE, num_classes=100, pretrained=True):
+        super().__init__('CIFAR100ReweightedJointNodes', 'CIFAR100JointNodes',
+            path_tree, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100ReweightedJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained)
+
+
+class TinyImagenet200ReweightedJointTree(JointTree):
+
+    def __init__(self, path_tree=DEFAULT_TINYIMAGENET200_TREE, num_classes=200, pretrained=True):
+        super().__init__('TinyImagenet200ReweightedJointNodes', 'TinyImagenet200JointNodes',
+            path_tree, DEFAULT_TINYIMAGENET200_WNIDS,
+            net=TinyImagenet200ReweightedJointNodes(path_tree), num_classes=num_classes,
             pretrained=pretrained)
 
 
