@@ -184,21 +184,21 @@ class CIFAR10JointNodes(JointNodes):
 
     def __init__(self, path_tree=DEFAULT_CIFAR10_TREE, num_classes=None):
         super().__init__(path_tree, DEFAULT_CIFAR10_WNIDS,
-            datasets.CIFAR10(root='./data'))
+            dataset=datasets.CIFAR10(root='./data'))
 
 
 class CIFAR100JointNodes(JointNodes):
 
     def __init__(self, path_tree=DEFAULT_CIFAR100_TREE, num_classes=None):
         super().__init__(path_tree, DEFAULT_CIFAR100_WNIDS,
-            datasets.CIFAR100(root='./data'))
+            dataset=datasets.CIFAR100(root='./data'))
 
 
 class TinyImagenet200JointNodes(JointNodes):
 
     def __init__(self, path_tree=DEFAULT_TINYIMAGENET200_TREE, num_classes=None):
         super().__init__(path_tree, DEFAULT_TINYIMAGENET200_WNIDS,
-            custom_datasets.TinyImagenet200(root='./data'))
+            dataset=custom_datasets.TinyImagenet200(root='./data'))
 
 
 class CIFAR10FreezeJointNodes(JointNodes):
@@ -281,7 +281,7 @@ class JointTree(nn.Module):
                 path_tree=path_tree
             )
             load_checkpoint(self.net, f'checkpoint/{fname}.pth')
-        self.linear = nn.Linear(Node.dim(self.net.nodes), num_classes)
+        self.linear = nn.Linear(Node.dim(self.net.nodes), num_classes, bias=False)
 
         self.softmax = nn.Softmax(dim=1)
         self._softmax = softmax
@@ -291,7 +291,7 @@ class JointTree(nn.Module):
             x = self.net(x)
             if self._softmax:
                 x = self.softmax(x)
-        x = torch.cat(x, dim=1)
+            x = torch.cat(x, dim=1)
         x = self.linear(x)
         return x
 
