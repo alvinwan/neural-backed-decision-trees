@@ -108,7 +108,7 @@ class JointNodes(nn.Module):
     accepts_path_tree = True
 
     def __init__(self, path_tree, path_wnids, dataset, balance_classes=False,
-            freeze_backbone=False):
+            freeze_backbone=False, balance_class_weights=False):
         super().__init__()
 
         import models
@@ -123,6 +123,7 @@ class JointNodes(nn.Module):
         self.dataset = dataset
 
         self.balance_classes = balance_classes
+        self.balance_class_weights = balance_class_weights
         self.freeze_backbone = freeze_backbone
 
     def custom_loss(self, criterion, outputs, targets):
@@ -130,19 +131,33 @@ class JointNodes(nn.Module):
         loss = 0
         for output, target, node in zip(outputs, targets.T, self.nodes):
 
+            weights = 1.
             if self.balance_classes:
-                random = torch.rand(target.size()).to(target.device)
-
-                if node.probabilities.device != target.device:
-                    node.probabilities = node.probabilities.to(target.device)
-
-                selector = (random < node.probabilities[target]).bool()
-                if not selector.any():
+                output, target, skip = self.resample_by_class(output, target, node)
+                if skip:
                     continue
-                output = output[selector]
-                target = target[selector]
-            loss += criterion(output, target)
+            if self.balance_class_weights:
+                weights = self.class_weights(output, target, node)
+
+            loss += (criterion(output, target) * weights)
         return loss
+
+    def resample_by_class(self, output, target, node):
+        random = torch.rand(target.size()).to(target.device)
+
+        if node.probabilities.device != target.device:
+            node.probabilities = node.probabilities.to(target.device)
+
+        selector = (random < node.probabilities[target]).bool()
+        if not selector.any():
+            return None, None, True
+
+        output = output[selector]
+        target = target[selector]
+        return output, target, False
+
+    def class_weights(self, _, target, node):
+        return 1.
 
     def custom_prediction(self, outputs):
         preds = []
