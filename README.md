@@ -1,18 +1,122 @@
-Notes:
-- downloaded structure_released.xml from http://image-net.org/download-toolbox
-- downloaded tinyimagenet from https://tiny-imagenet.herokuapp.com/
+## Setup
 
-### Results
+To get started,
 
-| Dataset | ResNet10 | ResNet18 | ResNet101 | ResNet10 Tree | ResNet10 JointTree | ResNet10 FJointTree |
-| --- | --- | --- | --- | --- | --- | --- |
-| *batch size* | 512 | 512 | 128 | 512 | 512 | 512 |
-| CIFAR10 | 93.64% | 94.92% | 95.31% | 93.75% | 93.11% | 93.75% |
-| CIFAR100 | 73.66% | 75.92% | 79.46% | - | 68.24% | 72.92% |
-| TinyImagenet200 | 61.05% | 64.10% | - | - | - | 60.63% |
+1. Generate the tree, per the section below.
+2. Then, launch training scripts, which use those trees.
 
-- The ResNet10Tree and the ResNet101 models have comparable complexity -- former with 9 gflops, 135 mb params and the latter with 8 gflops, 155 mb params.
-- The ResNet10JointTree and the ResNet10 models have comparable complexity
+## Tree
+
+> Too lazy? Run `bash scripts/generate_trees.sh` to generate trees for all
+datasets with all methods.
+
+First, generate the wnids. All the Imagenet datasets come with wnids. This is only needed for CIFAR{10,100}.
+
+```
+python generate_wnids.py --dataset=CIFAR100
+```
+
+Next, build the tree. By default, the tree uses wordnet hierarchy and is built from scratch.
+
+```
+python generate_tree.py --dataset=CIFAR100 --method=build
+```
+
+> One of the old methods `prune` would prune the `structure_released.xml` from
+from http://image-net.org/download-toolbox. This is no longer used but the code
+is still in the codebase.
+
+### Test Tree
+
+Finally, check the tree is somewhat sane.
+
+```
+python test_generated_tree.py --dataset=CIFAR100 --method=build
+```
+
+Make sure that your output ends with `==> All checks pass!`.
+
+### Visualize Tree
+
+Run the visualization generation script to obtain both the JSON representing
+the tree and the HTML file containing a d3 visualization.
+
+```
+python generate_vis.py --dataset=CIFAR100 --method=build
+```
+
+The above script will output the following.
+
+```
+==> Reading from data/CIFAR100/tree-build-branch3.xml
+Files already downloaded and verified
+==> Wrote JSON tree to data/CIFAR100/tree-build-d3.json
+==> Wrote HTML tree to out/tree-build.html
+```
+
+Open up `out/tree-build.html` in your browser to view the d3 visualization.
+
+<img width="1409" alt="Screen Shot 2020-02-18 at 2 47 03 PM" src="https://user-images.githubusercontent.com/2068077/74784796-94cb2980-525d-11ea-8aa8-c5f82c58c708.png">
+
+### Random Trees
+
+Use `--method=random` to randomly generate a binary-ish tree. Additionally,
+random trees feature two more flags:
+
+- `--seed` to generate random leaf orderings and
+- `--branching-factor` to generate trees with different branching factors.
+
+For all of the above calls, you may use any of the `CIFAR10`, `CIFAR100`, `TinyImagenet200` datasets.
+
+## Training
+
+To get started: First, train the nodes, with a shared backbone. Optionally pass in a `--path-tree=...` to customize your tree.
+
+```
+python main.py --model=CIFAR100JointNodes --dataset=CIFAR100JointNodes --batch-size=512 --epochs=200
+```
+
+Second, train the final fully-connected layer. If you passed in `--path-tree` to the last command, make sure to pass in the same tree path to this one.
+
+```
+python main.py --model=CIFAR100JointTree --dataset=CIFAR100 --batch-size=512 --epochs=200 --lr=0.01
+```
+
+This is the 'standard' pipeline. There are a few other pipelines to be aware of.
+
+### Models
+
+There are other models that do not need special flags. You can simply swap out the models in the 'standard' pipeline.
+
+- `CIFAR10*`
+- `TinyImagenet200*`
+- `CIFAR100BalancedJointNodes`, `CIFAR100BalancedJointTree` (not helpful)
+
+#### Frozen Backbone
+
+So far, our best models are fine-tuned, where the shared backbone is pretrained and frozen. The commands below train the frozen variants of the model.
+
+```
+python main.py --model=CIFAR100FreezeJointNodes --dataset=CIFAR100JointNodes --batch-size=512 --epochs=200 --backbone=./checkpoint/ckpt-ResNet10-CIFAR100.pth
+python main.py --model=CIFAR100FreezeJointTree --dataset=CIFAR100 --batch-size=512 --epochs=200 --lr=0.01
+```
+
+#### Individual Nodes
+
+One of our earliest experiments was to train each node individually, without sharing backbones. Consider all wnids in the tree, that are *not* leaves.
+
+```
+for wnid in wnids; do python main.py --model=ResNet10 --dataset=CIFAR10Node --wnid=${wnid} --batch-size=512 --epochs=200; done
+python main.py --model=CIFAR10Tree --dataset=CIFAR10 --batch-size=512 --epochs=200
+```
+
+### Inference Modes
+
+These inference modes do not require the second fully-connected layer training. Instead, inference is run directly on the outputted tree.
+
+## Results
+
+https://docs.google.com/spreadsheets/d/1DrvP4msf8Bn0dF1qnpdI5fjLgEp8K6xFbxXntSn1j2s/edit#gid=0
 
 -----------------
 

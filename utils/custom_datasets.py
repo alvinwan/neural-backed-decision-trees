@@ -2,6 +2,9 @@ import os
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
+import zipfile
+import urllib.request
+import shutil
 
 
 
@@ -10,6 +13,8 @@ __all__ = names = ('TinyImagenet200',)
 
 class TinyImagenet200(Dataset):
     """Tiny imagenet dataloader"""
+
+    url = 'http://cs231n.stanford.edu/tiny-imagenet-200.zip'
 
     transform_train = transforms.Compose([
         transforms.RandomCrop(64, padding=8),
@@ -25,16 +30,33 @@ class TinyImagenet200(Dataset):
 
     dataset = None
 
-    # TODO: download is just ignoredd
     def __init__(self, root='./data',
             *args, train=True, download=False, **kwargs):
         super().__init__()
 
         if download:
-            print('==> Download not setup. Ignoring...')
+            self.download(root=root)
         dataset = _TinyImagenet200Train if train else _TinyImagenet200Val
+        self.root = root
         self.dataset = dataset(root, *args, **kwargs)
         self.classes = self.dataset.classes
+
+    def download(self, root='./'):
+        """Download and unzip Imagenet200 files in the `root` directory."""
+        dir = os.path.join(root, 'tiny-imagenet-200')
+        dir_train = os.path.join(dir, 'train')
+        if os.path.exists(dir) and os.path.exists(dir_train):
+            print('==> Already downloaded.')
+            return
+
+        print('==> Downloading TinyImagenet200...')
+        file_name = os.path.join(root, 'tiny-imagenet-200.zip')
+
+        with urllib.request.urlopen(self.url) as response, open(file_name, 'wb') as out_file:
+            shutil.copyfileobj(response, out_file)
+            print('==> Extracting TinyImagenet200...')
+            with zipfile.ZipFile(file_name) as zf:
+                zf.extractall(root)
 
     def __getitem__(self, i):
         return self.dataset[i]

@@ -70,7 +70,7 @@ def get_leaves(tree):
             yield node
 
 
-def build_random_tree(wnids, seed=0):
+def build_random_tree(wnids, seed=0, branching_factor=2):
     random.seed(seed)
 
     tree = Element('tree')
@@ -85,7 +85,7 @@ def build_random_tree(wnids, seed=0):
     while len(remaining) > 1:
         current, remaining = remaining, []
         while current:
-            nodes, current = current[:2], current[2:]
+            nodes, current = current[:branching_factor], current[branching_factor:]
             remaining.append(nodes)
 
     # construct the xml tree from the root down
@@ -100,28 +100,20 @@ def build_random_tree(wnids, seed=0):
             else:
                 next.append((group[0], parent))
             continue
-        left, right = group
 
-        is_leaf_left = not isinstance(left, list)
-        wnid_left = left if is_leaf_left else str(i)
-        node_left = SubElement(parent, 'synset', {'wnid': wnid_left})
-        i += 1
+        for candidate in group:
+            is_leaf = not isinstance(candidate, list)
+            wnid = candidate if is_leaf else str(i)
+            node = SubElement(parent, 'synset', {'wnid': wnid})
+            i += 1
 
-        is_leaf_right = not isinstance(right, list)
-        wnid_right = right if is_leaf_right else str(i)
-        node_right = SubElement(parent, 'synset', {'wnid': wnid_right})
-        i += 1
+            if not is_leaf:
+                next.append((candidate, node))
 
-        if not is_leaf_left:
-            next.append((left, node_left))
-
-        if not is_leaf_right:
-            next.append((right, node_right))
-
-        node = root.find(f'.//synset[@wnid="{wnid_left}"]')
-        assert node is not None, (
-            f'Could not find {wnid_left} in built tree, with wnids '
-            f'{[node.get("wnid") for node in root.iter()]}'
-        )
+            node = root.find(f'.//synset[@wnid="{wnid}"]')
+            assert node is not None, (
+                f'Could not find {wnid} in built tree, with wnids '
+                f'{[node.get("wnid") for node in root.iter()]}'
+            )
 
     return ElementTree(tree)

@@ -13,7 +13,16 @@ import torch.nn as nn
 import torch.nn.init as init
 from pathlib import Path
 
+# tree-generation consntants
+METHODS = ('prune', 'build', 'random', 'image')
+DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200')
+DATASET_TO_FOLDER_NAME = {
+    'CIFAR10': 'CIFAR10',
+    'CIFAR100': 'CIFAR100',
+    'TinyImagenet200': 'tiny-imagenet-200'
+}
 
+# main script constants
 CIFAR10NODE = 'CIFAR10Node'
 CIFAR10PATHSANITY = 'CIFAR10PathSanity'
 
@@ -155,7 +164,8 @@ def get_fname(args):
     return generate_fname(args)
 
 
-def generate_fname(dataset, model, path_tree, wnid=None, name='', **kwargs):
+def generate_fname(dataset, model, path_tree, wnid=None, name='',
+        trainset=None, **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
     fname += '-' + model
@@ -166,4 +176,6 @@ def generate_fname(dataset, model, path_tree, wnid=None, name='', **kwargs):
     if path_tree:
         path = Path(path_tree)
         fname += '-' + path.stem.replace('tree-', '', 1)
+    else:
+        fname += '-build'  # WARNING: hard-coded
     return fname

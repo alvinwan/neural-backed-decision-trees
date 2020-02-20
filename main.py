@@ -38,7 +38,7 @@ parser.add_argument('--resume', '-r', action='store_true', help='resume from che
 parser.add_argument('--backbone', '-b',
                     help='Path to backbone network parameters to restore from')
 
-parser.add_argument('--path-tree', help='Path to tree-?.xml file.')
+parser.add_argument('--path-tree', help='Path to tree-?.xml file.')  # WARNING: hard-coded suffix -build in generate_fname
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
 parser.add_argument('--eval', help='eval only', action='store_true')
@@ -49,6 +49,7 @@ parser.add_argument('--test-path', action='store_true',
                     help='test path classifier with random init')
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
+print(analysis.names)
 
 args = parser.parse_args()
 
@@ -103,7 +104,7 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
-if args.dataset == 'TinyImagenet200':
+if 'TinyImagenet200' in args.dataset:
     transform_train = custom_datasets.TinyImagenet200.transform_train
     transform_test = custom_datasets.TinyImagenet200.transform_val
 
@@ -130,6 +131,8 @@ elif args.path_tree:
         f' => Warning: Dataset {args.dataset} does not support custom '
         f'tree paths: {args.path_tree}')
 
+# TODO: if root changes, it needs to be passed to the sanity dataset in IdInitJointTree models
+# and jointNodes
 trainset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
 testset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
 
@@ -138,7 +141,7 @@ assert trainset.classes == testset.classes, (trainset.classes, testset.classes)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
-print(f'Training with dataset {args.dataset} and classes {trainset.classes}')
+print(f'Training with dataset {args.dataset} and {len(trainset.classes)} classes')
 
 # Model
 print('==> Building model..')
@@ -174,11 +177,16 @@ if args.resume:
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
     fname = generate_fname(**vars(args))
-    checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
-    net.load_state_dict(checkpoint['net'])
-    best_acc = checkpoint['acc']
-    start_epoch = checkpoint['epoch']
-
+    try:
+        checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
+        net.load_state_dict(checkpoint['net'])
+        best_acc = checkpoint['acc']
+        start_epoch = checkpoint['epoch']
+        print(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
+              f'{best_acc} at {fname}')
+    except FileNotFoundError as e:
+        print('==> No checkpoint found. Skipping...')
+        print(e)
 def get_net():
     if device == 'cuda':
         return net.module
@@ -230,7 +238,7 @@ def train(epoch, analyzer):
         total += np.prod(targets.size())
         correct += predicted.eq(targets).sum().item()
 
-        analyzer.update_batch(predicted, targets)
+        analyzer.update_batch(outputs, predicted, targets)
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
@@ -271,13 +279,14 @@ def test(epoch, analyzer, checkpoint=True):
                 predicted = predicted.cpu()
                 targets = targets.cpu()
 
-            analyzer.update_batch(predicted, targets)
+            analyzer.update_batch(outputs, predicted, targets)
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
     # Save checkpoint.
     acc = 100.*correct/total
+    print("Accuracy: {}, {}/{}".format(acc, correct, total))
     if acc > best_acc and checkpoint:
         print('Saving..')
         state = {
@@ -291,6 +300,12 @@ def test(epoch, analyzer, checkpoint=True):
         fname = generate_fname(**vars(args))
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
+
+    if hasattr(get_net(), 'save_metrics'):
+        gt_classes = []
+        for _, targets in testloader:
+            gt_classes.extend(targets.tolist())
+        get_net().save_metrics(gt_classes)
 
     analyzer.end_test(epoch)
 

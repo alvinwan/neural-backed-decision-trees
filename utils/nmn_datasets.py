@@ -69,6 +69,8 @@ class Node:
             ]
         self._probabilities = None
 
+        self.children_wnids = [child.get('wnid') for child in children]
+
     @property
     def class_counts(self):
         """Number of old classes in each new class"""
@@ -112,6 +114,15 @@ class Node:
         wnids = sorted(wnid_to_node)
         nodes = [wnid_to_node[wnid] for wnid in wnids]
         return nodes
+
+    @staticmethod
+    def get_root_node_wnid(path_tree):
+        tree = ET.parse(path_tree)
+        for node in tree.iter():
+            wnid = node.get('wnid')
+            if wnid is not None:
+                return wnid
+        return None
 
     @staticmethod
     def dim(nodes):
@@ -221,6 +232,9 @@ class PathSanityDataset(Dataset):
 
     def __init__(self, path_tree, path_wnids, dataset):
         super().__init__()
+        self.path_tree = path_tree
+        self.path_wnids = path_wnids
+
         self.nodes = Node.get_nodes(path_tree, path_wnids, dataset.classes)
         self.dataset = dataset
         self.classes = dataset.classes
@@ -269,20 +283,35 @@ class PathSanityDataset(Dataset):
 
 class CIFAR10PathSanity(PathSanityDataset):
 
-    def __init__(self, *args, root='./data', **kwargs):
-        super().__init__(DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
+    def __init__(self,
+            *args,
+            path_tree=DEFAULT_CIFAR10_TREE,
+            path_wnids=DEFAULT_CIFAR10_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_tree, path_wnids,
             dataset=datasets.CIFAR10(*args, root=root, **kwargs))
 
 
 class CIFAR100PathSanity(PathSanityDataset):
 
-    def __init__(self, *args, root='./data', **kwargs):
-        super().__init__(DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+    def __init__(self,
+            *args,
+            path_tree=DEFAULT_CIFAR100_TREE,
+            path_wnids=DEFAULT_CIFAR100_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_tree, path_wnids,
             dataset=datasets.CIFAR100(*args, root=root, **kwargs))
 
 
 class TinyImagenet200PathSanity(PathSanityDataset):
 
-    def __init__(self, *args, root='./data', **kwargs):
-        super().__init__(DEFAULT_TINYIMAGENET200_TREE, DEFAULT_TINYIMAGENET200_WNIDS,
+    def __init__(self,
+            *args,
+            path_tree=DEFAULT_TINYIMAGENET200_TREE,
+            path_wnids=DEFAULT_TINYIMAGENET200_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_tree, path_wnids,
             dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs))
