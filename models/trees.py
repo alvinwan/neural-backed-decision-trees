@@ -395,11 +395,13 @@ class IdInitJointTree(JointTree):
 
     def __init__(self, *args, initializer=None, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.initializer = initializer
         self.initialize_weights(initializer)
 
     def initialize_weights(self, initializer):
         if initializer is not None:
-            self.linear.weights = nn.Parameter(initializer.get_weights())
+            self.linear.weight = nn.Parameter(initializer.get_weights())
 
 
 class CIFAR10IdInitJointTree(IdInitJointTree):
@@ -409,7 +411,7 @@ class CIFAR10IdInitJointTree(IdInitJointTree):
             path_tree, DEFAULT_CIFAR10_WNIDS,
             net=CIFAR10JointNodes(path_tree), num_classes=num_classes,
             pretrained=pretrained,
-            initializer=nmn_datasets.CIFAR10PathSanity())
+            initializer=nmn_datasets.CIFAR10PathSanity(path_tree=path_tree))
 
 
 class CIFAR100IdInitJointTree(IdInitJointTree):
@@ -419,7 +421,7 @@ class CIFAR100IdInitJointTree(IdInitJointTree):
             path_tree, DEFAULT_CIFAR100_WNIDS,
             net=CIFAR100JointNodes(path_tree), num_classes=num_classes,
             pretrained=pretrained,
-            initializer=nmn_datasets.CIFAR100PathSanity())
+            initializer=nmn_datasets.CIFAR100PathSanity(path_tree=path_tree))
 
 
 class TinyImagenet200IdInitJointTree(IdInitJointTree):
@@ -429,7 +431,7 @@ class TinyImagenet200IdInitJointTree(IdInitJointTree):
             path_tree, DEFAULT_TINYIMAGENET200_WNIDS,
             net=TinyImagenet200JointNodes(path_tree), num_classes=num_classes,
             pretrained=pretrained,
-            initializer=nmn_datasets.TinyImagenet200PathSanity())
+            initializer=nmn_datasets.TinyImagenet200PathSanity(path_tree=path_tree))
 
 
 class JointDecisionTree(nn.Module):
