@@ -104,7 +104,7 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
-if args.dataset == 'TinyImagenet200':
+if 'TinyImagenet200' in args.dataset:
     transform_train = custom_datasets.TinyImagenet200.transform_train
     transform_test = custom_datasets.TinyImagenet200.transform_val
 
@@ -182,7 +182,8 @@ if args.resume:
         net.load_state_dict(checkpoint['net'])
         best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
-        print(f'==> Checkpoint found for epoch {start_epoch} with accuracy {best_acc}')
+        print(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
+              f'{best_acc} at {fname}')
     except FileNotFoundError as e:
         print('==> No checkpoint found. Skipping...')
         print(e)
