@@ -32,12 +32,83 @@ class TreeNode:
         for child in self.children:
             child.print(ntabs + 3)
 
+
 # creates ETree recursively from node
-def extendTree(cur_element, node):
-    print("Extending to %d" % node.label)
+def extendTree(cur_element, node, wnid_counter):
+    print("Extending to", node.label)
     new_element = ET.SubElement(cur_element, "cluster" + str(node.label))
+    new_element.attrib['wnid'] = 'node%d' % wnid_counter['count']
+    wnid_counter['count'] += 1
     for child in node.children:
-        extendTree(new_element, child)
+        extendTree(new_element, child, wnid_counter)
+
+
+# generate random tree structure given some list of labels
+def randomizeTree(root, node_list, branching_factor=2):
+    print(node_list)
+    if len(node_list) < branching_factor:
+        for node in node_list:
+            root.children.append(TreeNode(node))
+        return
+    perm = np.random.permutation(len(node_list))
+    nodes_per_branch = len(node_list) // branching_factor
+    for branch in range(branching_factor):
+        root.children.append(TreeNode("random_node"))
+        start, end = branch * nodes_per_branch, (branch + 1) * nodes_per_branch
+        if branch == branching_factor - 1:
+            end = len(node_list)
+        randomizeTree(root.children[-1], node_list[perm[start:end]], branching_factor)
+
+
+def kmeans_cluster_topdown(x, y, branching_factor=2, debug=False):
+    label_set = set(y)
+    n_classes = len(label_set)
+
+    if debug:
+        print("Clustering top down for %d classes" % n_classes)
+
+    kmeans = KMeans(n_clusters = branching_factor).fit(x)
+    cluster_labels = kmeans.labels_
+
+    # count occurrences
+    cluster_count = {label:{i: 0 for i in range(branching_factor)} for label in label_set}
+    for cluster_label, label in zip(cluster_labels, y):
+        cluster_count[label][cluster_label] += 1
+
+
+    cluster_belong = {} # maps which label does each node belong to. y label -> cluster label
+    cluster_contains  = {} # maps new which y labels a cluster contains. cluster label -> [y labels]
+    # get cluster to which each node belongs in
+    for label in label_set:
+        cluster = max(cluster_count[label].items(), key=operator.itemgetter(1))[0]
+        cluster_belong[label] = cluster
+
+        if cluster not in cluster_contains:
+            cluster_contains[cluster] = []
+        cluster_contains[cluster].append(label)
+
+    # create root
+    root = TreeNode('node')
+
+    # terminate early? if only cluster to one cluster...
+    if len(cluster_contains) < 2:
+        if debug:
+            print("Terminating early, with %d classes left" % n_classes)
+        # generate random tree given nodes
+        randomizeTree(root, np.array(list(label_set)), branching_factor=branching_factor)
+        return root
+
+    new_x, new_y = {cluster:[] for cluster in cluster_contains}, {cluster:[] for cluster in cluster_contains}
+    for x_, y_ in zip(x, y):
+        new_x[cluster_belong[y_]].append(x_)
+        new_y[cluster_belong[y_]].append(y_)
+
+    for cluster in cluster_contains:
+        new_x[cluster], new_y[cluster] = np.array(new_x[cluster]), np.array(new_y[cluster])
+        root.children.append(kmeans_cluster_topdown(new_x[cluster], new_y[cluster], branching_factor, debug))
+
+    return root
+
 
 # feature_set - np array of feature maps from each image
 # tree_map - mapping (using list) from feature_set to node, which node does each image belong to
@@ -103,6 +174,8 @@ if __name__ == '__main__':
     parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                         default='fall11')
     parser.add_argument('--sample', default=1.0, type=float, help='How much of the dataset to sample')
+    parser.add_argument('--branching-factor', default=2, type=int, help='branching factor')
+    parser.add_argument('--topdown', default=True, type=bool, help='whether to construct tree top down or bottom up')
     args = parser.parse_args()
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -164,30 +237,36 @@ if __name__ == '__main__':
     #############################################
     #   Feature maps set up, time to cluster    #
     #############################################
-    # build list of nodes for each label
-    new_node_dict = {}  # label -> treenode
-    tree_map = []
-    for label in label_set:
-        if label not in new_node_dict:
-            new_node_dict[label] = TreeNode(label)
-        tree_map.append(new_node_dict[label])
-    # pass to clustering algo
-    while len(set(tree_map)) != 2:
-        tree_map = kmeans_cluster(feature_set, tree_map, debug=True)
+    wnid_counter = {'count':1} # artificial wnids
+    if args.topdown:
+        TreeNoderoot = kmeans_cluster_topdown(feature_set, label_set, branching_factor=args.branching_factor, debug=True)
+        TreeNoderoot.print()
+        root = ET.Element('root')
+        extendTree(root, TreeNoderoot, wnid_counter)
+    else:
+        # build list of nodes for each label
+        new_node_dict = {}  # label -> treenode
+        tree_map = []
+        for label in label_set:
+            if label not in new_node_dict:
+                new_node_dict[label] = TreeNode(label)
+            tree_map.append(new_node_dict[label])
+        # pass to clustering algo
+        while len(set(tree_map)) != 2:
+            tree_map = kmeans_cluster(feature_set, tree_map, debug=True)
 
-    # we now have the tree set up. Recursively create the tree, using our data struct
-    root = ET.Element('root')
-    for node in set(tree_map):
-        node.print()
-        extendTree(root, node)
+        # we now have the tree set up. Recursively create the tree, using our data struct
+        root = ET.Element('root')
+        for node in set(tree_map):
+            node.print()
+            extendTree(root, node, wnid_counter)
 
     # set up labels for leaf nodes
     label_to_idx_dict = trainset.class_to_idx
     idx_to_label_dict = {label_to_idx_dict[label]: label for label in label_to_idx_dict}
     with open(os.path.join('data', args.dataset, 'wnids.txt')) as f:
         wnid_dict = [wnid.strip() for wnid in f.readlines()]
-    print(len(wnid_dict))
-    # TODO: add wnids
+
     for leaf in get_leaves(root):
         leaf.attrib['label'] = idx_to_label_dict[int(re.search(r'\d+$', leaf.tag).group())]
         leaf.attrib['wnid'] = wnid_dict[int(re.search(r'\d+$', leaf.tag).group())]
