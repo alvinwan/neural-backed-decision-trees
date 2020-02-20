@@ -326,3 +326,5 @@ for epoch in range(start_epoch, args.epochs):
     train(epoch, analyzer)
     test(epoch, analyzer)
     analyzer.end_epoch(epoch)
+
+print(f'Best accuracy: {best_acc} // Checkpoint name: {fname}')
