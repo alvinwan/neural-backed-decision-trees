@@ -434,6 +434,36 @@ class TinyImagenet200IdInitJointTree(IdInitJointTree):
             initializer=nmn_datasets.TinyImagenet200PathSanity(path_tree=path_tree))
 
 
+class CIFAR10IdInitFreezeJointTree(IdInitJointTree):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR10_TREE, num_classes=10, pretrained=True):
+        super().__init__('CIFAR10FreezeJointNodes', 'CIFAR10FreezeJointNodes',
+            path_tree, DEFAULT_CIFAR10_WNIDS,
+            net=CIFAR10FreezeJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=nmn_datasets.CIFAR10PathSanity(path_tree=path_tree))
+
+
+class CIFAR100IdInitFreezeJointTree(IdInitJointTree):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR100_TREE, num_classes=100, pretrained=True):
+        super().__init__('CIFAR100FreezeJointNodes', 'CIFAR100FreezeJointNodes',
+            path_tree, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100FreezeJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=nmn_datasets.CIFAR100PathSanity(path_tree=path_tree))
+
+
+class TinyImagenet200IdInitFreezeJointTree(IdInitJointTree):
+
+    def __init__(self, path_tree=DEFAULT_TINYIMAGENET200_TREE, num_classes=200, pretrained=True):
+        super().__init__('TinyImagenet200FreezeJointNodes', 'TinyImagenet200FreezeJointNodes',
+            path_tree, DEFAULT_TINYIMAGENET200_WNIDS,
+            net=TinyImagenet200FreezeJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=nmn_datasets.TinyImagenet200PathSanity(path_tree=path_tree))
+
+
 class JointDecisionTree(nn.Module):
     """
     Decision tree based inference method using jointly trained nodes

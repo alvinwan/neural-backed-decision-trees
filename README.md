@@ -94,7 +94,7 @@ There are other models that do not need special flags. You can simply swap out t
 
 #### Frozen Backbone
 
-So far, our best models are fine-tuned, where the shared backcbone is pretrained and frozen. The commands below train the frozen variants of the model.
+So far, our best models are fine-tuned, where the shared backbone is pretrained and frozen. The commands below train the frozen variants of the model.
 
 ```
 python main.py --model=CIFAR100FreezeJointNodes --dataset=CIFAR100JointNodes --batch-size=512 --epochs=200 --backbone=./checkpoint/ckpt-ResNet10-CIFAR100.pth
