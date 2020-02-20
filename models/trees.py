@@ -27,7 +27,9 @@ __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
            'CIFAR100FreezeJointTree', 'TinyImagenet200FreezeJointTree',
            'CIFAR100BalancedFreezeJointNodes',
            'CIFAR100BalancedFreezeJointTree', 'CIFAR10IdInitJointTree',
-           'CIFAR100IdInitJointTree', 'TinyImagenet200IdInitJointTree')
+           'CIFAR100IdInitJointTree', 'TinyImagenet200IdInitJointTree',
+           'CIFAR10IdInitFreezeJointTree', 'CIFAR100IdInitFreezeJointTree',
+           'TinyImagenet200IdInitFreezeJointTree',)
 
 
 @contextmanager
