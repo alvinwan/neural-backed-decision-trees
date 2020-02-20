@@ -281,7 +281,7 @@ class JointTree(nn.Module):
                 path_tree=path_tree
             )
             load_checkpoint(self.net, f'checkpoint/{fname}.pth')
-        self.linear = nn.Linear(Node.dim(self.net.nodes), num_classes, bias=False)
+        self.linear = nn.Linear(Node.dim(self.net.nodes), num_classes)
 
         self.softmax = nn.Softmax(dim=1)
         self._softmax = softmax
