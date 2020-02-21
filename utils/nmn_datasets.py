@@ -344,6 +344,7 @@ class IncludeLabelsDataset(Dataset):
     """
 
     accepts_include_labels = True
+    acccepts_num_samples = True
 
     def __init__(self, dataset, include_labels=(0,), num_samples=0,
             drop_classes=False):
@@ -403,7 +404,7 @@ class IncludeClassesDataset(IncludeLabelsDataset):
     accepts_include_labels = False
     accepts_include_classes = True
 
-    def __init__(self, dataset, include_classes=(), num_samples=1):
+    def __init__(self, dataset, include_classes=(), num_samples=0):
         super().__init__(dataset, include_labels=[
                 dataset.classes.index(cls) for cls in include_classes
             ], num_samples=num_samples)
@@ -411,7 +412,7 @@ class IncludeClassesDataset(IncludeLabelsDataset):
 
 class CIFAR10IncludeLabels(IncludeLabelsDataset):
 
-    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=1, **kwargs):
+    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=0, **kwargs):
         super().__init__(
             dataset=datasets.CIFAR10(*args, root=root, **kwargs),
             include_labels=include_labels,
@@ -420,7 +421,7 @@ class CIFAR10IncludeLabels(IncludeLabelsDataset):
 
 class CIFAR100IncludeLabels(IncludeLabelsDataset):
 
-    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=1, **kwargs):
+    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=0, **kwargs):
         super().__init__(
             dataset=datasets.CIFAR100(*args, root=root, **kwargs),
             include_labels=include_labels,
@@ -429,7 +430,7 @@ class CIFAR100IncludeLabels(IncludeLabelsDataset):
 
 class TinyImagenet200IncludeLabels(IncludeLabelsDataset):
 
-    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=1, **kwargs):
+    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=0, **kwargs):
         super().__init__(
             dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs),
             include_labels=include_labels,

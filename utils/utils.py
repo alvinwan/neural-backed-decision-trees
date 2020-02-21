@@ -189,7 +189,8 @@ def get_fname(args):
 
 
 def generate_fname(dataset, model, path_tree, wnid=None, name='',
-        trainset=None, **kwargs):
+        trainset=None, include_labels=(), exclude_labels=(),
+        include_classes=(), num_samples=0, **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
     fname += '-' + model
@@ -202,4 +203,15 @@ def generate_fname(dataset, model, path_tree, wnid=None, name='',
         fname += '-' + path.stem.replace('tree-', '', 1)
     else:
         fname += '-build'  # WARNING: hard-coded
+    if include_labels:
+        labels = ",".join(map(str, include_labels))
+        fname += f'-incl{labels}'
+    if exclude_labels:
+        labels = ",".join(map(str, exclude_labels))
+        fname += f'-excl{labels}'
+    if include_classes:
+        labels = ",".join(map(str, include_classes))
+        fname += f'-incc{labels}'
+    if num_samples != 0:
+        fname += f'-samples{num_samples}'
     return fname

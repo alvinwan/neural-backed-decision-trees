@@ -54,6 +54,7 @@ parser.add_argument('--analysis', choices=analysis.names,
 parser.add_argument('--include-labels', nargs='*', type=int)
 parser.add_argument('--exclude-labels', nargs='*', type=int)
 parser.add_argument('--include-classes', nargs='*', type=int)
+parser.add_argument('--num-samples', type=int)
 
 args = parser.parse_args()
 
@@ -135,7 +136,8 @@ dataset_kwargs = {}
 if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
 
-for key in ('path_tree', 'include_labels', 'exclude_labels', 'include_classes'):
+for key in ('path_tree', 'include_labels', 'exclude_labels', 'include_classes',
+            'num_samples'):
     value = getattr(args, key)
     if getattr(dataset, f'accepts_{key}', False) and value:
         dataset_kwargs[key] = value
@@ -186,11 +188,11 @@ if args.test_path_sanity or args.test_path:
 if args.test_path_sanity:
     net.set_weight(trainset.get_weights())
 
+fname = generate_fname(**vars(args))
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    fname = generate_fname(**vars(args))
     try:
         checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
         net.load_state_dict(checkpoint['net'])
