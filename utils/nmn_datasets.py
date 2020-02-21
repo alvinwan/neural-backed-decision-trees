@@ -344,7 +344,7 @@ class IncludeLabelsDataset(Dataset):
     """
 
     accepts_include_labels = True
-    acccepts_num_samples = True
+    accepts_num_samples = True
 
     def __init__(self, dataset, include_labels=(0,), num_samples=0,
             drop_classes=False):
