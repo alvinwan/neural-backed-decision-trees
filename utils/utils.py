@@ -212,6 +212,6 @@ def generate_fname(dataset, model, path_tree, wnid=None, name='',
     if include_classes:
         labels = ",".join(map(str, include_classes))
         fname += f'-incc{labels}'
-    if num_samples != 0:
+    if num_samples != 0 and num_samples is not None:
         fname += f'-samples{num_samples}'
     return fname
