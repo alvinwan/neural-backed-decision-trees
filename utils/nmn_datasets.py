@@ -337,17 +337,29 @@ class IncludeLabelsDataset(Dataset):
     samples. Note that labels are integers in [0, k) for a k-class dataset.
 
     Pass `num_samples=0` to NOT truncate the dataset.
+
+    :drop_classes bool: Modifies the dataset so that it is only a m-way
+                        classification where m of k classes are kept. Otherwise,
+                        the problem is still k-way.
     """
 
     accepts_include_labels = True
 
-    def __init__(self, dataset, include_labels=(0,), num_samples=0):
+    def __init__(self, dataset, include_labels=(0,), num_samples=0,
+            drop_classes=False):
         self.dataset = dataset
-        self.classes = [cls for i, cls in enumerate(dataset.classes) if i in include_labels]
+        self.classes = dataset.classes
         self.include_labels = list(sorted(include_labels))
         self.num_samples = num_samples
 
         assert include_labels, 'No labels are included in `include_labels`'
+
+        self.drop_classes = drop_classes
+        if self.drop_classes:
+            self.classes = [
+                cls for i, cls in enumerate(dataset.classes)
+                if i in include_labels
+            ]
 
         self.new_to_old = self.build_index_mapping()
 
@@ -371,7 +383,11 @@ class IncludeLabelsDataset(Dataset):
     def __getitem__(self, index_new):
         index_old = self.new_to_old[index_new]
         sample, label_old = self.dataset[index_old]
-        label_new = self.include_labels.index(label_old)
+
+        label_new = label_old
+        if self.drop_classes:
+            label_new = self.include_labels.index(label_old)
+
         return sample, label_new
 
     def __len__(self):
