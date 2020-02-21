@@ -51,6 +51,7 @@ parser.add_argument('--test-path', action='store_true',
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
 
+parser.add_argument('--probability-labels', nargs='*', type=float)
 parser.add_argument('--include-labels', nargs='*', type=int)
 parser.add_argument('--exclude-labels', nargs='*', type=int)
 parser.add_argument('--include-classes', nargs='*', type=int)
@@ -62,10 +63,13 @@ args = parser.parse_args()
 if args.test:
     import xml.etree.ElementTree as ET
 
-    dataset = nmn_datasets.CIFAR10IncludeLabels(num_samples=1)
+    dataset = nmn_datasets.CIFAR10IncludeLabels()
     print(len(dataset))
 
-    dataset = nmn_datasets.CIFAR10ExcludeLabels(num_samples=0)
+    dataset = nmn_datasets.CIFAR10ExcludeLabels()
+    print(len(dataset))
+
+    dataset = nmn_datasets.CIFAR10ResampleLabels(probability_labels=0.5)
     print(len(dataset))
 
     dataset = nmn_datasets.CIFAR10PathSanity()
