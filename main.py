@@ -155,7 +155,7 @@ assert trainset.classes == testset.classes, (trainset.classes, testset.classes)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
-print(f'Training with dataset {args.dataset} and {len(trainset.classes)} classes')
+Colors.cyan(f'Training with dataset {args.dataset} and {len(trainset.classes)} classes')
 
 # Model
 print('==> Building model..')
@@ -167,7 +167,7 @@ model_kwargs = {}
 if getattr(model, 'accepts_path_tree', False) and args.path_tree:
     model_kwargs['path_tree'] = args.path_tree
 elif args.path_tree:
-    print(
+    Colors.red(
         f' => Warning: Model {args.model} does not support custom '
         f'tree paths: {args.path_tree}')
 
@@ -196,7 +196,7 @@ if args.resume:
         net.load_state_dict(checkpoint['net'])
         best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
-        print(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
+        Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
               f'{best_acc} at {fname}')
     except FileNotFoundError as e:
         print('==> No checkpoint found. Skipping...')
@@ -215,7 +215,7 @@ if args.backbone:
         if hasattr(get_net(), 'load_backbone'):
             get_net().load_backbone(args.backbone)
         else:
-            print('==> FAILED to load backbone. No `load_backbone` provided for model.')
+            Colors.red('==> FAILED to load backbone. No `load_backbone` provided for model.')
 
 criterion = nn.CrossEntropyLoss()  # TODO(alvin): WARNING JointNodes custom_loss hard-coded to CrossEntropyLoss
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
@@ -329,7 +329,7 @@ analyzer = generate(trainset, testset)
 
 if args.eval:
     if not args.resume:
-        print(' * Warning: Model is not loaded from checkpoint. Use --resume')
+        Colors.red(' * Warning: Model is not loaded from checkpoint. Use --resume')
 
     analyzer.start_epoch(0)
     test(0, analyzer, checkpoint=False)

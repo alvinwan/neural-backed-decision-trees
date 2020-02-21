@@ -343,8 +343,8 @@ class IncludeLabelsDataset(Dataset):
 
     def __init__(self, dataset, include_labels=(0,), num_samples=0):
         self.dataset = dataset
-        self.classes = dataset.classes
-        self.include_labels = include_labels
+        self.classes = [cls for i, cls in enumerate(dataset.classes) if i in include_labels]
+        self.include_labels = list(sorted(include_labels))
         self.num_samples = num_samples
 
         assert include_labels, 'No labels are included in `include_labels`'
@@ -368,9 +368,11 @@ class IncludeLabelsDataset(Dataset):
             return new_to_old[:self.num_samples]
         return new_to_old
 
-    def __getitem__(self, new_):
-        old = self.new_to_old[new_]
-        return self.dataset[old]
+    def __getitem__(self, index_new):
+        index_old = self.new_to_old[index_new]
+        sample, label_old = self.dataset[index_old]
+        label_new = self.include_labels.index(label_old)
+        return sample, label_new
 
     def __len__(self):
         return len(self.new_to_old)
