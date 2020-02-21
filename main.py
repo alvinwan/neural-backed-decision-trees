@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-from utils import custom_datasets, nmn_datasets
+from utils import custom_datasets, nmn_datasets, analysis
 
 import torchvision
 import torchvision.transforms as transforms
@@ -14,11 +14,13 @@ import argparse
 import numpy as np
 
 import models
-from utils.utils import progress_bar, initialize_confusion_matrix, \
-    update_confusion_matrix, confusion_matrix_recall, confusion_matrix_precision, \
-    set_np_printoptions, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY
+from utils.utils import (
+    progress_bar, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY,
+    set_np_printoptions
+)
 
 
+set_np_printoptions()
 datasets = ('CIFAR10', 'CIFAR100') + custom_datasets.names + nmn_datasets.names
 
 
@@ -33,7 +35,10 @@ parser.add_argument('--dataset', default='CIFAR10', choices=datasets)
 parser.add_argument('--model', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
+parser.add_argument('--backbone', '-b',
+                    help='Path to backbone network parameters to restore from')
 
+parser.add_argument('--path-tree', help='Path to tree-?.xml file.')  # WARNING: hard-coded suffix -build in generate_fname
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
 parser.add_argument('--eval', help='eval only', action='store_true')
@@ -42,7 +47,8 @@ parser.add_argument('--test-path-sanity', action='store_true',
                     help='test path classifier with oracle fc')
 parser.add_argument('--test-path', action='store_true',
                     help='test path classifier with random init')
-parser.add_argument('--print-confusion-matrix', action='store_true')
+parser.add_argument('--analysis', choices=analysis.names,
+                    help='Run analysis after each epoch')
 
 args = parser.parse_args()
 
@@ -50,15 +56,18 @@ args = parser.parse_args()
 if args.test:
     import xml.etree.ElementTree as ET
 
-    dataset = custom_datasets.CIFAR10PathSanity()
+    dataset = nmn_datasets.CIFAR10IncludeLabels()
+    print(len(dataset))
+
+    dataset = nmn_datasets.CIFAR10PathSanity()
     print(dataset[0][0])
 
     for wnid, text in (
-            ('fall11', 'root'),
+            # ('fall11', 'root'),
             ('n03575240', 'instrument'),
             ('n03791235', 'motor vehicle'),
             ('n02370806', 'hoofed mammal')):
-        dataset = custom_datasets.CIFAR10Node(wnid)
+        dataset = nmn_datasets.CIFAR10Node(wnid)
 
         print(text)
         print(dataset.node.mapping)
@@ -97,12 +106,12 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
-if args.dataset == 'TinyImagenet200':
+if 'TinyImagenet200' in args.dataset:
     transform_train = custom_datasets.TinyImagenet200.transform_train
     transform_test = custom_datasets.TinyImagenet200.transform_val
 
 if args.test_path_sanity or args.test_path:
-    assert args.dataset == CIFAR10PATHSANITY
+    assert 'PathSanity' in args.dataset
 if args.model == 'CIFAR10JointNodes':
     assert args.dataset == 'CIFAR10JointNodes'
 
@@ -114,23 +123,45 @@ else:
     dataset = getattr(torchvision.datasets, args.dataset)
 
 dataset_args = ()
+dataset_kwargs = {}
 if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
+if getattr(dataset, 'accepts_path_tree', False) and args.path_tree:
+    dataset_kwargs['path_tree'] = args.path_tree
+elif args.path_tree:
+    print(
+        f' => Warning: Dataset {args.dataset} does not support custom '
+        f'tree paths: {args.path_tree}')
 
-trainset = dataset(*dataset_args, root='./data', train=True, download=True, transform=transform_train)
-testset = dataset(*dataset_args, root='./data', train=False, download=True, transform=transform_test)
+# TODO: if root changes, it needs to be passed to the sanity dataset in IdInitJointTree models
+# and jointNodes
+trainset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
+testset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
 
 assert trainset.classes == testset.classes, (trainset.classes, testset.classes)
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
-print(f'Training with dataset {args.dataset} and classes {trainset.classes}')
+print(f'Training with dataset {args.dataset} and {len(trainset.classes)} classes')
 
 # Model
 print('==> Building model..')
-net = getattr(models, args.model)(
-    num_classes=len(trainset.classes)
+model = getattr(models, args.model)
+
+# TODO(alvin): should dataset trees be passed to models, isntead of re-passing
+# the tree path?
+model_kwargs = {}
+if getattr(model, 'accepts_path_tree', False) and args.path_tree:
+    model_kwargs['path_tree'] = args.path_tree
+elif args.path_tree:
+    print(
+        f' => Warning: Model {args.model} does not support custom '
+        f'tree paths: {args.path_tree}')
+
+net = model(
+    num_classes=len(trainset.classes),
+    **model_kwargs
 )
 net = net.to(device)
 if device == 'cuda':
@@ -147,13 +178,34 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    fname = generate_fname(args)
-    checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
-    net.load_state_dict(checkpoint['net'])
-    best_acc = checkpoint['acc']
-    start_epoch = checkpoint['epoch']
+    fname = generate_fname(**vars(args))
+    try:
+        checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
+        net.load_state_dict(checkpoint['net'])
+        best_acc = checkpoint['acc']
+        start_epoch = checkpoint['epoch']
+        print(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
+              f'{best_acc} at {fname}')
+    except FileNotFoundError as e:
+        print('==> No checkpoint found. Skipping...')
+        print(e)
+def get_net():
+    if device == 'cuda':
+        return net.module
+    return net
 
-criterion = nn.CrossEntropyLoss()
+if args.backbone:
+    print('==> Loading backbone..')
+    try:
+        checkpoint = torch.load(args.backbone)
+        net.load_state_dict(checkpoint['net'])
+    except:
+        if hasattr(get_net(), 'load_backbone'):
+            get_net().load_backbone(args.backbone)
+        else:
+            print('==> FAILED to load backbone. No `load_backbone` provided for model.')
+
+criterion = nn.CrossEntropyLoss()  # TODO(alvin): WARNING JointNodes custom_loss hard-coded to CrossEntropyLoss
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
 def adjust_learning_rate(epoch, lr):
@@ -165,7 +217,8 @@ def adjust_learning_rate(epoch, lr):
       return lr/100
 
 # Training
-def train(epoch):
+def train(epoch, analyzer):
+    analyzer.start_train(epoch)
     lr = adjust_learning_rate(epoch, args.lr)
     optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
 
@@ -187,13 +240,12 @@ def train(epoch):
         total += np.prod(targets.size())
         correct += predicted.eq(targets).sum().item()
 
+        analyzer.update_batch(outputs, predicted, targets)
+
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
-def get_net():
-    if device == 'cuda':
-        return net.module
-    return net
+    analyzer.end_train(epoch)
 
 def get_prediction(outputs):
     if hasattr(get_net(), 'custom_prediction'):
@@ -206,13 +258,14 @@ def get_loss(criterion, outputs, targets):
         return get_net().custom_loss(criterion, outputs, targets)
     return criterion(outputs, targets)
 
-def test(epoch, print_confusion_matrix, checkpoint=True):
+def test(epoch, analyzer, checkpoint=True):
+    analyzer.start_test(epoch)
+
     global best_acc
     net.eval()
     test_loss = 0
     correct = 0
     total = 0
-    confusion_matrix = initialize_confusion_matrix(len(trainset.classes))
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
@@ -228,16 +281,14 @@ def test(epoch, print_confusion_matrix, checkpoint=True):
                 predicted = predicted.cpu()
                 targets = targets.cpu()
 
-            if len(predicted.shape) == 1:
-                predicted = predicted.numpy().ravel()
-                targets = targets.numpy().ravel()
-                confusion_matrix = update_confusion_matrix(confusion_matrix, predicted, targets)
+            analyzer.update_batch(outputs, predicted, targets)
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
     # Save checkpoint.
     acc = 100.*correct/total
+    print("Accuracy: {}, {}/{}".format(acc, correct, total))
     if acc > best_acc and checkpoint:
         print('Saving..')
         state = {
@@ -248,25 +299,34 @@ def test(epoch, print_confusion_matrix, checkpoint=True):
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
 
-        fname = generate_fname(args)
+        fname = generate_fname(**vars(args))
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
 
-    if print_confusion_matrix:
-        set_np_printoptions()
-        recall = confusion_matrix_recall(confusion_matrix)
-        for row, cls in zip(recall, trainset.classes):
-            print(row, cls)
-        print(recall.diagonal())
+    if hasattr(get_net(), 'save_metrics'):
+        gt_classes = []
+        for _, targets in testloader:
+            gt_classes.extend(targets.tolist())
+        get_net().save_metrics(gt_classes)
 
+    analyzer.end_test(epoch)
+
+
+generate = getattr(analysis, args.analysis) if args.analysis else analysis.Noop
+analyzer = generate(trainset, testset)
 
 if args.eval:
     if not args.resume:
         print(' * Warning: Model is not loaded from checkpoint. Use --resume')
-    test(0, args.print_confusion_matrix, checkpoint=False)
+
+    analyzer.start_epoch(0)
+    test(0, analyzer, checkpoint=False)
     exit()
 
-
 for epoch in range(start_epoch, args.epochs):
-    train(epoch)
-    test(epoch, args.print_confusion_matrix)
+    analyzer.start_epoch(epoch)
+    train(epoch, analyzer)
+    test(epoch, analyzer)
+    analyzer.end_epoch(epoch)
+
+print(f'Best accuracy: {best_acc} // Checkpoint name: {fname}')

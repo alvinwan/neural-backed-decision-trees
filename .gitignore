@@ -3,6 +3,7 @@ data/*
 !data/cifar10/wnids.txt
 !data/cifar100/wnids.txt
 checkpoint
+out/*
 
 # Created by https://www.gitignore.io/api/macos,python
 # Edit at https://www.gitignore.io/?templates=macos,python
@@ -40,6 +41,7 @@ Temporary Items
 __pycache__/
 *.py[cod]
 *$py.class
+*.ipynb_checkpoints/
 
 # C extensions
 *.so

@@ -15,7 +15,9 @@ from . import custom_datasets
 
 __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
                    'CIFAR100Node', 'CIFAR100JointNodes',
-                   'TinyImagenet200JointNodes')
+                   'TinyImagenet200JointNodes', 'CIFAR100PathSanity',
+                   'TinyImagenet200PathSanity', 'CIFAR10IncludeLabels',
+                   'CIFAR100IncludeLabels', 'TinyImagenet200IncludeLabels')
 
 
 class Node:
@@ -67,6 +69,9 @@ class Node:
                 for old_indices in self.new_to_old
             ]
         self._probabilities = None
+        self._class_weights = None
+
+        self.children_wnids = [child.get('wnid') for child in children]
 
     @property
     def class_counts(self):
@@ -93,6 +98,16 @@ class Node:
     def probabilities(self, probabilities):
         self._probabilities = probabilities
 
+    @property
+    def class_weights(self):
+        if self._class_weights is None:
+            self._class_weights = self.probabilities
+        return self._class_weights
+
+    @class_weights.setter
+    def class_weights(self, class_weights):
+        self._class_weights = class_weights
+
     @staticmethod
     def get_wnid_to_node(path_tree, path_wnids, classes=()):
         tree = ET.parse(path_tree)
@@ -111,6 +126,15 @@ class Node:
         wnids = sorted(wnid_to_node)
         nodes = [wnid_to_node[wnid] for wnid in wnids]
         return nodes
+
+    @staticmethod
+    def get_root_node_wnid(path_tree):
+        tree = ET.parse(path_tree)
+        for node in tree.iter():
+            wnid = node.get('wnid')
+            if wnid is not None:
+                return wnid
+        return None
 
     @staticmethod
     def dim(nodes):
@@ -157,6 +181,8 @@ class CIFAR100Node(NodeDataset):
 
 class JointNodesDataset(Dataset):
 
+    accepts_path_tree = True
+
     def __init__(self, path_tree, path_wnids, dataset):
         super().__init__()
         self.nodes = Node.get_nodes(path_tree, path_wnids, dataset.classes)
@@ -179,33 +205,51 @@ class JointNodesDataset(Dataset):
 
 class CIFAR10JointNodes(JointNodesDataset):
 
-    def __init__(self, *args, root='./data', **kwargs):
-        super().__init__(DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
+    def __init__(self,
+            *args,
+            path_tree=DEFAULT_CIFAR10_TREE,
+            path_wnids=DEFAULT_CIFAR10_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_tree, path_wnids,
             dataset=datasets.CIFAR10(*args, root=root, **kwargs))
 
 
 class CIFAR100JointNodes(JointNodesDataset):
 
-    def __init__(self, *args, root='./data', **kwargs):
-        super().__init__(DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+    def __init__(self,
+            *args,
+            path_tree=DEFAULT_CIFAR100_TREE,
+            path_wnids=DEFAULT_CIFAR100_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_tree, path_wnids,
             dataset=datasets.CIFAR100(*args, root=root, **kwargs))
 
 
 class TinyImagenet200JointNodes(JointNodesDataset):
 
-    def __init__(self, *args, root='./data', **kwargs):
-        super().__init__(DEFAULT_TINYIMAGENET200_TREE, DEFAULT_TINYIMAGENET200_WNIDS,
+    def __init__(self,
+            *args,
+            path_tree=DEFAULT_TINYIMAGENET200_TREE,
+            path_wnids=DEFAULT_TINYIMAGENET200_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_tree, path_wnids,
             dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs))
 
 
-class CIFAR10PathSanity(datasets.CIFAR10):
+class PathSanityDataset(Dataset):
     """returns samples that assume all node classifiers are perfect"""
 
-    def __init__(self, root='./data', *args,
-            path_tree='./data/cifar10/tree.xml',
-            path_wnids='./data/cifar10/wnids.txt', **kwargs):
-        super().__init__(root=root, *args, **kwargs)
-        self.nodes = Node.get_nodes(path_tree, path_wnids, self.classes)
+    def __init__(self, path_tree, path_wnids, dataset):
+        super().__init__()
+        self.path_tree = path_tree
+        self.path_wnids = path_wnids
+
+        self.nodes = Node.get_nodes(path_tree, path_wnids, dataset.classes)
+        self.dataset = dataset
+        self.classes = dataset.classes
 
     def get_sample(self, node, old_label):
         new_label = node.mapping[old_label]
@@ -215,7 +259,7 @@ class CIFAR10PathSanity(datasets.CIFAR10):
 
     def _get_node_weights(self, node):
         n = node.num_classes
-        k = 10
+        k = len(self.dataset.classes)
 
         A = np.zeros((n, k))
         for new_index, cls in enumerate(node.classes):
@@ -236,7 +280,7 @@ class CIFAR10PathSanity(datasets.CIFAR10):
         return Node.dim(self.nodes)
 
     def __getitem__(self, i):
-        _, old_label = super().__getitem__(i)
+        _, old_label = self.dataset[i]
 
         sample = []
         for dataset in self.nodes:
@@ -244,3 +288,123 @@ class CIFAR10PathSanity(datasets.CIFAR10):
         sample = torch.Tensor(sample)
 
         return sample, old_label
+
+    def __len__(self):
+        return len(self.dataset)
+
+
+class CIFAR10PathSanity(PathSanityDataset):
+
+    def __init__(self,
+            *args,
+            path_tree=DEFAULT_CIFAR10_TREE,
+            path_wnids=DEFAULT_CIFAR10_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_tree, path_wnids,
+            dataset=datasets.CIFAR10(*args, root=root, **kwargs))
+
+
+class CIFAR100PathSanity(PathSanityDataset):
+
+    def __init__(self,
+            *args,
+            path_tree=DEFAULT_CIFAR100_TREE,
+            path_wnids=DEFAULT_CIFAR100_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_tree, path_wnids,
+            dataset=datasets.CIFAR100(*args, root=root, **kwargs))
+
+
+class TinyImagenet200PathSanity(PathSanityDataset):
+
+    def __init__(self,
+            *args,
+            path_tree=DEFAULT_TINYIMAGENET200_TREE,
+            path_wnids=DEFAULT_TINYIMAGENET200_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_tree, path_wnids,
+            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs))
+
+
+class IncludeLabelsDataset(Dataset):
+    """
+    Dataset that includes only the labels provided, with a limited number of
+    samples. Note that labels are integers in [0, k) for a k-class dataset.
+
+    Pass `num_samples=0` to NOT truncate the dataset.
+    """
+
+    def __init__(self, dataset, include_labels=(0,), num_samples=1):
+        self.dataset = dataset
+        self.include_labels = include_labels
+        self.num_samples = num_samples
+
+        assert include_labels, 'No labels are included in `include_labels`'
+
+        self.new_to_old = self.build_index_mapping()
+
+    def build_index_mapping(self):
+        """Iterates over all samples in dataset.
+
+        Remaps all to-be-included samples to [0, n) where n is the number of
+        samples with a class in the whitelist.
+
+        Additionally, the outputted list is truncated to match the number of
+        desired samples.
+        """
+        new_to_old = []
+        for old, (_, label) in enumerate(self.dataset):
+            if label in self.include_labels:
+                new_to_old.append(old)
+        if self.num_samples != 0:
+            return new_to_old[:self.num_samples]
+        return new_to_old
+
+    def __getitem__(self, new_):
+        old = new_to_old[new_]
+        return self.dataset[old]
+
+    def __len__(self):
+        return len(self.new_to_old)
+
+
+class IncludeClassesDataset(IncludeLabelsDataset):
+    """
+    Dataset that includes only the labels provided, with a limited number of
+    samples. Note that classes are strings, like 'cat' or 'dog'.
+    """
+
+    def __init__(self, dataset, include_classes=(), num_samples=1):
+        super().__init__(dataset, include_labels=[
+                dataset.classes.index(cls) for cls in include_classes
+            ], num_samples=num_samples)
+
+
+class CIFAR10IncludeLabels(IncludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=1, **kwargs):
+        super().__init__(
+            dataset=datasets.CIFAR10(*args, root=root, **kwargs),
+            include_labels=include_labels,
+            num_samples=num_samples)
+
+
+class CIFAR100IncludeLabels(IncludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=1, **kwargs):
+        super().__init__(
+            dataset=datasets.CIFAR100(*args, root=root, **kwargs),
+            include_labels=include_labels,
+            num_samples=num_samples)
+
+
+class TinyImagenet200IncludeLabels(IncludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=1, **kwargs):
+        super().__init__(
+            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs),
+            include_labels=include_labels,
+            num_samples=num_samples)
