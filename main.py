@@ -49,7 +49,6 @@ parser.add_argument('--test-path', action='store_true',
                     help='test path classifier with random init')
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
-print(analysis.names)
 
 args = parser.parse_args()
 
@@ -57,15 +56,18 @@ args = parser.parse_args()
 if args.test:
     import xml.etree.ElementTree as ET
 
-    dataset = custom_datasets.CIFAR10PathSanity()
+    dataset = nmn_datasets.CIFAR10IncludeLabels()
+    print(len(dataset))
+
+    dataset = nmn_datasets.CIFAR10PathSanity()
     print(dataset[0][0])
 
     for wnid, text in (
-            ('fall11', 'root'),
+            # ('fall11', 'root'),
             ('n03575240', 'instrument'),
             ('n03791235', 'motor vehicle'),
             ('n02370806', 'hoofed mammal')):
-        dataset = custom_datasets.CIFAR10Node(wnid)
+        dataset = nmn_datasets.CIFAR10Node(wnid)
 
         print(text)
         print(dataset.node.mapping)

@@ -16,7 +16,8 @@ from . import custom_datasets
 __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
                    'CIFAR100Node', 'CIFAR100JointNodes',
                    'TinyImagenet200JointNodes', 'CIFAR100PathSanity',
-                   'TinyImagenet200PathSanity')
+                   'TinyImagenet200PathSanity', 'CIFAR10IncludeLabels',
+                   'CIFAR100IncludeLabels', 'TinyImagenet200IncludeLabels')
 
 
 class Node:
@@ -326,3 +327,80 @@ class TinyImagenet200PathSanity(PathSanityDataset):
             **kwargs):
         super().__init__(path_tree, path_wnids,
             dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs))
+
+
+class IncludeLabelsDataset(Dataset):
+    """
+    Dataset that includes only the labels provided, with a limited number of
+    samples. Note that labels are integers in [0, k) for a k-class dataset.
+    """
+
+    def __init__(self, dataset, include_labels=(0,), num_samples=1):
+        self.dataset = dataset
+        self.include_labels = include_labels
+        self.num_samples = num_samples
+
+        assert include_labels, 'No labels are included in `include_labels`'
+
+        self.new_to_old = self.build_index_mapping()
+
+    def build_index_mapping(self):
+        """Iterates over all samples in dataset.
+
+        Remaps all to-be-included samples to [0, n) where n is the number of
+        samples with a class in the whitelist.
+
+        Additionally, the outputted list is truncated to match the number of
+        desired samples.
+        """
+        new_to_old = []
+        for old, (_, label) in enumerate(self.dataset):
+            if label in self.include_labels:
+                new_to_old.append(old)
+        return new_to_old[:self.num_samples]
+
+    def __getitem__(self, new_):
+        old = new_to_old[new_]
+        return self.dataset[old]
+
+    def __len__(self):
+        return len(self.new_to_old)
+
+
+class IncludeClassesDataset(IncludeLabelsDataset):
+    """
+    Dataset that includes only the labels provided, with a limited number of
+    samples. Note that classes are strings, like 'cat' or 'dog'.
+    """
+
+    def __init__(self, dataset, include_classes=(), num_samples=1):
+        super().__init__(dataset, include_labels=[
+                dataset.classes.index(cls) for cls in include_classes
+            ], num_samples=num_samples)
+
+
+class CIFAR10IncludeLabels(IncludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=1, **kwargs):
+        super().__init__(
+            dataset=datasets.CIFAR10(*args, root=root, **kwargs),
+            include_labels=include_labels,
+            num_samples=num_samples)
+
+
+class CIFAR100IncludeLabels(IncludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=1, **kwargs):
+        super().__init__(
+            dataset=datasets.CIFAR100(*args, root=root, **kwargs),
+            include_labels=include_labels,
+            num_samples=num_samples)
+
+
+class TinyImagenet200IncludeLabels(IncludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=1, **kwargs):
+        super().__init__(
+            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs),
+            include_labels=include_labels,
+            num_samples=num_samples)
