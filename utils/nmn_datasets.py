@@ -20,7 +20,9 @@ __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
                    'TinyImagenet200PathSanity', 'CIFAR10IncludeLabels',
                    'CIFAR100IncludeLabels', 'TinyImagenet200IncludeLabels',
                    'CIFAR10ExcludeLabels', 'CIFAR100ExcludeLabels',
-                   'TinyImagenet200ExcludeLabels')
+                   'TinyImagenet200ExcludeLabels',
+                   'CIFAR10ResampleLabels', 'CIFAR100ResampleLabels',
+                   'TinyImagenet200ResampleLabels')
 
 
 class Node:
