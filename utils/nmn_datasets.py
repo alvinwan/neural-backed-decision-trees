@@ -339,8 +339,11 @@ class IncludeLabelsDataset(Dataset):
     Pass `num_samples=0` to NOT truncate the dataset.
     """
 
+    accepts_include_labels = True
+
     def __init__(self, dataset, include_labels=(0,), num_samples=0):
         self.dataset = dataset
+        self.classes = dataset.classes
         self.include_labels = include_labels
         self.num_samples = num_samples
 
@@ -366,7 +369,7 @@ class IncludeLabelsDataset(Dataset):
         return new_to_old
 
     def __getitem__(self, new_):
-        old = new_to_old[new_]
+        old = self.new_to_old[new_]
         return self.dataset[old]
 
     def __len__(self):
@@ -378,6 +381,9 @@ class IncludeClassesDataset(IncludeLabelsDataset):
     Dataset that includes only the labels provided, with a limited number of
     samples. Note that classes are strings, like 'cat' or 'dog'.
     """
+
+    accepts_include_labels = False
+    accepts_include_classes = True
 
     def __init__(self, dataset, include_classes=(), num_samples=1):
         super().__init__(dataset, include_labels=[
@@ -413,6 +419,9 @@ class TinyImagenet200IncludeLabels(IncludeLabelsDataset):
 
 
 class ExcludeLabelsDataset(IncludeLabelsDataset):
+
+    accepts_include_labels = False
+    accepts_exclude_labels = True
 
     def __init__(self, dataset, exclude_labels=(0,), num_samples=0):
         k = len(dataset.classes)

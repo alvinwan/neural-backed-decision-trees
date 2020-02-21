@@ -14,6 +14,7 @@ import argparse
 import numpy as np
 
 import models
+from utils.utils import Colors
 from utils.utils import (
     progress_bar, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY,
     set_np_printoptions
@@ -49,6 +50,10 @@ parser.add_argument('--test-path', action='store_true',
                     help='test path classifier with random init')
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
+
+parser.add_argument('--include-labels', nargs='*', type=int)
+parser.add_argument('--exclude-labels', nargs='*', type=int)
+parser.add_argument('--include-classes', nargs='*', type=int)
 
 args = parser.parse_args()
 
@@ -129,12 +134,16 @@ dataset_args = ()
 dataset_kwargs = {}
 if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
-if getattr(dataset, 'accepts_path_tree', False) and args.path_tree:
-    dataset_kwargs['path_tree'] = args.path_tree
-elif args.path_tree:
-    print(
-        f' => Warning: Dataset {args.dataset} does not support custom '
-        f'tree paths: {args.path_tree}')
+
+for key in ('path_tree', 'include_labels', 'exclude_labels', 'include_classes'):
+    value = getattr(args, key)
+    if getattr(dataset, f'accepts_{key}', False) and value:
+        dataset_kwargs[key] = value
+        Colors.cyan(f'{key}:\t{value}')
+    elif value:
+        Colors.red(
+            f'Warning: Dataset {args.dataset} does not support custom '
+            f'{key}: {value}')
 
 # TODO: if root changes, it needs to be passed to the sanity dataset in IdInitJointTree models
 # and jointNodes
