@@ -16,7 +16,10 @@ from . import custom_datasets
 __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
                    'CIFAR100Node', 'CIFAR100JointNodes',
                    'TinyImagenet200JointNodes', 'CIFAR100PathSanity',
-                   'TinyImagenet200PathSanity')
+                   'TinyImagenet200PathSanity', 'CIFAR10IncludeLabels',
+                   'CIFAR100IncludeLabels', 'TinyImagenet200IncludeLabels',
+                   'CIFAR10ExcludeLabels', 'CIFAR100ExcludeLabels',
+                   'TinyImagenet200ExcludeLabels')
 
 
 class Node:
@@ -68,6 +71,7 @@ class Node:
                 for old_indices in self.new_to_old
             ]
         self._probabilities = None
+        self._class_weights = None
 
         self.children_wnids = [child.get('wnid') for child in children]
 
@@ -95,6 +99,16 @@ class Node:
     @probabilities.setter
     def probabilities(self, probabilities):
         self._probabilities = probabilities
+
+    @property
+    def class_weights(self):
+        if self._class_weights is None:
+            self._class_weights = self.probabilities
+        return self._class_weights
+
+    @class_weights.setter
+    def class_weights(self, class_weights):
+        self._class_weights = class_weights
 
     @staticmethod
     def get_wnid_to_node(path_tree, path_wnids, classes=()):
@@ -315,3 +329,150 @@ class TinyImagenet200PathSanity(PathSanityDataset):
             **kwargs):
         super().__init__(path_tree, path_wnids,
             dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs))
+
+
+class IncludeLabelsDataset(Dataset):
+    """
+    Dataset that includes only the labels provided, with a limited number of
+    samples. Note that labels are integers in [0, k) for a k-class dataset.
+
+    Pass `num_samples=0` to NOT truncate the dataset.
+
+    :drop_classes bool: Modifies the dataset so that it is only a m-way
+                        classification where m of k classes are kept. Otherwise,
+                        the problem is still k-way.
+    """
+
+    accepts_include_labels = True
+    accepts_num_samples = True
+
+    def __init__(self, dataset, include_labels=(0,), num_samples=0,
+            drop_classes=False):
+        self.dataset = dataset
+        self.classes = dataset.classes
+        self.include_labels = list(sorted(include_labels))
+        self.num_samples = num_samples
+
+        assert include_labels, 'No labels are included in `include_labels`'
+
+        self.drop_classes = drop_classes
+        if self.drop_classes:
+            self.classes = [
+                cls for i, cls in enumerate(dataset.classes)
+                if i in include_labels
+            ]
+
+        self.new_to_old = self.build_index_mapping()
+
+    def build_index_mapping(self):
+        """Iterates over all samples in dataset.
+
+        Remaps all to-be-included samples to [0, n) where n is the number of
+        samples with a class in the whitelist.
+
+        Additionally, the outputted list is truncated to match the number of
+        desired samples.
+        """
+        new_to_old = []
+        for old, (_, label) in enumerate(self.dataset):
+            if label in self.include_labels:
+                new_to_old.append(old)
+        if self.num_samples != 0:
+            return new_to_old[:self.num_samples]
+        return new_to_old
+
+    def __getitem__(self, index_new):
+        index_old = self.new_to_old[index_new]
+        sample, label_old = self.dataset[index_old]
+
+        label_new = label_old
+        if self.drop_classes:
+            label_new = self.include_labels.index(label_old)
+
+        return sample, label_new
+
+    def __len__(self):
+        return len(self.new_to_old)
+
+
+class IncludeClassesDataset(IncludeLabelsDataset):
+    """
+    Dataset that includes only the labels provided, with a limited number of
+    samples. Note that classes are strings, like 'cat' or 'dog'.
+    """
+
+    accepts_include_labels = False
+    accepts_include_classes = True
+
+    def __init__(self, dataset, include_classes=(), num_samples=0):
+        super().__init__(dataset, include_labels=[
+                dataset.classes.index(cls) for cls in include_classes
+            ], num_samples=num_samples)
+
+
+class CIFAR10IncludeLabels(IncludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=0, **kwargs):
+        super().__init__(
+            dataset=datasets.CIFAR10(*args, root=root, **kwargs),
+            include_labels=include_labels,
+            num_samples=num_samples)
+
+
+class CIFAR100IncludeLabels(IncludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=0, **kwargs):
+        super().__init__(
+            dataset=datasets.CIFAR100(*args, root=root, **kwargs),
+            include_labels=include_labels,
+            num_samples=num_samples)
+
+
+class TinyImagenet200IncludeLabels(IncludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', include_labels=(0,), num_samples=0, **kwargs):
+        super().__init__(
+            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs),
+            include_labels=include_labels,
+            num_samples=num_samples)
+
+
+class ExcludeLabelsDataset(IncludeLabelsDataset):
+
+    accepts_include_labels = False
+    accepts_exclude_labels = True
+
+    def __init__(self, dataset, exclude_labels=(0,), num_samples=0):
+        k = len(dataset.classes)
+        include_labels = set(range(k)) - set(exclude_labels)
+        super().__init__(
+            dataset=dataset,
+            include_labels=include_labels,
+            num_samples=num_samples)
+
+
+class CIFAR10ExcludeLabels(ExcludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', exclude_labels=(0,), num_samples=0, **kwargs):
+        super().__init__(
+            dataset=datasets.CIFAR10(*args, root=root, **kwargs),
+            exclude_labels=exclude_labels,
+            num_samples=num_samples)
+
+
+class CIFAR100ExcludeLabels(ExcludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', exclude_labels=(0,), num_samples=0, **kwargs):
+        super().__init__(
+            dataset=datasets.CIFAR100(*args, root=root, **kwargs),
+            exclude_labels=exclude_labels,
+            num_samples=num_samples)
+
+
+class TinyImagenet200ExcludeLabels(ExcludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', exclude_labels=(0,), num_samples=0, **kwargs):
+        super().__init__(
+            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs),
+            exclude_labels=exclude_labels,
+            num_samples=num_samples)

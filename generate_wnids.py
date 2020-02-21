@@ -5,6 +5,7 @@ import torchvision
 from nltk.corpus import wordnet as wn
 from utils.nltkutils import synset_to_wnid
 from pathlib import Path
+from utils.utils import Colors
 import os
 
 
@@ -48,7 +49,7 @@ for cls in dataset.classes:
     else:
         synsets = wn.synsets(cls, pos=wn.NOUN)
         if not synsets:
-            print(f' => Failed to find synset for {cls}')
+            Colors.red(f'==> Failed to find synset for {cls}')
             failures.append(cls)
             continue
         synset = synsets[0]
@@ -60,5 +61,5 @@ with open(str(path), 'w') as f:
     f.write('\n'.join(wnids))
 
 if failures:
-    print(f' => Warning: failed to find wordnet IDs for {failures}')
-print(f' => Wrote to {path}')
+    Colors.red(f'==> Warning: failed to find wordnet IDs for {failures}')
+Colors.green(f'==> Wrote to {path}')

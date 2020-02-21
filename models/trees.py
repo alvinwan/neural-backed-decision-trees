@@ -27,7 +27,15 @@ __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
            'CIFAR100FreezeJointTree', 'TinyImagenet200FreezeJointTree',
            'CIFAR100BalancedFreezeJointNodes',
            'CIFAR100BalancedFreezeJointTree', 'CIFAR10IdInitJointTree',
-           'CIFAR100IdInitJointTree', 'TinyImagenet200IdInitJointTree')
+           'CIFAR100IdInitJointTree', 'TinyImagenet200IdInitJointTree',
+           'CIFAR10IdInitFreezeJointTree', 'CIFAR100IdInitFreezeJointTree',
+           'TinyImagenet200IdInitFreezeJointTree', 'CIFAR10ReweightedJointNodes',
+           'CIFAR100ReweightedJointNodes', 'TinyImagenet200ReweightedJointNodes',
+           'CIFAR10ReweightedJointTree', 'CIFAR100ReweightedJointTree',
+           'TinyImagenet200ReweightedJointTree',
+           'CIFAR10IdInitReweightedJointTree',
+           'CIFAR100IdInitReweightedJointTree',
+           'TinyImagenet200IdInitReweightedJointTree')
 
 
 @contextmanager
@@ -105,8 +113,8 @@ class JointNodes(nn.Module):
 
     accepts_path_tree = True
 
-    def __init__(self, path_tree, path_wnids, balance_classes=False,
-            freeze_backbone=False, dataset=None):
+    def __init__(self, path_tree, path_wnids, dataset, balance_classes=False,
+            freeze_backbone=False, balance_class_weights=False):
         super().__init__()
 
         import models
@@ -121,6 +129,7 @@ class JointNodes(nn.Module):
         self.dataset = dataset
 
         self.balance_classes = balance_classes
+        self.balance_class_weights = balance_class_weights
         self.freeze_backbone = freeze_backbone
 
     def custom_loss(self, criterion, outputs, targets):
@@ -128,19 +137,37 @@ class JointNodes(nn.Module):
         loss = 0
         for output, target, node in zip(outputs, targets.T, self.nodes):
 
+            weights = 1.
             if self.balance_classes:
-                random = torch.rand(target.size()).to(target.device)
-
-                if node.probabilities.device != target.device:
-                    node.probabilities = node.probabilities.to(target.device)
-
-                selector = (random < node.probabilities[target]).bool()
-                if not selector.any():
+                output, target, skip = self.resample_by_class(output, target, node)
+                if skip:
                     continue
-                output = output[selector]
-                target = target[selector]
+            if self.balance_class_weights:
+                weights = self.class_weights(output, target, node)
+                # TODO(alvin): hard-coded loss lol
+                criterion = nn.CrossEntropyLoss(weight=weights)
+
             loss += criterion(output, target)
         return loss
+
+    def resample_by_class(self, output, target, node):
+        random = torch.rand(target.size()).to(target.device)
+
+        if node.probabilities.device != target.device:
+            node.probabilities = node.probabilities.to(target.device)
+
+        selector = (random < node.probabilities[target]).bool()
+        if not selector.any():
+            return None, None, True
+
+        output = output[selector]
+        target = target[selector]
+        return output, target, False
+
+    def class_weights(self, _, target, node):
+        if node.class_weights.device != target.device:
+            node.class_weights = node.class_weights.to(target.device)
+        return node.class_weights
 
     def custom_prediction(self, outputs):
         preds = []
@@ -204,14 +231,14 @@ class TinyImagenet200JointNodes(JointNodes):
 class CIFAR10FreezeJointNodes(JointNodes):
     def __init__(self, path_tree=DEFAULT_CIFAR10_TREE, num_classes=None):
         super().__init__(path_tree, DEFAULT_CIFAR10_WNIDS,
-            freeze_backbone=True)
+            freeze_backbone=True, dataset=datasets.CIFAR10(root='./data'))
 
 
 class CIFAR100FreezeJointNodes(JointNodes):
 
     def __init__(self, path_tree=DEFAULT_CIFAR100_TREE, num_classes=None):
         super().__init__(path_tree, DEFAULT_CIFAR100_WNIDS,
-            freeze_backbone=True)
+            freeze_backbone=True, dataset=datasets.CIFAR100(root='./data'))
 
 
 class TinyImagenet200FreezeJointNodes(JointNodes):
@@ -220,21 +247,22 @@ class TinyImagenet200FreezeJointNodes(JointNodes):
         super().__init__(
             path_tree,
             DEFAULT_TINYIMAGENET200_WNIDS,
-            freeze_backbone=True)
+            freeze_backbone=True,
+            dataset=custom_datasets.TinyImagenet200(root='./data'))
 
 
 class CIFAR10BalancedJointNodes(JointNodes):
 
     def __init__(self, path_tree=DEFAULT_CIFAR10_TREE, num_classes=None):
         super().__init__(path_tree, DEFAULT_CIFAR10_WNIDS,
-            balance_classes=True)
+            balance_classes=True, dataset=datasets.CIFAR10(root='./data'))
 
 
 class CIFAR100BalancedJointNodes(JointNodes):
 
     def __init__(self, path_tree=DEFAULT_CIFAR100_TREE, num_classes=None):
         super().__init__(path_tree, DEFAULT_CIFAR100_WNIDS,
-            balance_classes=True)
+            balance_classes=True, dataset=datasets.CIFAR100(root='./data'))
 
 
 class TinyImagenet200BalancedJointNodes(JointNodes):
@@ -243,14 +271,40 @@ class TinyImagenet200BalancedJointNodes(JointNodes):
         super().__init__(
             path_tree,
             DEFAULT_TINYIMAGENET200_WNIDS,
-            balance_classes=True)
+            balance_classes=True,
+            dataset=custom_datasets.TinyImagenet200(root='./data'))
+
+
+class CIFAR10ReweightedJointNodes(JointNodes):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR10_TREE, num_classes=None):
+        super().__init__(path_tree, DEFAULT_CIFAR10_WNIDS,
+            balance_class_weights=True, dataset=datasets.CIFAR10(root='./data'))
+
+
+class CIFAR100ReweightedJointNodes(JointNodes):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR100_TREE, num_classes=None):
+        super().__init__(path_tree, DEFAULT_CIFAR100_WNIDS,
+            balance_class_weights=True, dataset=datasets.CIFAR100(root='./data'))
+
+
+class TinyImagenet200ReweightedJointNodes(JointNodes):
+
+    def __init__(self, path_tree=DEFAULT_TINYIMAGENET200_TREE, num_classes=None):
+        super().__init__(
+            path_tree,
+            DEFAULT_TINYIMAGENET200_WNIDS,
+            balance_class_weights=True,
+            dataset=custom_datasets.TinyImagenet200(root='./data'))
 
 
 class CIFAR100BalancedFreezeJointNodes(JointNodes):
 
     def __init__(self, path_tree=DEFAULT_CIFAR100_TREE, num_classes=None):
         super().__init__(path_tree, DEFAULT_CIFAR100_WNIDS,
-            balance_classes=True, freeze_backbone=True)
+            balance_classes=True, freeze_backbone=True,
+            dataset=datasets.CIFAR100(root='./data'))
 
 
 class JointTree(nn.Module):
@@ -355,6 +409,33 @@ class TinyImagenet200BalancedJointTree(JointTree):
             pretrained=pretrained)
 
 
+class CIFAR10ReweightedJointTree(JointTree):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR10_TREE, num_classes=10, pretrained=True):
+        super().__init__('CIFAR10ReweightedJointNodes', 'CIFAR10JointNodes',
+            path_tree, DEFAULT_CIFAR10_WNIDS,
+            net=CIFAR10ReweightedJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained)
+
+
+class CIFAR100ReweightedJointTree(JointTree):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR100_TREE, num_classes=100, pretrained=True):
+        super().__init__('CIFAR100ReweightedJointNodes', 'CIFAR100JointNodes',
+            path_tree, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100ReweightedJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained)
+
+
+class TinyImagenet200ReweightedJointTree(JointTree):
+
+    def __init__(self, path_tree=DEFAULT_TINYIMAGENET200_TREE, num_classes=200, pretrained=True):
+        super().__init__('TinyImagenet200ReweightedJointNodes', 'TinyImagenet200JointNodes',
+            path_tree, DEFAULT_TINYIMAGENET200_WNIDS,
+            net=TinyImagenet200ReweightedJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained)
+
+
 class CIFAR10FreezeJointTree(JointTree):
 
     def __init__(self, path_tree=DEFAULT_CIFAR10_TREE, num_classes=10, pretrained=True):
@@ -437,7 +518,7 @@ class TinyImagenet200IdInitJointTree(IdInitJointTree):
 class CIFAR10IdInitFreezeJointTree(IdInitJointTree):
 
     def __init__(self, path_tree=DEFAULT_CIFAR10_TREE, num_classes=10, pretrained=True):
-        super().__init__('CIFAR10FreezeJointNodes', 'CIFAR10FreezeJointNodes',
+        super().__init__('CIFAR10FreezeJointNodes', 'CIFAR10JointNodes',
             path_tree, DEFAULT_CIFAR10_WNIDS,
             net=CIFAR10FreezeJointNodes(path_tree), num_classes=num_classes,
             pretrained=pretrained,
@@ -447,7 +528,7 @@ class CIFAR10IdInitFreezeJointTree(IdInitJointTree):
 class CIFAR100IdInitFreezeJointTree(IdInitJointTree):
 
     def __init__(self, path_tree=DEFAULT_CIFAR100_TREE, num_classes=100, pretrained=True):
-        super().__init__('CIFAR100FreezeJointNodes', 'CIFAR100FreezeJointNodes',
+        super().__init__('CIFAR100FreezeJointNodes', 'CIFAR100JointNodes',
             path_tree, DEFAULT_CIFAR100_WNIDS,
             net=CIFAR100FreezeJointNodes(path_tree), num_classes=num_classes,
             pretrained=pretrained,
@@ -457,9 +538,39 @@ class CIFAR100IdInitFreezeJointTree(IdInitJointTree):
 class TinyImagenet200IdInitFreezeJointTree(IdInitJointTree):
 
     def __init__(self, path_tree=DEFAULT_TINYIMAGENET200_TREE, num_classes=200, pretrained=True):
-        super().__init__('TinyImagenet200FreezeJointNodes', 'TinyImagenet200FreezeJointNodes',
+        super().__init__('TinyImagenet200FreezeJointNodes', 'TinyImagenet200JointNodes',
             path_tree, DEFAULT_TINYIMAGENET200_WNIDS,
             net=TinyImagenet200FreezeJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=nmn_datasets.TinyImagenet200PathSanity(path_tree=path_tree))
+
+
+class CIFAR10IdInitReweightedJointTree(IdInitJointTree):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR10_TREE, num_classes=10, pretrained=True):
+        super().__init__('CIFAR10ReweightedJointNodes', 'CIFAR10JointNodes',
+            path_tree, DEFAULT_CIFAR10_WNIDS,
+            net=CIFAR10ReweightedJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=nmn_datasets.CIFAR10PathSanity(path_tree=path_tree))
+
+
+class CIFAR100IdInitReweightedJointTree(IdInitJointTree):
+
+    def __init__(self, path_tree=DEFAULT_CIFAR100_TREE, num_classes=100, pretrained=True):
+        super().__init__('CIFAR100ReweightedJointNodes', 'CIFAR100JointNodes',
+            path_tree, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100ReweightedJointNodes(path_tree), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=nmn_datasets.CIFAR100PathSanity(path_tree=path_tree))
+
+
+class TinyImagenet200IdInitReweightedJointTree(IdInitJointTree):
+
+    def __init__(self, path_tree=DEFAULT_TINYIMAGENET200_TREE, num_classes=200, pretrained=True):
+        super().__init__('TinyImagenet200ReweightedJointNodes', 'TinyImagenet200JointNodes',
+            path_tree, DEFAULT_TINYIMAGENET200_WNIDS,
+            net=TinyImagenet200ReweightedJointNodes(path_tree), num_classes=num_classes,
             pretrained=pretrained,
             initializer=nmn_datasets.TinyImagenet200PathSanity(path_tree=path_tree))
 
