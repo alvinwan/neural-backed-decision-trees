@@ -140,7 +140,7 @@ if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
 
 for key in ('path_tree', 'include_labels', 'exclude_labels', 'include_classes',
-            'accepts_probability_labels'):
+            'probability_labels'):
     value = getattr(args, key)
     if getattr(dataset, f'accepts_{key}', False) and value:
         dataset_kwargs[key] = value
