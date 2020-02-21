@@ -333,6 +333,8 @@ class IncludeLabelsDataset(Dataset):
     """
     Dataset that includes only the labels provided, with a limited number of
     samples. Note that labels are integers in [0, k) for a k-class dataset.
+
+    Pass `num_samples=0` to NOT truncate the dataset.
     """
 
     def __init__(self, dataset, include_labels=(0,), num_samples=1):
@@ -357,7 +359,9 @@ class IncludeLabelsDataset(Dataset):
         for old, (_, label) in enumerate(self.dataset):
             if label in self.include_labels:
                 new_to_old.append(old)
-        return new_to_old[:self.num_samples]
+        if self.num_samples != 0:
+            return new_to_old[:self.num_samples]
+        return new_to_old
 
     def __getitem__(self, new_):
         old = new_to_old[new_]
