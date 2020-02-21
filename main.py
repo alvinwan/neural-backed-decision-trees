@@ -55,7 +55,6 @@ parser.add_argument('--probability-labels', nargs='*', type=float)
 parser.add_argument('--include-labels', nargs='*', type=int)
 parser.add_argument('--exclude-labels', nargs='*', type=int)
 parser.add_argument('--include-classes', nargs='*', type=int)
-parser.add_argument('--num-samples', type=int)
 
 args = parser.parse_args()
 
@@ -141,7 +140,7 @@ if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
 
 for key in ('path_tree', 'include_labels', 'exclude_labels', 'include_classes',
-            'num_samples'):
+            'accepts_probability_labels'):
     value = getattr(args, key)
     if getattr(dataset, f'accepts_{key}', False) and value:
         dataset_kwargs[key] = value
