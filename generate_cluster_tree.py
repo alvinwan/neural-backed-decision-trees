@@ -38,7 +38,6 @@ index_node = 0
 def extendTree(cur_element, node):
     global index_node
     index_node += 1
-    print("Extending to", node.label)
     new_element = ET.SubElement(cur_element, "synset", {
         'wnid': str(index_node),
         'cluster': str(node.label)
@@ -62,6 +61,78 @@ def randomizeTree(root, node_list, branching_factor=2):
         if branch == branching_factor - 1:
             end = len(node_list)
         randomizeTree(root.children[-1], node_list[perm[start:end]], branching_factor)
+
+'''
+Cluster via heuristic, create a balanced tree with some branching factor b bottom up. 
+Methodology:
+    1. Cluster to k clusters.
+    2. For each class, find its linear weight via each cluster. sum of weights add to 1.
+    3. Start with any given class. Find the b - 1 other non-used classes with the LEAST amount
+        of shared weights with this given class. Essentially, their dot products is minimized.
+        These classes are clustered together.
+    4. Repeat step 3 until all classes clustered. Now move one step up, and repeat.
+ycounts - dictionary, {label : count}
+k - kmeans k
+y - TreeNodes, corresponds to each x
+'''
+def kmeans_cluster_weighted(x, y, k=5, disjoint=False, branching_factor=2, debug=False):
+    node_set = set(y)
+    n_classes = len(node_set)
+    ycounts = {node:0 for node in node_set}
+    for node in y:
+        ycounts[node] += 1
+
+    if debug:
+        print("Clustering top down for %d classes" % n_classes)
+
+    kmeans = KMeans(n_clusters = k).fit(x)
+    cluster_labels = kmeans.labels_
+
+    # count occurrences
+    cluster_count = {node:[0 for i in range(k)] for node in node_set}
+    for cluster_label, node in zip(cluster_labels, y):
+        cluster_count[node][cluster_label] += 1
+
+    # find weights
+    cluster_weights = {node: np.array(cluster_count[node]) / ycounts[node] for node in node_set}
+
+    # cluster via minimum dot products. Currently manually doing branching factor of 2
+    # TODO: implement higher branching factors. think of way to cluster
+    node_pool = list(node_set)
+    new_nodes = []
+    new_node_map = {}  # maps old nodes to their new parent node.
+
+    while len(node_pool) > 0:
+        node1 = node_pool[0]
+        node2 = node_pool[1]
+        for i, node in enumerate(node_pool[2:]):
+
+            if cluster_weights[node1].dot(cluster_weights[node2]) > cluster_weights[node1].dot(cluster_weights[node]):
+                if disjoint:
+                    node2 = node
+            else:
+                if not disjoint:
+                    node2 = node
+        # generate new node
+        new_node = TreeNode('node')
+        new_node.children.extend([node1, node2])
+        new_node_map[node1] = new_node
+        new_node_map[node2] = new_node
+        new_nodes.append(new_node)
+
+        node_pool.remove(node1)
+        node_pool.remove(node2)
+        if len(node_pool) == 1:   # if we are left with one element, add it to the previous node split
+            new_node_map[node_pool[0]] = new_nodes[-1]
+            new_nodes[-1].children.append(node_pool[0])
+            node_pool.remove(node_pool[0])
+
+    # get new y
+    new_y = []
+    for node in y:
+        new_y.append(new_node_map[node])
+
+    return new_y
 
 
 def kmeans_cluster_topdown(x, y, branching_factor=2, debug=False):
@@ -258,7 +329,7 @@ def get_feature_label_means():
 
 import argparse
 
-CHOICES = ('bottom-up-count', 'bottom-up-means', 'top-down')
+CHOICES = ('bottom-up-count', 'bottom-up-means', 'top-down', 'weighted-disjoint', 'weighted-joint')
 
 if __name__ == '__main__':
 
@@ -271,6 +342,7 @@ if __name__ == '__main__':
                         help='Batch size used for pulling data')
     parser.add_argument('--sample', default=1.0, type=float, help='How much of the dataset to sample')
     parser.add_argument('--branching-factor', default=2, type=int, help='branching factor')
+    parser.add_argument('--k', default=5, type=int, help='kmeans k')
     parser.add_argument('--method', choices=CHOICES, default=CHOICES[0])
     args = parser.parse_args()
 
@@ -308,7 +380,7 @@ if __name__ == '__main__':
         print("Using CUDA")
         model_ft = torch.nn.DataParallel(model_ft)
 
-    if args.method == CHOICES[0] or args.method == CHOICES[2]:
+    if args.method == CHOICES[0] or args.method == CHOICES[2] or args.method == CHOICES[3] or args.method == CHOICES[4]:
         feature_set, label_set = get_feature_label_counts()
     elif args.method == CHOICES[1]:
         feature_set, label_set = get_feature_label_means()
@@ -320,7 +392,7 @@ if __name__ == '__main__':
     root = ET.SubElement(tree, "synset", {
         "wnid": "-1"
     })
-    if args.method == CHOICES[2]:
+    if args.method == CHOICES[2]: # topdown
         TreeNoderoot = kmeans_cluster_topdown(feature_set, label_set, branching_factor=args.branching_factor, debug=True)
         TreeNoderoot.print()
         extendTree(root, TreeNoderoot)
@@ -333,12 +405,17 @@ if __name__ == '__main__':
                 new_node_dict[label] = TreeNode(label)
             tree_map.append(new_node_dict[label])
         # pass to clustering algo
-        while len(set(tree_map)) != 2:
+        while len(set(tree_map)) != 1:
             if args.method == CHOICES[0]:
                 tree_map = kmeans_cluster_counts(feature_set, tree_map, debug=True)
             elif args.method == CHOICES[1]:
                 tree_map = kmeans_cluster_means(feature_set, tree_map, debug=True)
-        # we now have the tree set up. Recursively create the tree, using our data struct
+            elif args.method == 'weighted-joint' or args.method == 'weighted-disjoint':
+                tree_map = kmeans_cluster_weighted(feature_set, tree_map, k=args.k,  
+                                                            disjoint=args.method == 'weighted-disjoint',
+                                                            branching_factor=args.branching_factor,
+                                                            debug=True)
+            # we now have the tree set up. Recursively create the tree, using our data struct
         for node in set(tree_map):
             node.print()
             extendTree(root, node)
@@ -355,7 +432,7 @@ if __name__ == '__main__':
         leaf.attrib['wnid'] = wnid_dict[index_cluster]
 
     directory = os.path.join('data', args.dataset)
-    path = os.path.join(directory, 'tree-image.xml')
+    path = os.path.join(directory, 'tree-image-%s.xml' % args.method)
     tree = ET.ElementTree(element=tree)
     tree = prune_single_child_nodes(tree)
     tree = prune_single_child_nodes(tree)
