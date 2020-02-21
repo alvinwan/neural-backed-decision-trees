@@ -56,7 +56,10 @@ args = parser.parse_args()
 if args.test:
     import xml.etree.ElementTree as ET
 
-    dataset = nmn_datasets.CIFAR10IncludeLabels()
+    dataset = nmn_datasets.CIFAR10IncludeLabels(num_samples=1)
+    print(len(dataset))
+
+    dataset = nmn_datasets.CIFAR10ExcludeLabels(num_samples=0)
     print(len(dataset))
 
     dataset = nmn_datasets.CIFAR10PathSanity()
