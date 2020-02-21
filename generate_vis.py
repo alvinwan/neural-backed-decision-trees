@@ -4,6 +4,7 @@ import argparse
 import torchvision
 import os
 
+from utils.utils import Colors
 from pathlib import Path
 from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from utils import custom_datasets
@@ -111,7 +112,7 @@ fname = Path(file).stem
 path_json = os.path.join(directory, f'{fname}-d3.json')
 json.dump(tree_data, open(path_json, 'w'))
 
-print('\033[92m==> Wrote JSON tree to {}\033[0m'.format(path_json))
+Colors.green('==> Wrote JSON tree to {}'.format(path_json))
 
 with open('vis/tree-template.html') as f:
     html = f.read().replace(
@@ -123,4 +124,4 @@ path_html = f'out/{fname}.html'
 with open(path_html, 'w') as f:
     f.write(html)
 
-print('\033[92m==> Wrote HTML tree to {}\033[0m'.format(path_html))
+Colors.green('==> Wrote HTML tree to {}'.format(path_html))

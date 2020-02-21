@@ -9,6 +9,7 @@ from utils.xmlutils import keep_matched_nodes_and_ancestors, count_nodes, \
     compute_depth, compute_num_children, prune_single_child_nodes, \
     prune_duplicate_leaves
 from utils.nltkutils import build_minimal_wordnet_tree, build_random_tree
+from utils.utils import Colors
 import xml.etree.ElementTree as ET
 import argparse
 import os
@@ -85,7 +86,7 @@ def main():
     path = os.path.join(directory, f'{fname}.xml')
     tree.write(path)
 
-    print('\033[92m==> Wrote tree to {}\033[0m'.format(path))
+    Colors.green('==> Wrote tree to {}'.format(path))
 
     wnids_set = {node.get('wnid') for node in tree.iter()}
     assert all(wnid.strip() in wnids_set for wnid in wnids), \
