@@ -21,12 +21,13 @@ def generate_fname(**kwargs):
     return fname
 
 
-def get_wnids_from_dataset(dataset, root='./data'):
+def get_directory(dataset, root='./data'):
     folder = DATASET_TO_FOLDER_NAME[dataset]
-    return get_wnids_from_directory(os.path.join(root, folder))
+    return os.path.join(root, folder)
 
 
-def get_wnids_from_directory(directory):
+def get_wnids_from_dataset(dataset, root='./data'):
+    directory = get_directory(dataset, root)
     return get_wnids(os.path.join(directory, 'wnids.txt'))
 
 
@@ -44,6 +45,10 @@ def wnid_to_synset(wnid):
     offset = int(wnid[1:])
     pos = wnid[0]
     return wn.synset_from_pos_and_offset(wnid[0], offset)
+
+
+def synset_to_name(synset):
+    return synset.name().split('.')[0]
 
 
 def get_leaves(G):
@@ -64,16 +69,24 @@ def get_roots(G):
             yield node
 
 
+def set_node_label(G, synset):
+    nx.set_node_attributes(G, {
+        synset_to_wnid(synset): synset_to_name(synset)
+    }, 'label')
+
+
 def build_minimal_wordnet_graph(wnids):
     G = nx.DiGraph()
 
     for wnid in wnids:
         G.add_node(wnid)
         synset = wnid_to_synset(wnid)
+        set_node_label(G, synset)
 
         hypernyms = [synset]
         while hypernyms:
             current = hypernyms.pop(0)
+            set_node_label(G, current)
             for hypernym in current.hypernyms():
                 G.add_edge(synset_to_wnid(hypernym), synset_to_wnid(current))
                 hypernyms.append(hypernym)

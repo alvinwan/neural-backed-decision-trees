@@ -28,7 +28,7 @@ wnid_to_class = {wnid: cls for wnid, cls in zip(wnids, dataset.classes)}
 def build_tree(root, parent='null'):
     return {
         'name': root,
-        'label': wnid_to_class.get(root, ''),
+        'label': G.nodes[root].get('label', ''),
         'parent': parent,
         'children': [build_tree(child, root) for child in G.succ[root]]
     }
@@ -38,7 +38,7 @@ def build_graph():
     return {
         'nodes': [{
             'name': wnid,
-            'label': wnid_to_class.get(wnid, ''),
+            'label': G.nodes[root].get('label', ''),
             'id': wnid
         } for wnid in G.nodes],
         'links': [{
