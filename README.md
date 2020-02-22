@@ -7,6 +7,12 @@ To get started,
 
 ## Tree
 
+
+### Extra Roots Structure
+The tree root will be a fake root, with wnid="fakeRoot". All fake roots must be added at the end of the tree structure (with the original tree being the left-most child of "fakeRoot". Children of these fake roots must have the parameter extra="True", and if any of these children are not true leaves (ie class labels), they must have the parameter leaf="false".
+
+### Generation
+
 > Too lazy? Run `bash scripts/generate_trees.sh` to generate trees for all
 datasets with all methods.
 
