@@ -78,9 +78,9 @@ def main():
 
     print_tree_stats(tree, 'matched', args)
     # lol
-    # tree = prune_single_child_nodes(tree)
-    # tree = prune_single_child_nodes(tree)
-    # tree = prune_single_child_nodes(tree)
+    tree = prune_single_child_nodes(tree)
+    tree = prune_single_child_nodes(tree)
+    tree = prune_single_child_nodes(tree)
 
     # prune duplicate leaves
     tree = prune_duplicate_leaves(tree)
