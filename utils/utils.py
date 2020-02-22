@@ -34,6 +34,30 @@ DEFAULT_TINYIMAGENET200_TREE = './data/tiny-imagenet-200/tree-build.xml'
 DEFAULT_TINYIMAGENET200_WNIDS = './data/tiny-imagenet-200/wnids.txt'
 
 
+class Colors:
+    RED = '\x1b[31m'
+    GREEN = '\x1b[32m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    CYAN = '\x1b[36m'
+
+    @classmethod
+    def red(cls, *args):
+        print(cls.RED + args[0], *args[1:], cls.ENDC)
+
+    @classmethod
+    def green(cls, *args):
+        print(cls.GREEN + args[0], *args[1:], cls.ENDC)
+
+    @classmethod
+    def cyan(cls, *args):
+        print(cls.CYAN + args[0], *args[1:], cls.ENDC)
+
+    @classmethod
+    def bold(cls, *args):
+        print(cls.BOLD + args[0], *args[1:], cls.ENDC)
+
+
 def get_mean_and_std(dataset):
     '''Compute the mean and std value of dataset.'''
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=2)
@@ -165,7 +189,8 @@ def get_fname(args):
 
 
 def generate_fname(dataset, model, path_tree, wnid=None, name='',
-        trainset=None, **kwargs):
+        trainset=None, include_labels=(), exclude_labels=(),
+        include_classes=(), num_samples=0, **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
     fname += '-' + model
@@ -178,4 +203,15 @@ def generate_fname(dataset, model, path_tree, wnid=None, name='',
         fname += '-' + path.stem.replace('tree-', '', 1)
     else:
         fname += '-build'  # WARNING: hard-coded
+    if include_labels:
+        labels = ",".join(map(str, include_labels))
+        fname += f'-incl{labels}'
+    if exclude_labels:
+        labels = ",".join(map(str, exclude_labels))
+        fname += f'-excl{labels}'
+    if include_classes:
+        labels = ",".join(map(str, include_classes))
+        fname += f'-incc{labels}'
+    if num_samples != 0 and num_samples is not None:
+        fname += f'-samples{num_samples}'
     return fname

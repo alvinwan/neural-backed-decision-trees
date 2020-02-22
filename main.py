@@ -14,6 +14,7 @@ import argparse
 import numpy as np
 
 import models
+from utils.utils import Colors
 from utils.utils import (
     progress_bar, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY,
     set_np_printoptions
@@ -50,13 +51,21 @@ parser.add_argument('--test-path', action='store_true',
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
 
+parser.add_argument('--include-labels', nargs='*', type=int)
+parser.add_argument('--exclude-labels', nargs='*', type=int)
+parser.add_argument('--include-classes', nargs='*', type=int)
+parser.add_argument('--num-samples', type=int)
+
 args = parser.parse_args()
 
 
 if args.test:
     import xml.etree.ElementTree as ET
 
-    dataset = nmn_datasets.CIFAR10IncludeLabels()
+    dataset = nmn_datasets.CIFAR10IncludeLabels(num_samples=1)
+    print(len(dataset))
+
+    dataset = nmn_datasets.CIFAR10ExcludeLabels(num_samples=0)
     print(len(dataset))
 
     dataset = nmn_datasets.CIFAR10PathSanity()
@@ -126,12 +135,17 @@ dataset_args = ()
 dataset_kwargs = {}
 if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
-if getattr(dataset, 'accepts_path_tree', False) and args.path_tree:
-    dataset_kwargs['path_tree'] = args.path_tree
-elif args.path_tree:
-    print(
-        f' => Warning: Dataset {args.dataset} does not support custom '
-        f'tree paths: {args.path_tree}')
+
+for key in ('path_tree', 'include_labels', 'exclude_labels', 'include_classes',
+            'num_samples'):
+    value = getattr(args, key)
+    if getattr(dataset, f'accepts_{key}', False) and value:
+        dataset_kwargs[key] = value
+        Colors.cyan(f'{key}:\t{value}')
+    elif value:
+        Colors.red(
+            f'Warning: Dataset {args.dataset} does not support custom '
+            f'{key}: {value}')
 
 # TODO: if root changes, it needs to be passed to the sanity dataset in IdInitJointTree models
 # and jointNodes
@@ -143,7 +157,7 @@ assert trainset.classes == testset.classes, (trainset.classes, testset.classes)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
-print(f'Training with dataset {args.dataset} and {len(trainset.classes)} classes')
+Colors.cyan(f'Training with dataset {args.dataset} and {len(trainset.classes)} classes')
 
 # Model
 print('==> Building model..')
@@ -155,7 +169,7 @@ model_kwargs = {}
 if getattr(model, 'accepts_path_tree', False) and args.path_tree:
     model_kwargs['path_tree'] = args.path_tree
 elif args.path_tree:
-    print(
+    Colors.red(
         f' => Warning: Model {args.model} does not support custom '
         f'tree paths: {args.path_tree}')
 
@@ -174,17 +188,17 @@ if args.test_path_sanity or args.test_path:
 if args.test_path_sanity:
     net.set_weight(trainset.get_weights())
 
+fname = generate_fname(**vars(args))
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    fname = generate_fname(**vars(args))
     try:
         checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
         net.load_state_dict(checkpoint['net'])
         best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
-        print(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
+        Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
               f'{best_acc} at {fname}')
     except FileNotFoundError as e:
         print('==> No checkpoint found. Skipping...')
@@ -203,7 +217,7 @@ if args.backbone:
         if hasattr(get_net(), 'load_backbone'):
             get_net().load_backbone(args.backbone)
         else:
-            print('==> FAILED to load backbone. No `load_backbone` provided for model.')
+            Colors.red('==> FAILED to load backbone. No `load_backbone` provided for model.')
 
 criterion = nn.CrossEntropyLoss()  # TODO(alvin): WARNING JointNodes custom_loss hard-coded to CrossEntropyLoss
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
@@ -317,7 +331,7 @@ analyzer = generate(trainset, testset)
 
 if args.eval:
     if not args.resume:
-        print(' * Warning: Model is not loaded from checkpoint. Use --resume')
+        Colors.red(' * Warning: Model is not loaded from checkpoint. Use --resume')
 
     analyzer.start_epoch(0)
     test(0, analyzer, checkpoint=False)
