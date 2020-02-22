@@ -14,47 +14,7 @@ def wnid_to_synset(wnid):
     return wn.synset_from_pos_and_offset(wnid[0], offset)
 
 
-def get_paths(synset, extra_roots=False):
-    last = [[synset]]
-    current = []
-    final = []
-
-    while last:
-        while last:
-            path = last.pop(0)
-            synset = path[0]
-            if not synset.hypernyms():
-                final.append(path)
-            else:
-                for hypernym in synset.hypernyms():
-                    path = path[:]
-                    path.insert(0, hypernym)
-                    current.append(path)
-
-                    if not extra_roots:
-                        break
-        last = current
-        current = []
-    return final
-
-
-def build_tree(root, path, wnid_to_node={}, wnid_to_parent={}):
-    parent = root
-    for synset in path:
-        id = synset_to_wnid(synset)
-        if id in wnid_to_node:
-            parent = wnid_to_node[id]
-        elif id == 'n10129825':  # harcode making woman/girl siblings
-            wnid_to_parent[id] = parent
-            parent = SubElement(wnid_to_parent['n10787470'], 'synset', {'wnid': id})
-            wnid_to_node[id] = parent
-        else:
-            wnid_to_parent[id] = parent
-            parent = SubElement(parent, 'synset', {'wnid': id})
-            wnid_to_node[id] = parent
-
-
-def build_minimal_wordnet_tree(wnids, extra_roots=False):
+def build_minimal_wordnet_tree(wnids):
     tree = Element('tree')
     root = SubElement(tree, 'synset', {'wnid': 'fall11'})
     wnid_to_node = {'fall11': root}
@@ -63,16 +23,31 @@ def build_minimal_wordnet_tree(wnids, extra_roots=False):
     for wnid in wnids:
         offset = int(wnid[1:])
         synset = original = wnid_to_synset(wnid)
-
         assert synset is not None
+
+        path = [synset_to_wnid(synset)]
+        while synset.hypernyms():
+            hypernym = synset.hypernyms()[0]
+            path.insert(0, synset_to_wnid(hypernym))
+            synset = hypernym
+
         assert wnid == synset_to_wnid(original), (
             f'Wrong synset may have been used for wnid {wnid} (became '
             f'{synset_to_wnid(original)})'
         )
 
-        paths = get_paths(synset, extra_roots=extra_roots)
-        for path in paths:
-            build_tree(root, path, wnid_to_node, wnid_to_parent)
+        parent = root
+        for id in path:
+            if id in wnid_to_node:
+                parent = wnid_to_node[id]
+            elif id == 'n10129825':  # harcode making woman/girl siblings
+                wnid_to_parent[id] = parent
+                parent = SubElement(wnid_to_parent['n10787470'], 'synset', {'wnid': id})
+                wnid_to_node[id] = parent
+            else:
+                wnid_to_parent[id] = parent
+                parent = SubElement(parent, 'synset', {'wnid': id})
+                wnid_to_node[id] = parent
 
         node = root.find(f'.//synset[@wnid="{wnid}"]')
         assert node is not None, (

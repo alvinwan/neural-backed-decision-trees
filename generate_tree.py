@@ -49,9 +49,6 @@ def main():
         default='build')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--branching-factor', type=int, default=2)
-    parser.add_argument('--extra-roots', action='store_true',
-                        help='If should include all parents of each synset '
-                        'as extra roots.')
     parser.add_argument('--verbose', action='store_true')
 
     args = parser.parse_args()
@@ -69,10 +66,9 @@ def main():
             './/synset[@wnid="{}"]'.format(wnid) for wnid in wnids
         ])
     elif args.method == 'build':
-        tree = build_minimal_wordnet_tree(wnids, extra_roots=args.extra_roots)
+        tree = build_minimal_wordnet_tree(wnids)
     elif args.method == 'random':
-        tree = build_random_tree(
-            wnids, seed=args.seed, branching_factor=args.branching_factor)
+        tree = build_random_tree(wnids, seed=args.seed, branching_factor=args.branching_factor)
     else:
         raise NotImplementedError(f'Method "{args.method}" not yet handled.')
 
