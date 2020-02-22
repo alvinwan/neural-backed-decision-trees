@@ -40,6 +40,7 @@ class TinyImagenet200(Dataset):
         self.root = root
         self.dataset = dataset(root, *args, **kwargs)
         self.classes = self.dataset.classes
+        self.class_to_idx = {cls: i for i, cls in enumerate(self.classes)}
 
     def download(self, root='./'):
         """Download and unzip Imagenet200 files in the `root` directory."""
