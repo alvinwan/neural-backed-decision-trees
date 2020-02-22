@@ -3,15 +3,11 @@
 from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from utils.graph import build_minimal_wordnet_graph, \
     prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
-    get_parser
+    get_parser, get_wnids_from_dataset
 from utils.utils import Colors
 import xml.etree.ElementTree as ET
 import argparse
 import os
-
-
-def get_wnids_from_directory(directory):
-    return get_wnids(os.path.join(directory, 'wnids.txt'))
 
 
 def print_graph_stats(G, name, args):
@@ -34,8 +30,7 @@ def main():
     args = parser.parse_args()
 
     folder = DATASET_TO_FOLDER_NAME[args.dataset]
-    directory = os.path.join('data', folder)
-    wnids = get_wnids_from_directory(directory)
+    wnids = get_wnids_from_dataset(directory)
 
     G = build_minimal_wordnet_graph(wnids)
     print_graph_stats(G, 'matched', args)

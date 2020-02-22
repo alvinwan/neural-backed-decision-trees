@@ -1,9 +1,10 @@
 import networkx as nx
 import json
 from nltk.corpus import wordnet as wn
-from utils.utils import DATASETS
+from utils.utils import DATASETS, DATASET_TO_FOLDER_NAME
 from networkx.readwrite.json_graph import node_link_data, node_link_graph
 import argparse
+import os
 
 
 def get_parser():
@@ -18,6 +19,15 @@ def get_parser():
 def generate_fname(**kwargs):
     fname = f'graph-wordnet'
     return fname
+
+
+def get_wnids_from_dataset(dataset, root='./data'):
+    folder = DATASET_TO_FOLDER_NAME[dataset]
+    return get_wnids_from_directory(os.path.join(root, folder))
+
+
+def get_wnids_from_directory(directory):
+    return get_wnids(os.path.join(directory, 'wnids.txt'))
 
 
 def get_wnids(path_wnids):
