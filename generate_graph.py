@@ -8,6 +8,15 @@ import argparse
 import os
 
 
+def get_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset',
+        help='Must be a folder data/{dataset} containing a wnids.txt',
+        choices=DATASETS,
+        default='CIFAR10')
+    return parser
+
+
 def generate_fname(method, seed=0, branching_factor=2, **kwargs):
     fname = f'tree-{method}'
     if method == 'random':
@@ -30,23 +39,7 @@ def print_graph_stats(G, name, args):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset',
-        help='Must be a folder data/{dataset} containing a wnids.txt',
-        choices=DATASETS,
-        default='CIFAR10')
-    parser.add_argument('--method', choices=METHODS,
-        help='structure_released.xml apparently is missing many CIFAR100 classes. '
-        'As a result, pruning does not work for CIFAR100. Random will randomly '
-        'join clusters together, iteratively, to make a roughly-binary tree.',
-        default='build')
-    parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--branching-factor', type=int, default=2)
-    parser.add_argument('--extra-roots', action='store_true',
-                        help='If should include all parents of each synset '
-                        'as extra roots.')
-    parser.add_argument('--verbose', action='store_true')
-
+    parser = get_parser()
     args = parser.parse_args()
 
     folder = DATASET_TO_FOLDER_NAME[args.dataset]
