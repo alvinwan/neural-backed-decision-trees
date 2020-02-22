@@ -60,11 +60,6 @@ def main():
     path = os.path.join(directory, f'{fname}.json')
     print('==> Reading from {}'.format(path))
 
-    dataset = getattr(data, args.dataset)('./data')
-    wnids = get_wnids_from_dataset(args.dataset)
-    wnid_to_class = {wnid: cls for wnid, cls in zip(wnids, dataset.classes)}
-
-
     G = read_graph(path)
 
     num_roots = len(list(get_roots(G)))
