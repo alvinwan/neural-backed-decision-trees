@@ -38,7 +38,7 @@ def build_graph():
     return {
         'nodes': [{
             'name': wnid,
-            'label': G.nodes[root].get('label', ''),
+            'label': G.nodes[wnid].get('label', ''),
             'id': wnid
         } for wnid in G.nodes],
         'links': [{
