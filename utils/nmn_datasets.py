@@ -46,10 +46,18 @@ class Node:
         self.num_classes = n
 
         for new_index, child in enumerate(children):
+            if 'extra' in child.attrib:   # find the actual node
+                child = tree.find('.//synset[@wnid="{}"]'.format(child.get('wnid')))
             for leaf in get_leaves(child):
                 wnid = leaf.get('wnid')
+                if 'leaf' in leaf.attrib and leaf.get('leaf') == 'false':
+                    continue
                 old_index = wnids.index(wnid)
                 self.mapping[old_index] = new_index
+
+        if self.wnid == 'test':
+            print(len(self.mapping))
+
         if len(self.mapping) < self.num_original_classes:
             self.num_classes += 1
 
@@ -114,7 +122,8 @@ class Node:
         wnid_to_node = {}
         for node in tree.iter():
             wnid = node.get('wnid')
-            if wnid is None or len(node.getchildren()) == 0:
+            if wnid is None or len(node.getchildren()) == 0 or \
+                wnid == 'fakeRoot' or ('leaf' in node.attrib and node.get('leaf') == 'false'):
                 continue
             wnid_to_node[wnid] = Node(node.get('wnid'),
                 path_tree=path_tree, path_wnids=path_wnids, classes=classes)
