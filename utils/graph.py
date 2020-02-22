@@ -36,7 +36,7 @@ def prune_single_successor_nodes(G):
     for node in G.nodes:
         if len(G.succ[node]) == 1:
             succ = list(G.succ[node])[0]
-            G = nx.contracted_nodes(G, node, succ, self_loops=False)
+            G = nx.contracted_nodes(G, succ, node, self_loops=False)
     return G
 
 

@@ -17,13 +17,14 @@ def get_parser():
     return parser
 
 
-def generate_fname(method, seed=0, branching_factor=2, **kwargs):
-    fname = f'tree-{method}'
-    if method == 'random':
-        if seed != 0:
-            fname += f'-seed{seed}'
-        if branching_factor != 2:
-            fname += f'-branch{branching_factor}'
+def get_wnids(directory):
+    with open(os.path.join(directory, 'wnids.txt')) as f:
+        wnids = [wnid.strip() for wnid in f.readlines()]
+    return wnids
+
+
+def generate_fname(**kwargs):
+    fname = f'graph'
     return fname
 
 
@@ -34,8 +35,12 @@ def print_graph_stats(G, name, args):
         len(G.nodes),
         0,  # compute_depth(tree),
         max(num_children)))
-    if args.verbose:
-        print('[{}]'.format(name), num_children)
+
+
+def assert_all_wnids_in_graph(G, wnids):
+    assert all(wnid.strip() in G.nodes for wnid in wnids), [
+        wnid for wnid in wnids if wnid not in G.nodes
+    ]
 
 
 def main():
@@ -44,30 +49,21 @@ def main():
 
     folder = DATASET_TO_FOLDER_NAME[args.dataset]
     directory = os.path.join('data', folder)
-    with open(os.path.join(directory, 'wnids.txt')) as f:
-        wnids = [wnid.strip() for wnid in f.readlines()]
-
-    # elif args.method == 'random':
-    #     tree = build_random_tree(
-    #         wnids, seed=args.seed, branching_factor=args.branching_factor)
-    # else:
-    #     raise NotImplementedError(f'Method "{args.method}" not yet handled.')
+    wnids = get_wnids(directory)
 
     G = build_minimal_wordnet_graph(wnids)
     print_graph_stats(G, 'matched', args)
+    assert_all_wnids_in_graph(G, wnids)
 
     G = prune_single_successor_nodes(G)
     print_graph_stats(G, 'pruned', args)
+    assert_all_wnids_in_graph(G, wnids)
 
     fname = generate_fname(**vars(args))
     path = os.path.join(directory, f'{fname}.json')
     write_graph(G, path)
 
     Colors.green('==> Wrote tree to {}'.format(path))
-
-    # wnids_set = {node.get('wnid') for node in tree.iter()}
-    # assert all(wnid.strip() in wnids_set for wnid in wnids), \
-    #     [wnid.strip() for wnid in wnids if wnid.strip() not in wnids_set]
 
 
 if __name__ == '__main__':
