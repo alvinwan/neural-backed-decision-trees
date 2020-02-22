@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from utils.utils import Colors, METHODS, DATASET_TO_FOLDER_NAME
 from utils.graph import generate_fname, get_parser, read_graph, get_roots, \
-    get_wnids_from_dataset
+    get_wnids_from_dataset, get_directory
 from networkx.readwrite.json_graph import adjacency_data
 from utils import data
 
@@ -53,10 +53,8 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    folder = DATASET_TO_FOLDER_NAME[args.dataset]
-    directory = os.path.join('data', folder)
-
     fname = generate_fname(**vars(args))
+    directory = get_directory(args.dataset)
     path = os.path.join(directory, f'{fname}.json')
     print('==> Reading from {}'.format(path))
 
