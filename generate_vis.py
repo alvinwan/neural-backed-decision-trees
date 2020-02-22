@@ -8,7 +8,6 @@ from pathlib import Path
 from utils.utils import Colors, METHODS, DATASET_TO_FOLDER_NAME
 from utils.graph import generate_fname, get_parser, read_graph, get_roots
 from networkx.readwrite.json_graph import adjacency_data
-from utils import custom_datasets
 
 
 parser = get_parser()

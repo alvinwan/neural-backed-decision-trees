@@ -10,7 +10,7 @@ from utils.utils import (
 )
 from collections import defaultdict
 from utils.graph import get_wnids, read_graph, get_leaves, get_non_leaves
-from . import custom_datasets
+from . import imagenet
 import random
 
 
@@ -242,7 +242,7 @@ class TinyImagenet200JointNodes(JointNodesDataset):
             root='./data',
             **kwargs):
         super().__init__(path_tree, path_wnids,
-            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs))
+            dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs))
 
 
 class PathSanityDataset(Dataset):
@@ -332,7 +332,7 @@ class TinyImagenet200PathSanity(PathSanityDataset):
             root='./data',
             **kwargs):
         super().__init__(path_tree, path_wnids,
-            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs))
+            dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs))
 
 
 class ResampleLabelsDataset(Dataset):
@@ -443,7 +443,7 @@ class TinyImagenet200ResampleLabels(ResampleLabelsDataset):
 
     def __init__(self, *args, root='./data', probability_labels=1, **kwargs):
         super().__init__(
-            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs),
+            dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs),
             probability_labels=probability_labels)
 
 
@@ -482,7 +482,7 @@ class TinyImagenet200IncludeLabels(IncludeLabelsDataset):
 
     def __init__(self, *args, root='./data', include_labels=(0,), **kwargs):
         super().__init__(
-            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs),
+            dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs),
             include_labels=include_labels)
 
 
@@ -519,5 +519,5 @@ class TinyImagenet200ExcludeLabels(ExcludeLabelsDataset):
 
     def __init__(self, *args, root='./data', exclude_labels=(0,), **kwargs):
         super().__init__(
-            dataset=custom_datasets.TinyImagenet200(*args, root=root, **kwargs),
+            dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs),
             exclude_labels=exclude_labels)

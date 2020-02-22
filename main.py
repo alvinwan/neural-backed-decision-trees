@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-from utils import custom_datasets, nmn_datasets, analysis
+from utils import data, analysis
 
 import torchvision
 import torchvision.transforms as transforms
@@ -22,7 +22,7 @@ from utils.utils import (
 
 
 set_np_printoptions()
-datasets = ('CIFAR10', 'CIFAR100') + custom_datasets.names + nmn_datasets.names
+datasets = ('CIFAR10', 'CIFAR100') + data.imagenet.names + data.custom.names
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
@@ -62,16 +62,16 @@ args = parser.parse_args()
 if args.test:
     import xml.etree.ElementTree as ET
 
-    dataset = nmn_datasets.CIFAR10IncludeLabels()
+    dataset = data.CIFAR10IncludeLabels()
     print(len(dataset))
 
-    dataset = nmn_datasets.CIFAR10ExcludeLabels()
+    dataset = data.CIFAR10ExcludeLabels()
     print(len(dataset))
 
-    dataset = nmn_datasets.CIFAR10ResampleLabels(probability_labels=0.5)
+    dataset = data.CIFAR10ResampleLabels(probability_labels=0.5)
     print(len(dataset))
 
-    dataset = nmn_datasets.CIFAR10PathSanity()
+    dataset = data.CIFAR10PathSanity()
     print(dataset[0][0])
 
     for wnid, text in (
@@ -79,7 +79,7 @@ if args.test:
             ('n03575240', 'instrument'),
             ('n03791235', 'motor vehicle'),
             ('n02370806', 'hoofed mammal')):
-        dataset = nmn_datasets.CIFAR10Node(wnid)
+        dataset = data.CIFAR10Node(wnid)
 
         print(text)
         print(dataset.node.old_to_new_classes)
@@ -106,20 +106,15 @@ transform_test = transforms.Compose([
 ])
 
 if 'TinyImagenet200' in args.dataset:
-    transform_train = custom_datasets.TinyImagenet200.transform_train
-    transform_test = custom_datasets.TinyImagenet200.transform_val
+    transform_train = data.TinyImagenet200.transform_train
+    transform_test = data.TinyImagenet200.transform_val
 
 if args.test_path_sanity or args.test_path:
     assert 'PathSanity' in args.dataset
 if args.model == 'CIFAR10JointNodes':
     assert args.dataset == 'CIFAR10JointNodes'
 
-if args.dataset in nmn_datasets.names:
-    dataset = getattr(nmn_datasets, args.dataset)
-elif args.dataset in custom_datasets.names:
-    dataset = getattr(custom_datasets, args.dataset)
-else:
-    dataset = getattr(torchvision.datasets, args.dataset)
+dataset = getattr(data, args.dataset)
 
 dataset_args = ()
 dataset_kwargs = {}

@@ -65,7 +65,7 @@ def build_minimal_wordnet_graph(wnids):
         while hypernyms:
             current = hypernyms.pop(0)
             for hypernym in current.hypernyms():
-                G.add_edge(synset_to_wnid(hypernym), wnid)
+                G.add_edge(synset_to_wnid(hypernym), synset_to_wnid(current))
                 hypernyms.append(hypernym)
 
         assert len(G.succ[wnid]) == 0

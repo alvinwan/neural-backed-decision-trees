@@ -2,7 +2,7 @@ from torchvision import datasets
 import torch
 import torchvision.models as models
 import torchvision.transforms as transforms
-from utils import custom_datasets
+from utils.data import imagenet as custom_datasets
 import numpy as np
 import operator
 import xml.etree.ElementTree as ET
@@ -63,7 +63,7 @@ def randomizeTree(root, node_list, branching_factor=2):
         randomizeTree(root.children[-1], node_list[perm[start:end]], branching_factor)
 
 '''
-Cluster via heuristic, create a balanced tree with some branching factor b bottom up. 
+Cluster via heuristic, create a balanced tree with some branching factor b bottom up.
 Methodology:
     1. Cluster to k clusters.
     2. For each class, find its linear weight via each cluster. sum of weights add to 1.
@@ -411,7 +411,7 @@ if __name__ == '__main__':
             elif args.method == CHOICES[1]:
                 tree_map = kmeans_cluster_means(feature_set, tree_map, debug=True)
             elif args.method == 'weighted-joint' or args.method == 'weighted-disjoint':
-                tree_map = kmeans_cluster_weighted(feature_set, tree_map, k=args.k,  
+                tree_map = kmeans_cluster_weighted(feature_set, tree_map, k=args.k,
                                                             disjoint=args.method == 'weighted-disjoint',
                                                             branching_factor=args.branching_factor,
                                                             debug=True)
