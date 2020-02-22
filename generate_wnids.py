@@ -3,7 +3,7 @@
 import argparse
 import torchvision
 from nltk.corpus import wordnet as wn
-from utils.nltkutils import synset_to_wnid
+from utils.graph import synset_to_wnid
 from pathlib import Path
 from utils.utils import Colors
 import os

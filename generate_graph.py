@@ -2,29 +2,16 @@
 
 from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from utils.graph import build_minimal_wordnet_graph, \
-    prune_single_successor_nodes, write_graph, get_wnids
+    prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
+    get_parser
 from utils.utils import Colors
 import xml.etree.ElementTree as ET
 import argparse
 import os
 
 
-def get_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset',
-        help='Must be a folder data/{dataset} containing a wnids.txt',
-        choices=DATASETS,
-        default='CIFAR10')
-    return parser
-
-
 def get_wnids_from_directory(directory):
     return get_wnids(os.path.join(directory, 'wnids.txt'))
-
-
-def generate_fname(**kwargs):
-    fname = f'graph-wordnet'
-    return fname
 
 
 def print_graph_stats(G, name, args):

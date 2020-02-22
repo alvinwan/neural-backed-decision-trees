@@ -1,7 +1,23 @@
 import networkx as nx
 import json
 from nltk.corpus import wordnet as wn
+from utils.utils import DATASETS
 from networkx.readwrite.json_graph import node_link_data, node_link_graph
+import argparse
+
+
+def get_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset',
+        help='Must be a folder data/{dataset} containing a wnids.txt',
+        choices=DATASETS,
+        default='CIFAR10')
+    return parser
+
+
+def generate_fname(**kwargs):
+    fname = f'graph-wordnet'
+    return fname
 
 
 def get_wnids(path_wnids):
@@ -29,6 +45,12 @@ def get_leaves(G):
 def get_non_leaves(G):
     for node in G.nodes:
         if len(G.succ[node]) > 0:
+            yield node
+
+
+def get_roots(G):
+    for node in G.nodes:
+        if len(G.pred[node]) == 0:
             yield node
 
 
