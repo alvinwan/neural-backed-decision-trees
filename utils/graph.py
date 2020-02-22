@@ -4,6 +4,12 @@ from nltk.corpus import wordnet as wn
 from networkx.readwrite.json_graph import node_link_data, node_link_graph
 
 
+def get_wnids(path_wnids):
+    with open(path_wnids) as f:
+        wnids = [wnid.strip() for wnid in f.readlines()]
+    return wnids
+
+
 def synset_to_wnid(synset):
     return f'{synset.pos()}{synset.offset():08d}'
 
@@ -12,6 +18,18 @@ def wnid_to_synset(wnid):
     offset = int(wnid[1:])
     pos = wnid[0]
     return wn.synset_from_pos_and_offset(wnid[0], offset)
+
+
+def get_leaves(G):
+    for node in G.nodes:
+        if len(G.succ[node]) == 0:
+            yield node
+
+
+def get_non_leaves(G):
+    for node in G.nodes:
+        if len(G.succ[node]) > 0:
+            yield node
 
 
 def build_minimal_wordnet_graph(wnids):

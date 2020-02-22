@@ -1,6 +1,4 @@
 import torchvision.datasets as datasets
-import xml.etree.ElementTree as ET
-from utils.xmlutils import get_leaves, remove
 import torch
 import numpy as np
 from torch.utils.data import Dataset
@@ -10,6 +8,8 @@ from utils.utils import (
     DEFAULT_CIFAR100_WNIDS, DEFAULT_TINYIMAGENET200_TREE,
     DEFAULT_TINYIMAGENET200_WNIDS
 )
+from collections import defaultdict
+from utils.graph import get_wnids, read_graph, get_leaves, get_non_leaves
 from . import custom_datasets
 import random
 
@@ -27,69 +27,64 @@ __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
 
 class Node:
 
-    def __init__(self, wnid,
+    def __init__(self, wnid, classes,
             path_tree=DEFAULT_CIFAR10_TREE,
-            path_wnids=DEFAULT_CIFAR10_WNIDS,
-            classes=()):
+            path_wnids=DEFAULT_CIFAR10_WNIDS):
         self.wnid = wnid
+        self.wnids = get_wnids(path_wnids)
+        self.G = read_graph(path_tree)
+
         self.original_classes = classes
+        self.num_original_classes = len(self.wnids)
 
-        with open(path_wnids) as f:
-            wnids = [line.strip() for line in f.readlines()]
-        self.num_original_classes = len(wnids)
+        assert not self.is_leaf(), 'Cannot build dataset for leaf'
+        self.num_children = len(self.get_children())
+        self.num_classes = self.num_children + int(self.is_root())
 
-        tree = ET.parse(path_tree)
+        self.old_to_new_classes = self.build_old_to_new_classes()
+        self.new_to_old_classes = self.build_new_to_old_classes()
+        self.classes = self.build_classes()
 
-        # generate mapping from wnid to class
-        self.mapping = {}
-        node = tree.find('.//synset[@wnid="{}"]'.format(wnid))
-        assert node is not None, f'Failed to find node with wnid {wnid}'
-        children = node.getchildren()
-        n = len(children)
-        assert n > 0, 'Cannot build dataset for leaf node.'
-        self.num_children = n
-        self.num_classes = n
-
-        for new_index, child in enumerate(children):
-            if 'extra' in child.attrib:   # find the actual node
-                child = tree.find('.//synset[@wnid="{}"]'.format(child.get('wnid')))
-            for leaf in get_leaves(child):
-                wnid = leaf.get('wnid')
-                if 'leaf' in leaf.attrib and leaf.get('leaf') == 'false':
-                    continue
-                old_index = wnids.index(wnid)
-                self.mapping[old_index] = new_index
-
-        if self.wnid == 'test':
-            print(len(self.mapping))
-
-        if len(self.mapping) < self.num_original_classes:
-            self.num_classes += 1
-
-        for old_index in range(self.num_original_classes):
-            if old_index not in self.mapping:
-                self.mapping[old_index] = n
-
-        self.new_to_old = [[] for _ in range(self.num_classes)]
-        for old_index in range(self.num_original_classes):
-            new_index = self.mapping[old_index]
-            self.new_to_old[new_index].append(old_index)
-
-        self.classes = []
-        if self.original_classes:
-            self.classes = [','.join(
-                [self.original_classes[old_index] for old_index in old_indices])
-                for old_indices in self.new_to_old
-            ]
         self._probabilities = None
         self._class_weights = None
 
-        self.children_wnids = [child.get('wnid') for child in children]
+    def get_parents(self):
+        return self.G.pred[self.wnid]
+
+    def get_children(self):
+        return self.G.succ[self.wnid]
+
+    def is_leaf(self):
+        return len(self.get_children()) == 0
+
+    def is_root(self):
+        return len(self.get_parents()) == 0
+
+    def build_old_to_new_classes(self):
+        mapping = {}
+        for new_index, child in enumerate(self.get_children()):
+            for leaf in get_leaves(self.G):
+                old_index = self.wnids.index(leaf)
+                mapping[old_index] = new_index
+        return mapping
+
+    def build_new_to_old_classes(self):
+        mapping = defaultdict(lambda: [])
+        for old_index in range(self.num_original_classes):
+            new_index = self.old_to_new_classes[old_index]
+            mapping[new_index].append(old_index)
+        return mapping
+
+    def build_classes(self):
+        return [
+            ','.join([self.original_classes[old_index] for old_index in old_indices])
+            for old_indices in self.new_to_old_classes.values()
+        ]
 
     @property
     def class_counts(self):
         """Number of old classes in each new class"""
-        return [len(old_indices) for old_indices in self.new_to_old]
+        return [len(old_indices) for old_indices in self.new_to_old_classes]
 
     @property
     def probabilities(self):
@@ -103,7 +98,7 @@ class Node:
             reference = min(self.class_counts)
             self._probabilities = torch.Tensor([
                 min(1, reference / len(old_indices))
-                for old_indices in self.new_to_old
+                for old_indices in self.new_to_old_classes
             ])
         return self._probabilities
 
@@ -122,20 +117,16 @@ class Node:
         self._class_weights = class_weights
 
     @staticmethod
-    def get_wnid_to_node(path_tree, path_wnids, classes=()):
-        tree = ET.parse(path_tree)
+    def get_wnid_to_node(path_tree, path_wnids, classes):
         wnid_to_node = {}
-        for node in tree.iter():
-            wnid = node.get('wnid')
-            if wnid is None or len(node.getchildren()) == 0 or \
-                wnid == 'fakeRoot' or ('leaf' in node.attrib and node.get('leaf') == 'false'):
-                continue
-            wnid_to_node[wnid] = Node(node.get('wnid'),
-                path_tree=path_tree, path_wnids=path_wnids, classes=classes)
+        G = read_graph(path_tree)
+        for wnid in get_non_leaves(G):
+            wnid_to_node[wnid] = Node(
+                wnid, classes, path_tree=path_tree, path_wnids=path_wnids)
         return wnid_to_node
 
     @staticmethod
-    def get_nodes(path_tree, path_wnids, classes=()):
+    def get_nodes(path_tree, path_wnids, classes):
         wnid_to_node = Node.get_wnid_to_node(path_tree, path_wnids, classes)
         wnids = sorted(wnid_to_node)
         nodes = [wnid_to_node[wnid] for wnid in wnids]
@@ -143,6 +134,7 @@ class Node:
 
     @staticmethod
     def get_root_node_wnid(path_tree):
+        raise UserWarning('Root node may have wnid now')
         tree = ET.parse(path_tree)
         for node in tree.iter():
             wnid = node.get('wnid')
@@ -167,13 +159,13 @@ class NodeDataset(Dataset):
         super().__init__()
 
         self.dataset = dataset
-        self.node = Node(wnid, path_tree, path_wnids, dataset.classes)
+        self.node = Node(wnid, dataset.classes, path_tree, path_wnids)
         self.original_classes = dataset.classes
         self.classes = self.node.classes
 
     def __getitem__(self, i):
         sample, old_label = self.dataset[i]
-        return sample, self.node.mapping[old_label]
+        return sample, self.node.old_to_new_classes[old_label]
 
     def __len__(self):
         return len(self.dataset)
@@ -209,7 +201,7 @@ class JointNodesDataset(Dataset):
     def __getitem__(self, i):
         sample, old_label = self.dataset[i]
         new_label = torch.Tensor([
-            node.mapping[old_label] for node in self.nodes
+            node.old_to_new_classes[old_label] for node in self.nodes
         ]).long()
         return sample, new_label
 
@@ -266,7 +258,7 @@ class PathSanityDataset(Dataset):
         self.classes = dataset.classes
 
     def get_sample(self, node, old_label):
-        new_label = node.mapping[old_label]
+        new_label = node.old_to_new_classes[old_label]
         sample = [0] * node.num_classes
         sample[new_label] = 1
         return sample

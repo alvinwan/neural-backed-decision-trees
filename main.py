@@ -82,21 +82,8 @@ if args.test:
         dataset = nmn_datasets.CIFAR10Node(wnid)
 
         print(text)
-        print(dataset.node.mapping)
+        print(dataset.node.old_to_new_classes)
         print(dataset.classes)
-
-    with open('./data/cifar10/wnids.txt') as f:
-        wnids = [line.strip() for line in f.readlines()]
-
-    tree = ET.parse('./data/cifar10/tree.xml');
-    for wnid in wnids:
-        node = tree.find('.//synset[@wnid="{}"]'.format(wnid))
-        assert len(node.getchildren()) == 0, (
-            node.get('words'), [child.get('words') for child in node.getchildren()]
-        )
-
-    print(' '.join([node.get('wnid') for node in tree.iter()
-          if len(node.getchildren()) > 0 and node.get('wnid')]))
     exit()
 
 

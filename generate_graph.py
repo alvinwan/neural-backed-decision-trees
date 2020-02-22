@@ -1,7 +1,8 @@
 """Generates various graphs for independent node training"""
 
 from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
-from utils.graph import build_minimal_wordnet_graph, prune_single_successor_nodes, write_graph
+from utils.graph import build_minimal_wordnet_graph, \
+    prune_single_successor_nodes, write_graph, get_wnids
 from utils.utils import Colors
 import xml.etree.ElementTree as ET
 import argparse
@@ -17,14 +18,12 @@ def get_parser():
     return parser
 
 
-def get_wnids(directory):
-    with open(os.path.join(directory, 'wnids.txt')) as f:
-        wnids = [wnid.strip() for wnid in f.readlines()]
-    return wnids
+def get_wnids_from_directory(directory):
+    return get_wnids(os.path.join(directory, 'wnids.txt'))
 
 
 def generate_fname(**kwargs):
-    fname = f'graph'
+    fname = f'graph-wordnet'
     return fname
 
 
@@ -49,7 +48,7 @@ def main():
 
     folder = DATASET_TO_FOLDER_NAME[args.dataset]
     directory = os.path.join('data', folder)
-    wnids = get_wnids(directory)
+    wnids = get_wnids_from_directory(directory)
 
     G = build_minimal_wordnet_graph(wnids)
     print_graph_stats(G, 'matched', args)

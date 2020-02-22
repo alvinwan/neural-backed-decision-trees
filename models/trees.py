@@ -64,7 +64,7 @@ class Tree(nn.Module):
             num_classes=10):
         super().__init__()
 
-        self.nodes = Node.get_nodes(path_tree, path_wnids)
+        self.nodes = Node.get_nodes(path_tree, path_wnids, dataset.classes)
         self.nets = nn.ModuleList([
             self.get_net_for_node(dataset, node, pretrained) for node in self.nodes])
         self.linear = nn.Linear(self.get_input_dim(), num_classes)
