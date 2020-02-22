@@ -11,30 +11,17 @@ from utils.graph import generate_fname, get_parser, read_graph, get_roots, \
 from networkx.readwrite.json_graph import adjacency_data
 from utils import data
 
-parser = get_parser()
-args = parser.parse_args()
 
-folder = DATASET_TO_FOLDER_NAME[args.dataset]
-directory = os.path.join('data', folder)
-
-fname = generate_fname(**vars(args))
-path = os.path.join(directory, f'{fname}.json')
-print('==> Reading from {}'.format(path))
-
-dataset = getattr(data, args.dataset)('./data')
-wnids = get_wnids_from_dataset(args.dataset)
-wnid_to_class = {wnid: cls for wnid, cls in zip(wnids, dataset.classes)}
-
-def build_tree(root, parent='null'):
+def build_tree(G, root, parent='null'):
     return {
         'name': root,
         'label': G.nodes[root].get('label', ''),
         'parent': parent,
-        'children': [build_tree(child, root) for child in G.succ[root]]
+        'children': [build_tree(G, child, root) for child in G.succ[root]]
     }
 
 
-def build_graph():
+def build_graph(G):
     return {
         'nodes': [{
             'name': wnid,
@@ -48,7 +35,7 @@ def build_graph():
     }
 
 
-def generate_vis(path_template, data, name):
+def generate_vis(path_template, data, name, fname):
     with open(path_template) as f:
         html = f.read().replace(
             "'TREE_DATA_CONSTANT_TO_BE_REPLACED'",
@@ -62,17 +49,37 @@ def generate_vis(path_template, data, name):
     Colors.green('==> Wrote HTML to {}'.format(path_html))
 
 
-G = read_graph(path)
+def main():
+    parser = get_parser()
+    args = parser.parse_args()
 
-num_roots = len(list(get_roots(G)))
-root = next(get_roots(G))
-tree = build_tree(root)
-graph = build_graph()
+    folder = DATASET_TO_FOLDER_NAME[args.dataset]
+    directory = os.path.join('data', folder)
 
-if num_roots == 0:
-    Colors.red(f'==> Found {num_roots} roots! Should be only 1.')
-else:
-    Colors.green(f'==> Found just {num_roots} root.')
+    fname = generate_fname(**vars(args))
+    path = os.path.join(directory, f'{fname}.json')
+    print('==> Reading from {}'.format(path))
 
-generate_vis('vis/tree-template.html', tree, 'tree')
-generate_vis('vis/graph-template.html', graph, 'graph')
+    dataset = getattr(data, args.dataset)('./data')
+    wnids = get_wnids_from_dataset(args.dataset)
+    wnid_to_class = {wnid: cls for wnid, cls in zip(wnids, dataset.classes)}
+
+
+    G = read_graph(path)
+
+    num_roots = len(list(get_roots(G)))
+    root = next(get_roots(G))
+    tree = build_tree(G, root)
+    graph = build_graph(G)
+
+    if num_roots == 0:
+        Colors.red(f'==> Found {num_roots} roots! Should be only 1.')
+    else:
+        Colors.green(f'==> Found just {num_roots} root.')
+
+    generate_vis('vis/tree-template.html', tree, 'tree', fname)
+    generate_vis('vis/graph-template.html', graph, 'graph', fname)
+
+
+if __name__ == '__main__':
+    main()
