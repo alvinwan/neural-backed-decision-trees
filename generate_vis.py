@@ -1,4 +1,3 @@
-import xmltodict
 import json
 import argparse
 import torchvision

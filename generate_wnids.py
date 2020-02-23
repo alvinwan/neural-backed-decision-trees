@@ -24,6 +24,7 @@ failures = []
 
 hardcoded_mapping = {
     'aquarium_fish': wn.synsets('fingerling', pos=wn.NOUN)[0],
+    'beaver': wn.synsets('beaver', pos=wn.NOUN)[-1],
     'castle': wn.synsets('castle', pos=wn.NOUN)[1],
     'flatfish': wn.synsets('flatfish', pos=wn.NOUN)[1],
     'leopard': wn.synsets('leopard', pos=wn.NOUN)[1],

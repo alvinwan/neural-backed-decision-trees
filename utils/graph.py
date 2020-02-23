@@ -91,6 +91,10 @@ def build_minimal_wordnet_graph(wnids):
         synset = wnid_to_synset(wnid)
         set_node_label(G, synset)
 
+        if wnid == 'n10129825':  # hardcode 'girl' to be a child of 'female', not 'woman'
+            G.add_edge('n09619168', 'n10129825')
+            continue
+
         hypernyms = [synset]
         while hypernyms:
             current = hypernyms.pop(0)
@@ -99,7 +103,9 @@ def build_minimal_wordnet_graph(wnids):
                 G.add_edge(synset_to_wnid(hypernym), synset_to_wnid(current))
                 hypernyms.append(hypernym)
 
-        assert len(G.succ[wnid]) == 0
+        children = [(key, wnid_to_synset(key).name()) for key in G.succ[wnid]]
+        assert len(children) == 0, \
+            f'Node {wnid} ({synset.name()}) is not a leaf. Children: {children}'
     return G
 
 

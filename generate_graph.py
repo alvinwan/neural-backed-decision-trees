@@ -27,6 +27,8 @@ def assert_all_wnids_in_graph(G, wnids):
 
 def main():
     parser = get_parser()
+    parser.add_argument('--no-prune', action='store_true', help='Do not prune.')
+
     args = parser.parse_args()
     wnids = get_wnids_from_dataset(args.dataset)
 
@@ -34,9 +36,10 @@ def main():
     print_graph_stats(G, 'matched', args)
     assert_all_wnids_in_graph(G, wnids)
 
-    G = prune_single_successor_nodes(G)
-    print_graph_stats(G, 'pruned', args)
-    assert_all_wnids_in_graph(G, wnids)
+    if not args.no_prune:
+        G = prune_single_successor_nodes(G)
+        print_graph_stats(G, 'pruned', args)
+        assert_all_wnids_in_graph(G, wnids)
 
     path = get_graph_path_from_args(args)
     write_graph(G, path)
