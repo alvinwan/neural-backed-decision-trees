@@ -206,6 +206,26 @@ class JointNodes(nn.Module):
         return outputs
 
 
+class JointNodesSingle(JointNodes):
+
+    def custom_loss(self, criterion, outputs, targets):
+        """With some probability, drop over-represented classes"""
+        loss = 0
+        for output, target, node in zip(outputs, targets.T, self.nodes):
+            weights = 1.
+            if self.balance_classes:
+                output, target, skip = self.resample_by_class(output, target, node)
+                if skip:
+                    continue
+            if self.balance_class_weights:
+                weights = self.class_weights(output, target, node)
+                # TODO(alvin): hard-coded loss lol
+                criterion = nn.CrossEntropyLoss(weight=weights)
+
+            loss += criterion(output, target)
+        return loss
+
+
 # num_classes is ignored
 class CIFAR10JointNodes(JointNodes):
 
@@ -759,9 +779,9 @@ class TreeSup(nn.Module):
     def custom_loss(self, criterion, outputs, targets):
         loss = criterion(outputs, targets)
         for output, target in zip(outputs, targets):
-            old_label = int(target.cpu())
+            old_label = int(target)
             for node in self.nodes:
-                new_labels = node.old_to_new_classes[target]
+                new_labels = node.old_to_new_classes[old_label]
                 if not new_labels:  # if new_label = [], node does not include target
                     continue
                 output_sub = torch.cat([
