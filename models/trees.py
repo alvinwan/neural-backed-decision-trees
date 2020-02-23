@@ -761,14 +761,14 @@ class TreeSup(nn.Module):
         for output, target in zip(outputs, targets):
             old_label = int(target)
             for node in self.nodes:
-                node_contains_label = node.old_to_new_classes[target]
-                if not node_contains_label:
+                new_labels = node.old_to_new_classes[target]
+                if not new_labels:  # if new_label = [], node does not include target
                     continue
                 output_sub = torch.cat([
                     torch.sum(output[node.new_to_old_classes[new_label]])
                     for new_label in range(node.num_classes)
                 ])
-                loss += criterion(output_sub, target)
+                loss += criterion(output_sub, new_labels[0])
         return loss
 
     def forward(self, x):
