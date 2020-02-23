@@ -10,22 +10,28 @@ import os
 
 def get_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset',
+    parser.add_argument(
+        '--dataset',
         help='Must be a folder data/{dataset} containing a wnids.txt',
         choices=DATASETS,
         default='CIFAR10')
-    parser.add_argument('--extra',
+    parser.add_argument(
+        '--extra',
         type=int,
         default=0,
         help='Percent extra nodes to add to the tree. If 100, the number of '
-             'nodes in tree are doubled. Note this is an integral percent.')
+        'nodes in tree are doubled. Note this is an integral percent.')
+    parser.add_argument(
+        '--single-path',
+        action='store_true',
+        help='Ensure every leaf only has one path from the root.')
     parser.add_argument('--no-prune', action='store_true', help='Do not prune.')
     parser.add_argument('--fname', type=str,
         help='Override all settings and just provide a path to a graph')
     return parser
 
 
-def generate_fname(extra=0, no_prune=False, fname='', **kwargs):
+def generate_fname(extra=0, no_prune=False, fname='', single_path=False, **kwargs):
     if fname:
         return fname
 
@@ -34,6 +40,8 @@ def generate_fname(extra=0, no_prune=False, fname='', **kwargs):
         fname += f'-extra{extra}'
     if no_prune:
         fname += '-noprune'
+    if single_path:
+        fname += '-single'
     return fname
 
 
@@ -109,7 +117,7 @@ def set_node_label(G, synset):
     }, 'label')
 
 
-def build_minimal_wordnet_graph(wnids):
+def build_minimal_wordnet_graph(wnids, single_path=False):
     G = nx.DiGraph()
 
     for wnid in wnids:
@@ -128,6 +136,9 @@ def build_minimal_wordnet_graph(wnids):
             for hypernym in current.hypernyms():
                 G.add_edge(synset_to_wnid(hypernym), synset_to_wnid(current))
                 hypernyms.append(hypernym)
+
+                if single_path:
+                    break
 
         children = [(key, wnid_to_synset(key).name()) for key in G.succ[wnid]]
         assert len(children) == 0, \

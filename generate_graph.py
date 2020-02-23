@@ -32,7 +32,7 @@ def main():
     args = parser.parse_args()
     wnids = get_wnids_from_dataset(args.dataset)
 
-    G = build_minimal_wordnet_graph(wnids)
+    G = build_minimal_wordnet_graph(wnids, args.single_path)
     print_graph_stats(G, 'matched', args)
     assert_all_wnids_in_graph(G, wnids)
 
