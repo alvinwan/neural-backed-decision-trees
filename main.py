@@ -285,7 +285,7 @@ def test(epoch, analyzer, checkpoint=True):
     acc = 100.*correct/total
     print("Accuracy: {}, {}/{}".format(acc, correct, total))
     if acc > best_acc and checkpoint:
-        print('Saving..')
+        print(f'Saving to {fname} ({acc})..')
         state = {
             'net': net.state_dict(),
             'acc': acc,
