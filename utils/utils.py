@@ -200,9 +200,9 @@ def generate_fname(dataset, model, path_tree, wnid=None, name='',
         fname += '-' + name
     if path_tree:
         path = Path(path_tree)
-        fname += '-' + path.stem.replace('tree-', '', 1)
+        fname += '-' + path.stem.replace('tree-', '', 1).replace('graph-', '', 1)
     else:
-        fname += '-build'  # WARNING: hard-coded
+        fname += '-wordnet'  # WARNING: hard-coded
     if include_labels:
         labels = ",".join(map(str, include_labels))
         fname += f'-incl{labels}'
