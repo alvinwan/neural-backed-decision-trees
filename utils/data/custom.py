@@ -162,13 +162,18 @@ class NodeDataset(Dataset):
         self.original_classes = dataset.classes
         self.classes = self.node.classes
 
-    def one_hot(self, labels):
-        return torch.eye(self.node.num_classes)[labels]
+    @staticmethod
+    def one_hot(node, labels):
+        return torch.eye(node.num_classes)[labels]
+
+    @staticmethod
+    def multi_label_to_k_hot(node, labels):
+        return torch.sum(NodeDataset.one_hot(node, labels), dim=0)
 
     def __getitem__(self, i):
         sample, old_label = self.dataset[i]
         new_labels = self.node.old_to_new_classes[old_label]
-        new_label = torch.sum(self.one_hot(new_labels), dim=0)
+        new_label = NodeDataset.multi_label_to_k_hot(self.node, new_labels)
         return sample, new_label
 
     def __len__(self):
@@ -198,19 +203,16 @@ class JointNodesDataset(Dataset):
         super().__init__()
         self.nodes = Node.get_nodes(path_tree, path_wnids, dataset.classes)
         self.dataset = dataset
-        self._node_datasets = [
-            NodeDataset(node.wnid, path_tree, path_wnids, dataset, node)
-            for node in self.nodes
-        ]
         # NOTE: the below is used for computing num_classes, which is ignored
         # anyways. Also, this will break the confusion matrix code
         self.original_classes = dataset.classes
         self.classes = self.nodes[0].classes
 
     def __getitem__(self, i):
-        sample, _ = self.dataset[i]
+        sample, old_label = self.dataset[i]
         new_label = torch.cat([
-            dataset[i][1] for dataset in self._node_datasets
+            NodeDataset.multi_label_to_k_hot(node, node.old_to_new_classes[old_label])
+            for node in self.nodes
         ], dim=0)
         return sample, new_label
 
