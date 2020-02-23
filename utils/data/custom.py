@@ -196,37 +196,19 @@ class CIFAR100Node(NodeDataset):
 class JointNodesDataset(Dataset):
 
     accepts_path_graph = True
+    criterion = nn.BCEWithLogitsLoss
 
-    def __init__(self, path_graph, path_wnids, dataset, single_path=False):
+    def __init__(self, path_graph, path_wnids, dataset):
         super().__init__()
         self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.dataset = dataset
-        self.single_path = single_path
         self.path_graph = path_graph
         # NOTE: the below is used for computing num_classes, which is ignored
         # anyways. Also, this will break the confusion matrix code
         self.original_classes = dataset.classes
         self.classes = self.nodes[0].classes
 
-    @property
-    def criterion(self):
-        if self.single_path:
-            return nn.CrossEntropyLoss
-        return nn.BCEWithLogitsLoss
-
     def get_label(self, old_label):
-        if self.single_path:
-            path_length_per_leaf = [
-                len(node.old_to_new_classes[old_label])
-                for node in self.nodes
-            ]
-            assert all([length <= 1 for length in path_length_per_leaf]), (
-                f'Dataset asks for single_path=True but tree {self.path_graph}'
-                f' has leaves with multiple paths: {path_lengths_per_leaf}'
-            )
-            return torch.Tensor([
-                (node.old_to_new_classes[old_label] or [-1])[0]
-                for node in self.nodes])
         return torch.cat([
             NodeDataset.multi_label_to_k_hot(node, node.old_to_new_classes[old_label])
             for node in self.nodes
@@ -239,6 +221,22 @@ class JointNodesDataset(Dataset):
 
     def __len__(self):
         return len(self.dataset)
+
+
+class JointNodesSingleDataset(JointNodesDataset):
+
+    def get_label(self, old_label):
+        path_length_per_leaf = [
+            len(node.old_to_new_classes[old_label])
+            for node in self.nodes
+        ]
+        assert all([length <= 1 for length in path_length_per_leaf]), (
+            f'Dataset asks for single_path=True but tree {self.path_graph}'
+            f' has leaves with multiple paths: {path_lengths_per_leaf}'
+        )
+        return torch.Tensor([
+            (node.old_to_new_classes[old_label] or [-1])[0]
+            for node in self.nodes])
 
 
 class CIFAR10JointNodes(JointNodesDataset):

@@ -784,13 +784,13 @@ class TreeSup(nn.Module):
                 new_labels = node.old_to_new_classes[old_label]
                 if not new_labels:  # if new_label = [], node does not include target
                     continue
-                output_sub = torch.cat([
-                    torch.sum(output[node.new_to_old_classes[new_label]])
+                output_sub = torch.flatten(torch.cat([
+                    torch.sum(output[node.new_to_old_classes[new_label]])[None]
                     for new_label in range(node.num_classes)
-                ])
-                target_sub = new_labels[0]
+                ], dim=0))[None]
+                target_sub = torch.tensor(new_labels[0])[None].to(output.device)
                 assert 0 <= target_sub < node.num_classes
-                loss += criterion(output_sub, new_target)
+                loss += criterion(output_sub, target_sub)
         return loss
 
     def forward(self, x):
