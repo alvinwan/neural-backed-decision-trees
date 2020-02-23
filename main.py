@@ -28,9 +28,9 @@ datasets = ('CIFAR10', 'CIFAR100') + data.imagenet.names + data.custom.names
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
 parser.add_argument('--name', default='',
                     help='Name of experiment. Used for checkpoint filename')
-parser.add_argument('--batch-size', default=128, type=int,
+parser.add_argument('--batch-size', default=512, type=int,
                     help='Batch size used for training')
-parser.add_argument('--epochs', '-e', default=350, type=int,
+parser.add_argument('--epochs', '-e', default=200, type=int,
                     help='By default, lr schedule is scaled accordingly')
 parser.add_argument('--dataset', default='CIFAR10', choices=datasets)
 parser.add_argument('--model', default='ResNet18', choices=list(models.get_model_choices()))
