@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from utils.utils import Colors, METHODS, DATASET_TO_FOLDER_NAME
 from utils.graph import generate_fname, get_parser, read_graph, get_roots, \
-    get_wnids_from_dataset, get_directory
+    get_wnids_from_dataset, get_directory, get_graph_path_from_args
 from networkx.readwrite.json_graph import adjacency_data
 from utils import data
 
@@ -53,9 +53,7 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    fname = generate_fname(**vars(args))
-    directory = get_directory(args.dataset)
-    path = os.path.join(directory, f'{fname}.json')
+    path = get_graph_path_from_args(args)
     print('==> Reading from {}'.format(path))
 
     G = read_graph(path)
@@ -70,6 +68,7 @@ def main():
     else:
         Colors.green(f'==> Found just {num_roots} root.')
 
+    fname = generate_fname(**vars(args)).replace('graph-', '', 1)
     generate_vis('vis/tree-template.html', tree, 'tree', fname)
     generate_vis('vis/graph-template.html', graph, 'graph', fname)
 

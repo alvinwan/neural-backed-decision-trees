@@ -3,7 +3,7 @@
 from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from utils.graph import build_minimal_wordnet_graph, \
     prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
-    get_parser, get_wnids_from_dataset, get_directory
+    get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args
 from utils.utils import Colors
 import xml.etree.ElementTree as ET
 import argparse
@@ -38,9 +38,7 @@ def main():
     print_graph_stats(G, 'pruned', args)
     assert_all_wnids_in_graph(G, wnids)
 
-    fname = generate_fname(**vars(args))
-    directory = get_directory(args.dataset)
-    path = os.path.join(directory, f'{fname}.json')
+    path = get_graph_path_from_args(args)
     write_graph(G, path)
 
     Colors.green('==> Wrote tree to {}'.format(path))

@@ -37,6 +37,13 @@ def get_wnids(path_wnids):
     return wnids
 
 
+def get_graph_path_from_args(args):
+    fname = generate_fname(**vars(args))
+    directory = get_directory(args.dataset)
+    path = os.path.join(directory, f'{fname}.json')
+    return path
+
+
 def synset_to_wnid(synset):
     return f'{synset.pos()}{synset.offset():08d}'
 

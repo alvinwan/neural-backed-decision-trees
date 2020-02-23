@@ -7,10 +7,6 @@ To get started,
 
 ## Tree
 
-
-### Extra Roots Structure
-The tree root will be a fake root, with wnid="fakeRoot". All fake roots must be added at the end of the tree structure (with the original tree being the left-most child of "fakeRoot". Children of these fake roots must have the parameter extra="True", and if any of these children are not true leaves (ie class labels), they must have the parameter leaf="false".
-
 ### Generation
 
 > Too lazy? Run `bash scripts/generate_trees.sh` to generate trees for all
@@ -19,25 +15,21 @@ datasets with all methods.
 First, generate the wnids. All the Imagenet datasets come with wnids. This is only needed for CIFAR{10,100}.
 
 ```
-python generate_wnids.py --dataset=CIFAR100
+python generate_wnids.py --dataset=CIFAR10
 ```
 
 Next, build the tree. By default, the tree uses wordnet hierarchy and is built from scratch.
 
 ```
-python generate_tree.py --dataset=CIFAR100 --method=build
+python generate_graph.py --dataset=CIFAR10
 ```
-
-> One of the old methods `prune` would prune the `structure_released.xml` from
-from http://image-net.org/download-toolbox. This is no longer used but the code
-is still in the codebase.
 
 ### Test Tree
 
 Finally, check the tree is somewhat sane.
 
 ```
-python test_generated_tree.py --dataset=CIFAR100 --method=build
+python test_generated_graph.py --dataset=CIFAR10
 ```
 
 Make sure that your output ends with `==> All checks pass!`.
@@ -48,19 +40,19 @@ Run the visualization generation script to obtain both the JSON representing
 the tree and the HTML file containing a d3 visualization.
 
 ```
-python generate_vis.py --dataset=CIFAR100 --method=build
+python generate_vis.py --dataset=CIFAR10
 ```
 
 The above script will output the following.
 
 ```
-==> Reading from data/CIFAR100/tree-build-branch3.xml
-Files already downloaded and verified
-==> Wrote JSON tree to data/CIFAR100/tree-build-d3.json
-==> Wrote HTML tree to out/tree-build.html
+==> Reading from ./data/CIFAR10/graph-wordnet.json
+==> Found just 1 root.
+==> Wrote HTML to out/wordnet-tree.html
+==> Wrote HTML to out/wordnet-graph.html
 ```
 
-Open up `out/tree-build.html` in your browser to view the d3 visualization.
+Open up `out/wordnet-graph.html` in your browser to view the d3 visualization.
 
 <img width="1409" alt="Screen Shot 2020-02-18 at 2 47 03 PM" src="https://user-images.githubusercontent.com/2068077/74784796-94cb2980-525d-11ea-8aa8-c5f82c58c708.png">
 
