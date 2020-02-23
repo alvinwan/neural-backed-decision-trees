@@ -312,7 +312,7 @@ class JointTree(nn.Module):
     JointNodes model
     """
 
-    accepts_path_tree = True
+    accepts_path_graph = True
 
     def __init__(self,
             model_name,
