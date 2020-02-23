@@ -62,7 +62,7 @@ def main():
     tree = build_tree(G, root)
     graph = build_graph(G)
 
-    if num_roots == 0:
+    if num_roots > 1:
         Colors.red(f'==> Found {num_roots} roots! Should be only 1.')
     else:
         Colors.green(f'==> Found just {num_roots} root.')

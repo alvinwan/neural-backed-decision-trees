@@ -1,5 +1,6 @@
 import networkx as nx
 import json
+import random
 from nltk.corpus import wordnet as wn
 from utils.utils import DATASETS, DATASET_TO_FOLDER_NAME
 from networkx.readwrite.json_graph import node_link_data, node_link_graph
@@ -13,11 +14,26 @@ def get_parser():
         help='Must be a folder data/{dataset} containing a wnids.txt',
         choices=DATASETS,
         default='CIFAR10')
+    parser.add_argument('--extra',
+        type=int,
+        default=0,
+        help='Percent extra nodes to add to the tree. If 100, the number of '
+             'nodes in tree are doubled. Note this is an integral percent.')
+    parser.add_argument('--no-prune', action='store_true', help='Do not prune.')
+    parser.add_argument('--fname', type=str,
+        help='Override all settings and just provide a path to a graph')
     return parser
 
 
-def generate_fname(**kwargs):
+def generate_fname(extra=0, no_prune=False, fname='', **kwargs):
+    if fname:
+        return fname
+
     fname = f'graph-wordnet'
+    if extra > 0:
+        fname += f'-extra{extra}'
+    if no_prune:
+        fname += '-noprune'
     return fname
 
 
@@ -51,7 +67,11 @@ def synset_to_wnid(synset):
 def wnid_to_synset(wnid):
     offset = int(wnid[1:])
     pos = wnid[0]
-    return wn.synset_from_pos_and_offset(wnid[0], offset)
+
+    try:
+        return wn.synset_from_pos_and_offset(wnid[0], offset)
+    except:
+        return FakeSynset(wnid)
 
 
 def synset_to_name(synset):
@@ -75,6 +95,12 @@ def get_roots(G):
     for node in G.nodes:
         if len(G.pred[node]) == 0:
             yield node
+
+
+def get_root(G):
+    roots = list(get_roots(G))
+    assert len(roots) == 1
+    return roots[0]
 
 
 def set_node_label(G, synset):
@@ -125,3 +151,127 @@ def write_graph(G, path):
 def read_graph(path):
     with open(path) as f:
         return node_link_graph(json.load(f))
+
+
+####################
+# AUGMENTING GRAPH #
+####################
+
+
+class FakeSynset:
+
+    def __init__(self, wnid):
+        self.wnid = wnid
+
+        assert isinstance(wnid, str)
+
+    @staticmethod
+    def create_from_offset(offset):
+        return FakeSynset('f{:08d}'.format(offset))
+
+    def offset(self):
+        return int(self.wnid[1:])
+
+    def pos(self):
+        return 'f'
+
+    def name(self):
+        return '(generated)'
+
+
+def augment_graph(G, extra, allow_imaginary=False, seed=0, max_retries=10000):
+    """Augment graph G with extra% more nodes.
+
+    e.g., If G has 100 nodes and extra = 0.5, the final graph will have 150
+    nodes.
+    """
+    n = len(G.nodes)
+    n_extra = int(extra / 100. * n)
+    random.seed(seed)
+
+    n_imaginary = 0
+    for i in range(n_extra):
+        candidate, is_imaginary_synset, children = get_new_node(G)
+        if not is_imaginary_synset or \
+                (is_imaginary_synset and allow_imaginary):
+            add_node_to_graph(G, candidate, children)
+            n_imaginary += is_imaginary_synset
+            continue
+
+        # now, must be imaginary synset AND not allowed
+        if n_imaginary > 0:  # hit max retries before, not likely to find real
+            return G, i, n_imaginary
+
+        retries, is_imaginary_synset = 0, True
+        while is_imaginary_synset:
+            candidate, is_imaginary_synset, children = get_new_node(G)
+            if retries > max_retries:
+                print(f'Exceeded max retries ({max_retries})')
+                return G, i, n_imaginary
+        add_node_to_graph(G, candidate, children)
+
+    return G, n_extra, n_imaginary
+
+
+def get_new_node(G):
+    """Get new candidate node for the graph"""
+    root = get_root(G)
+    nodes = list(filter(lambda node: node is not root and not node.startswith('f'), G.nodes))
+
+    children = get_new_adjacency(G, nodes)
+    synsets = [wnid_to_synset(wnid) for wnid in children]
+    common_hypernyms = get_common_hypernyms(synsets)
+
+    assert len(common_hypernyms) > 0, [synset.name() for synset in synsets]
+
+    candidate = pick_unseen_hypernym(G, common_hypernyms)
+    if candidate is None:
+        return FakeSynset.create_from_offset(len(G.nodes)), True, children
+    return candidate, False, children
+
+
+def add_node_to_graph(G, candidate, children):
+    root = get_root(G)
+
+    wnid = synset_to_wnid(candidate)
+    G.add_node(wnid)
+    set_node_label(G, candidate)
+
+    for child in children:
+        G.add_edge(wnid, child)
+    G.add_edge(root, wnid)
+
+
+def get_new_adjacency(G, nodes):
+    adjacency = set(tuple(adj) for adj in G.adj.values())
+    children = next(iter(adjacency))
+
+    while children in adjacency:
+        k = random.randint(2, 4)
+        children = tuple(random.sample(nodes, k=k))
+    return children
+
+
+def get_common_hypernyms(synsets):
+    common_hypernyms = set(synsets[0].common_hypernyms(synsets[1]))
+    for synset in synsets[2:]:
+        common_hypernyms &= set(synsets[0].common_hypernyms(synset))
+    return common_hypernyms
+
+
+def deepest_synset(synsets):
+    return max(synsets, key=lambda synset: synset.max_depth())
+
+
+def pick_unseen_hypernym(G, common_hypernyms):
+    candidate = deepest_synset(common_hypernyms)
+    wnid = synset_to_wnid(candidate)
+
+    while common_hypernyms and wnid in G.nodes:
+        common_hypernyms -= {candidate}
+        if not common_hypernyms:
+            return None
+
+        candidate = deepest_synset(common_hypernyms)
+        wnid = synset_to_wnid(candidate)
+    return candidate

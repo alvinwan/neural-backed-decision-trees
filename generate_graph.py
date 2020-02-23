@@ -3,7 +3,8 @@
 from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from utils.graph import build_minimal_wordnet_graph, \
     prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
-    get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args
+    get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args, \
+    augment_graph
 from utils.utils import Colors
 import xml.etree.ElementTree as ET
 import argparse
@@ -27,7 +28,6 @@ def assert_all_wnids_in_graph(G, wnids):
 
 def main():
     parser = get_parser()
-    parser.add_argument('--no-prune', action='store_true', help='Do not prune.')
 
     args = parser.parse_args()
     wnids = get_wnids_from_dataset(args.dataset)
@@ -39,6 +39,12 @@ def main():
     if not args.no_prune:
         G = prune_single_successor_nodes(G)
         print_graph_stats(G, 'pruned', args)
+        assert_all_wnids_in_graph(G, wnids)
+
+    if args.extra > 0:
+        G, n_extra, n_imaginary = augment_graph(G, args.extra, True)
+        print(f'[extra] \t Extras: {n_extra} \t Imaginary: {n_imaginary}')
+        print_graph_stats(G, 'extra', args)
         assert_all_wnids_in_graph(G, wnids)
 
     path = get_graph_path_from_args(args)
