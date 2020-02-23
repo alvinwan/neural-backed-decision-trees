@@ -36,7 +36,11 @@ __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
            'CIFAR10IdInitReweightedJointTree',
            'CIFAR100IdInitReweightedJointTree',
            'TinyImagenet200IdInitReweightedJointTree',
-           'CIFAR10TreeSup', 'CIFAR100TreeSup', 'TinyImagenet200TreeSup')
+           'CIFAR10TreeSup', 'CIFAR100TreeSup', 'TinyImagenet200TreeSup',
+           'CIFAR10JointNodesSingle', 'CIFAR100JointNodesSingle',
+           'TinyImagenet200JointNodesSingle', 'CIFAR10IdInitJointTreeSingle',
+           'CIFAR100IdInitJointTreeSingle',
+           'TinyImagenet200IdInitJointTreeSingle')
 
 
 @contextmanager
@@ -212,6 +216,9 @@ class JointNodesSingle(JointNodes):
         """With some probability, drop over-represented classes"""
         loss = 0
         for output, target, node in zip(outputs, targets.T, self.nodes):
+            if target < 0:
+                continue
+
             weights = 1.
             if self.balance_classes:
                 output, target, skip = self.resample_by_class(output, target, node)
@@ -224,6 +231,14 @@ class JointNodesSingle(JointNodes):
 
             loss += criterion(output, target)
         return loss
+
+    def custom_prediction(self, outputs):
+        preds = []
+        for output in outputs:
+            _, pred = output.max(dim=1)
+            preds.append(pred[:, None])
+        predicted = torch.cat(preds, dim=1)
+        return predicted
 
 
 # num_classes is ignored
@@ -242,6 +257,27 @@ class CIFAR100JointNodes(JointNodes):
 
 
 class TinyImagenet200JointNodes(JointNodes):
+
+    def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=None):
+        super().__init__(path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
+            dataset=data.TinyImagenet200(root='./data'))
+
+
+class CIFAR10JointNodesSingle(JointNodesSingle):
+
+    def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=None):
+        super().__init__(path_graph, DEFAULT_CIFAR10_WNIDS,
+            dataset=datasets.CIFAR10(root='./data'))
+
+
+class CIFAR100JointNodesSingle(JointNodesSingle):
+
+    def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=None):
+        super().__init__(path_graph, DEFAULT_CIFAR100_WNIDS,
+            dataset=datasets.CIFAR100(root='./data'))
+
+
+class TinyImagenet200JointNodesSingle(JointNodesSingle):
 
     def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=None):
         super().__init__(path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
@@ -531,6 +567,36 @@ class TinyImagenet200IdInitJointTree(IdInitJointTree):
         super().__init__('TinyImagenet200JointNodes', 'TinyImagenet200JointNodes',
             path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
             net=TinyImagenet200JointNodes(path_graph), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=data.TinyImagenet200PathSanity(path_graph=path_graph))
+
+
+class CIFAR10IdInitJointTreeSingle(IdInitJointTree):
+
+    def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10, pretrained=True):
+        super().__init__('CIFAR10JointNodesSingle', 'CIFAR10JointNodes',
+            path_graph, DEFAULT_CIFAR10_WNIDS,
+            net=CIFAR10JointNodesSingle(path_graph), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=data.CIFAR10PathSanity(path_graph=path_graph))
+
+
+class CIFAR100IdInitJointTreeSingle(IdInitJointTree):
+
+    def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=100, pretrained=True):
+        super().__init__('CIFAR100JointNodesSingle', 'CIFAR100JointNodes',
+            path_graph, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100JointNodesSingle(path_graph), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=data.CIFAR100PathSanity(path_graph=path_graph))
+
+
+class TinyImagenet200IdInitJointTreeSingle(IdInitJointTree):
+
+    def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=200, pretrained=True):
+        super().__init__('TinyImagenet200JointNodesSingle', 'TinyImagenet200JointNodes',
+            path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
+            net=TinyImagenet200JointNodesSingle(path_graph), num_classes=num_classes,
             pretrained=pretrained,
             initializer=data.TinyImagenet200PathSanity(path_graph=path_graph))
 

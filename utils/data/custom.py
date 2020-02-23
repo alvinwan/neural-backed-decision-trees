@@ -23,7 +23,9 @@ __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
                    'CIFAR10ExcludeLabels', 'CIFAR100ExcludeLabels',
                    'TinyImagenet200ExcludeLabels',
                    'CIFAR10ResampleLabels', 'CIFAR100ResampleLabels',
-                   'TinyImagenet200ResampleLabels',)
+                   'TinyImagenet200ResampleLabels',
+                   'CIFAR10JointNodesSingle', 'CIFAR100JointNodesSingle',
+                   'TinyImagenet200JointNodesSingle')
 
 
 class Node:
@@ -225,6 +227,8 @@ class JointNodesDataset(Dataset):
 
 class JointNodesSingleDataset(JointNodesDataset):
 
+    criterion = nn.CrossEntropyLoss
+
     def get_label(self, old_label):
         path_length_per_leaf = [
             len(node.old_to_new_classes[old_label])
@@ -232,11 +236,12 @@ class JointNodesSingleDataset(JointNodesDataset):
         ]
         assert all([length <= 1 for length in path_length_per_leaf]), (
             f'Dataset asks for single_path=True but tree {self.path_graph}'
-            f' has leaves with multiple paths: {path_lengths_per_leaf}'
+            f' has leaves with multiple paths: {path_length_per_leaf}. '
+            'Did you mean to use --path-graph to pass a new graph?'
         )
         return torch.Tensor([
             (node.old_to_new_classes[old_label] or [-1])[0]
-            for node in self.nodes])
+            for node in self.nodes]).long()
 
 
 class CIFAR10JointNodes(JointNodesDataset):
@@ -264,6 +269,42 @@ class CIFAR100JointNodes(JointNodesDataset):
 
 
 class TinyImagenet200JointNodes(JointNodesDataset):
+
+    def __init__(self,
+            *args,
+            path_graph=DEFAULT_TINYIMAGENET200_TREE,
+            path_wnids=DEFAULT_TINYIMAGENET200_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_graph, path_wnids,
+            dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs))
+
+
+class CIFAR10JointNodesSingle(JointNodesSingleDataset):
+
+    def __init__(self,
+            *args,
+            path_graph=DEFAULT_CIFAR10_TREE,
+            path_wnids=DEFAULT_CIFAR10_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_graph, path_wnids,
+            dataset=datasets.CIFAR10(*args, root=root, **kwargs))
+
+
+class CIFAR100JointNodesSingle(JointNodesSingleDataset):
+
+    def __init__(self,
+            *args,
+            path_graph=DEFAULT_CIFAR100_TREE,
+            path_wnids=DEFAULT_CIFAR100_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_graph, path_wnids,
+            dataset=datasets.CIFAR100(*args, root=root, **kwargs))
+
+
+class TinyImagenet200JointNodesSingle(JointNodesSingleDataset):
 
     def __init__(self,
             *args,
