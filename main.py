@@ -39,7 +39,7 @@ parser.add_argument('--resume', '-r', action='store_true', help='resume from che
 parser.add_argument('--backbone', '-b',
                     help='Path to backbone network parameters to restore from')
 
-parser.add_argument('--path-tree', help='Path to tree-?.xml file.')  # WARNING: hard-coded suffix -build in generate_fname
+parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
 parser.add_argument('--eval', help='eval only', action='store_true')
