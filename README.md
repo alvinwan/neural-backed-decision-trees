@@ -15,13 +15,13 @@ datasets with all methods.
 First, generate the wnids. All the Imagenet datasets come with wnids. This is only needed for CIFAR{10,100}.
 
 ```
-python generate_wnids.py --dataset=CIFAR10
+python generate_wnids.py
 ```
 
 Next, build the tree. By default, the tree uses wordnet hierarchy and is built from scratch.
 
 ```
-python generate_graph.py --dataset=CIFAR10
+python generate_graph.py
 ```
 
 ### Test Graph
@@ -29,7 +29,7 @@ python generate_graph.py --dataset=CIFAR10
 Finally, check the tree is somewhat sane.
 
 ```
-python test_generated_graph.py --dataset=CIFAR10
+python test_generated_graph.py
 ```
 
 Make sure that your output ends with `==> All checks pass!`.
@@ -40,7 +40,7 @@ Run the visualization generation script to obtain both the JSON representing
 the tree and the HTML file containing a d3 visualization.
 
 ```
-python generate_vis.py --dataset=CIFAR10
+python generate_vis.py
 ```
 
 The above script will output the following.
@@ -65,20 +65,22 @@ random trees feature two more flags:
 - `--seed` to generate random leaf orderings and
 - `--branching-factor` to generate trees with different branching factors.
 
-For all of the above calls, you may use any of the `CIFAR10`, `CIFAR100`, `TinyImagenet200` datasets.
+### Datasets
+
+For all of the above calls, you may use any of the `CIFAR10`, `CIFAR100`, `TinyImagenet200` datasets, by passing the `--dataset` flag.
 
 ## Training
 
-To get started: First, train the nodes, with a shared backbone. Optionally pass in a `--path-tree=...` to customize your tree.
+To get started: First, train the nodes, with a shared backbone. Optionally pass in a `--path-graph=...` to customize your tree.
 
 ```
-python main.py --model=CIFAR100JointNodes --dataset=CIFAR100JointNodes --batch-size=512 --epochs=200
+python main.py --model=CIFAR100JointNodes --dataset=CIFAR100JointNodes
 ```
 
-Second, train the final fully-connected layer. If you passed in `--path-tree` to the last command, make sure to pass in the same tree path to this one.
+Second, train the final fully-connected layer. If you passed in `--path-graph` to the last command, make sure to pass in the same tree path to this one.
 
 ```
-python main.py --model=CIFAR100JointTree --dataset=CIFAR100 --batch-size=512 --epochs=200 --lr=0.01
+python main.py --model=CIFAR100JointTree --dataset=CIFAR100 --lr=0.01
 ```
 
 This is the 'standard' pipeline. There are a few other pipelines to be aware of.
@@ -96,8 +98,8 @@ There are other models that do not need special flags. You can simply swap out t
 So far, our best models are fine-tuned, where the shared backbone is pretrained and frozen. The commands below train the frozen variants of the model.
 
 ```
-python main.py --model=CIFAR100FreezeJointNodes --dataset=CIFAR100JointNodes --batch-size=512 --epochs=200 --backbone=./checkpoint/ckpt-ResNet10-CIFAR100.pth
-python main.py --model=CIFAR100FreezeJointTree --dataset=CIFAR100 --batch-size=512 --epochs=200 --lr=0.01
+python main.py --model=CIFAR100FreezeJointNodes --dataset=CIFAR100JointNodes --backbone=./checkpoint/ckpt-ResNet10-CIFAR100.pth
+python main.py --model=CIFAR100FreezeJointTree --dataset=CIFAR100 --lr=0.01
 ```
 
 #### Individual Nodes
@@ -105,8 +107,8 @@ python main.py --model=CIFAR100FreezeJointTree --dataset=CIFAR100 --batch-size=5
 One of our earliest experiments was to train each node individually, without sharing backbones. Consider all wnids in the tree, that are *not* leaves.
 
 ```
-for wnid in wnids; do python main.py --model=ResNet10 --dataset=CIFAR10Node --wnid=${wnid} --batch-size=512 --epochs=200; done
-python main.py --model=CIFAR10Tree --dataset=CIFAR10 --batch-size=512 --epochs=200
+for wnid in wnids; do python main.py --model=ResNet10 --dataset=CIFAR10Node --wnid=${wnid}; done
+python main.py --model=CIFAR10Tree --dataset=CIFAR10
 ```
 
 ### Inference Modes
