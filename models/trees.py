@@ -135,7 +135,9 @@ class JointNodes(nn.Module):
     def custom_loss(self, criterion, outputs, targets):
         """With some probability, drop over-represented classes"""
         loss = 0
-        for output, target, node in zip(outputs, targets.T, self.nodes):
+        for output, node in zip(outputs, self.nodes):
+            d = output.size(1)
+            target, targets = targets[:, :d], targets[:, d:]
 
             weights = 1.
             if self.balance_classes:
@@ -145,7 +147,7 @@ class JointNodes(nn.Module):
             if self.balance_class_weights:
                 weights = self.class_weights(output, target, node)
                 # TODO(alvin): hard-coded loss lol
-                criterion = nn.CrossEntropyLoss(weight=weights)
+                criterion = nn.BCEWithLogitsLoss(weight=weights)
 
             loss += criterion(output, target)
         return loss
@@ -170,11 +172,8 @@ class JointNodes(nn.Module):
         return node.class_weights
 
     def custom_prediction(self, outputs):
-        preds = []
-        for output in outputs:
-            _, pred = output.max(dim=1)
-            preds.append(pred[:, None])
-        predicted = torch.cat(preds, dim=1)
+        preds = [output > 0.5 for output in outputs]
+        predicted = torch.cat(preds, dim=1).float()
         return predicted
 
     def load_backbone(self, path):

@@ -60,29 +60,18 @@ args = parser.parse_args()
 
 
 if args.test:
-    import xml.etree.ElementTree as ET
-
-    dataset = data.CIFAR10IncludeLabels()
-    print(len(dataset))
-
-    dataset = data.CIFAR10ExcludeLabels()
-    print(len(dataset))
-
-    dataset = data.CIFAR10ResampleLabels(probability_labels=0.5)
-    print(len(dataset))
-
-    dataset = data.CIFAR10PathSanity()
-    print(dataset[0][0])
+    trainset = data.CIFAR10JointNodes()
+    print(trainset[0][1])
 
     for wnid, text in (
             # ('fall11', 'root'),
             ('n03575240', 'instrument'),
             ('n03791235', 'motor vehicle'),
-            ('n02370806', 'hoofed mammal')):
+            ('n01471682', 'vertebrate')):
         dataset = data.CIFAR10Node(wnid)
 
-        print(text)
-        print(dataset.node.old_to_new_classes)
+        print(f'==> {text}')
+        print(dict(dataset.node.old_to_new_classes))
         print(dataset.classes)
     exit()
 
@@ -111,8 +100,15 @@ if 'TinyImagenet200' in args.dataset:
 
 if args.test_path_sanity or args.test_path:
     assert 'PathSanity' in args.dataset
-if args.model == 'CIFAR10JointNodes':
-    assert args.dataset == 'CIFAR10JointNodes'
+
+is_model_joint = 'JointNodes' in args.model
+is_dataset_joint = 'JointNodes' in args.dataset
+is_both_joint = is_model_joint and is_dataset_joint
+is_neither_joint = not is_model_joint and not is_dataset_joint
+both_joint_nodes = is_both_joint or is_neither_joint, (
+        f'Either both model {args.model} and dataset {args.dataset} are '
+        'JointNodes or neither are.'
+    )
 
 dataset = getattr(data, args.dataset)
 
@@ -204,7 +200,7 @@ if args.backbone:
         else:
             Colors.red('==> FAILED to load backbone. No `load_backbone` provided for model.')
 
-criterion = nn.CrossEntropyLoss()  # TODO(alvin): WARNING JointNodes custom_loss hard-coded to CrossEntropyLoss
+criterion = getattr(dataset, 'criterion', nn.CrossEntropyLoss)()  # TODO(alvin): WARNING JointNodes custom_loss hard-coded to CrossEntropyLoss
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
 def adjust_learning_rate(epoch, lr):

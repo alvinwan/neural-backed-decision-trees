@@ -51,8 +51,9 @@ def synset_to_name(synset):
     return synset.name().split('.')[0]
 
 
-def get_leaves(G):
-    for node in G.nodes:
+def get_leaves(G, root=None, include_root=False):
+    nodes = G.nodes if root is None else nx.descendants(G, root) | {root}
+    for node in nodes:
         if len(G.succ[node]) == 0:
             yield node
 

@@ -11,6 +11,7 @@ from utils.utils import (
 from collections import defaultdict
 from utils.graph import get_wnids, read_graph, get_leaves, get_non_leaves
 from . import imagenet
+import torch.nn as nn
 import random
 
 
@@ -39,11 +40,14 @@ class Node:
 
         assert not self.is_leaf(), 'Cannot build dataset for leaf'
         self.num_children = len(self.get_children())
-        self.num_classes = self.num_children + int(self.is_root())
+        self.num_classes = self.num_children
 
-        self.old_to_new_classes = self.build_old_to_new_classes()
-        self.new_to_old_classes = self.build_new_to_old_classes()
+        self.old_to_new_classes, self.new_to_old_classes = \
+            self.build_class_mappings()
         self.classes = self.build_classes()
+
+        assert len(self.classes) == self.num_classes, (
+            self.classes, self.num_classes)
 
         self._probabilities = None
         self._class_weights = None
@@ -60,20 +64,15 @@ class Node:
     def is_root(self):
         return len(self.get_parents()) == 0
 
-    def build_old_to_new_classes(self):
-        mapping = {}
+    def build_class_mappings(self):
+        old_to_new = defaultdict(lambda: [])
+        new_to_old = defaultdict(lambda: [])
         for new_index, child in enumerate(self.get_children()):
-            for leaf in get_leaves(self.G):
+            for leaf in get_leaves(self.G, child, include_root=True):
                 old_index = self.wnids.index(leaf)
-                mapping[old_index] = new_index
-        return mapping
-
-    def build_new_to_old_classes(self):
-        mapping = defaultdict(lambda: [])
-        for old_index in range(self.num_original_classes):
-            new_index = self.old_to_new_classes[old_index]
-            mapping[new_index].append(old_index)
-        return mapping
+                old_to_new[old_index].append(new_index)
+                new_to_old[new_index].append(old_index)
+        return old_to_new, new_to_old
 
     def build_classes(self):
         return [
@@ -148,24 +147,29 @@ class Node:
 
 
 class NodeDataset(Dataset):
-    """Creates dataset for a specific node in the CIFAR10 wordnet tree
+    """Creates dataset for a specific node in the wordnet tree
 
     wnids.txt is needed to map wnids to class indices
     """
 
     needs_wnid = True
 
-    def __init__(self, wnid, path_tree, path_wnids, dataset):
+    def __init__(self, wnid, path_tree, path_wnids, dataset, node=None):
         super().__init__()
 
         self.dataset = dataset
-        self.node = Node(wnid, dataset.classes, path_tree, path_wnids)
+        self.node = node or Node(wnid, dataset.classes, path_tree, path_wnids)
         self.original_classes = dataset.classes
         self.classes = self.node.classes
 
+    def one_hot(self, labels):
+        return torch.eye(self.node.num_classes)[labels]
+
     def __getitem__(self, i):
         sample, old_label = self.dataset[i]
-        return sample, self.node.old_to_new_classes[old_label]
+        new_labels = self.node.old_to_new_classes[old_label]
+        new_label = torch.sum(self.one_hot(new_labels), dim=0)
+        return sample, new_label
 
     def __len__(self):
         return len(self.dataset)
@@ -188,21 +192,26 @@ class CIFAR100Node(NodeDataset):
 class JointNodesDataset(Dataset):
 
     accepts_path_tree = True
+    criterion = nn.BCEWithLogitsLoss
 
     def __init__(self, path_tree, path_wnids, dataset):
         super().__init__()
         self.nodes = Node.get_nodes(path_tree, path_wnids, dataset.classes)
         self.dataset = dataset
+        self._node_datasets = [
+            NodeDataset(node.wnid, path_tree, path_wnids, dataset, node)
+            for node in self.nodes
+        ]
         # NOTE: the below is used for computing num_classes, which is ignored
         # anyways. Also, this will break the confusion matrix code
         self.original_classes = dataset.classes
         self.classes = self.nodes[0].classes
 
     def __getitem__(self, i):
-        sample, old_label = self.dataset[i]
-        new_label = torch.Tensor([
-            node.old_to_new_classes[old_label] for node in self.nodes
-        ]).long()
+        sample, _ = self.dataset[i]
+        new_label = torch.cat([
+            dataset[i][1] for dataset in self._node_datasets
+        ], dim=0)
         return sample, new_label
 
     def __len__(self):
@@ -258,9 +267,10 @@ class PathSanityDataset(Dataset):
         self.classes = dataset.classes
 
     def get_sample(self, node, old_label):
-        new_label = node.old_to_new_classes[old_label]
+        new_labels = node.old_to_new_classes[old_label]
         sample = [0] * node.num_classes
-        sample[new_label] = 1
+        for new_label in new_labels:
+            sample[new_label] = 1
         return sample
 
     def _get_node_weights(self, node):
