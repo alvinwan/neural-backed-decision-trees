@@ -5,7 +5,7 @@ To get started,
 1. Generate the tree, per the section below.
 2. Then, launch training scripts, which use those trees.
 
-## Tree
+## Graphs
 
 ### Generation
 
@@ -24,7 +24,7 @@ Next, build the tree. By default, the tree uses wordnet hierarchy and is built f
 python generate_graph.py --dataset=CIFAR10
 ```
 
-### Test Tree
+### Test Graph
 
 Finally, check the tree is somewhat sane.
 
@@ -34,7 +34,7 @@ python test_generated_graph.py --dataset=CIFAR10
 
 Make sure that your output ends with `==> All checks pass!`.
 
-### Visualize Tree
+### Visualize Graph
 
 Run the visualization generation script to obtain both the JSON representing
 the tree and the HTML file containing a d3 visualization.
@@ -54,9 +54,10 @@ The above script will output the following.
 
 Open up `out/wordnet-graph.html` in your browser to view the d3 visualization.
 
-<img width="1409" alt="Screen Shot 2020-02-18 at 2 47 03 PM" src="https://user-images.githubusercontent.com/2068077/74784796-94cb2980-525d-11ea-8aa8-c5f82c58c708.png">
+<img width="1436" alt="Screen Shot 2020-02-22 at 1 52 51 AM" src="https://user-images.githubusercontent.com/2068077/75101893-ca8f4b80-5598-11ea-9b47-7adcc3fc3027.png">
 
-### Random Trees
+
+### Random Graphs
 
 Use `--method=random` to randomly generate a binary-ish tree. Additionally,
 random trees feature two more flags:
