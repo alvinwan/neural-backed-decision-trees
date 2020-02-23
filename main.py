@@ -285,7 +285,6 @@ def test(epoch, analyzer, checkpoint=True):
     acc = 100.*correct/total
     print("Accuracy: {}, {}/{}".format(acc, correct, total))
     if acc > best_acc and checkpoint:
-        print(f'Saving to {fname} ({acc})..')
         state = {
             'net': net.state_dict(),
             'acc': acc,
@@ -295,6 +294,7 @@ def test(epoch, analyzer, checkpoint=True):
             os.mkdir('checkpoint')
 
         fname = generate_fname(**vars(args))
+        print(f'Saving to {fname} ({acc})..')
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
 
