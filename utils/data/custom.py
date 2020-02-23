@@ -29,11 +29,11 @@ __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
 class Node:
 
     def __init__(self, wnid, classes,
-            path_tree=DEFAULT_CIFAR10_TREE,
+            path_graph=DEFAULT_CIFAR10_TREE,
             path_wnids=DEFAULT_CIFAR10_WNIDS):
         self.wnid = wnid
         self.wnids = get_wnids(path_wnids)
-        self.G = read_graph(path_tree)
+        self.G = read_graph(path_graph)
 
         self.original_classes = classes
         self.num_original_classes = len(self.wnids)
@@ -116,25 +116,25 @@ class Node:
         self._class_weights = class_weights
 
     @staticmethod
-    def get_wnid_to_node(path_tree, path_wnids, classes):
+    def get_wnid_to_node(path_graph, path_wnids, classes):
         wnid_to_node = {}
-        G = read_graph(path_tree)
+        G = read_graph(path_graph)
         for wnid in get_non_leaves(G):
             wnid_to_node[wnid] = Node(
-                wnid, classes, path_tree=path_tree, path_wnids=path_wnids)
+                wnid, classes, path_graph=path_graph, path_wnids=path_wnids)
         return wnid_to_node
 
     @staticmethod
-    def get_nodes(path_tree, path_wnids, classes):
-        wnid_to_node = Node.get_wnid_to_node(path_tree, path_wnids, classes)
+    def get_nodes(path_graph, path_wnids, classes):
+        wnid_to_node = Node.get_wnid_to_node(path_graph, path_wnids, classes)
         wnids = sorted(wnid_to_node)
         nodes = [wnid_to_node[wnid] for wnid in wnids]
         return nodes
 
     @staticmethod
-    def get_root_node_wnid(path_tree):
+    def get_root_node_wnid(path_graph):
         raise UserWarning('Root node may have wnid now')
-        tree = ET.parse(path_tree)
+        tree = ET.parse(path_graph)
         for node in tree.iter():
             wnid = node.get('wnid')
             if wnid is not None:
@@ -154,11 +154,11 @@ class NodeDataset(Dataset):
 
     needs_wnid = True
 
-    def __init__(self, wnid, path_tree, path_wnids, dataset, node=None):
+    def __init__(self, wnid, path_graph, path_wnids, dataset, node=None):
         super().__init__()
 
         self.dataset = dataset
-        self.node = node or Node(wnid, dataset.classes, path_tree, path_wnids)
+        self.node = node or Node(wnid, dataset.classes, path_graph, path_wnids)
         self.original_classes = dataset.classes
         self.classes = self.node.classes
 
@@ -198,9 +198,9 @@ class JointNodesDataset(Dataset):
     accepts_path_tree = True
     criterion = nn.BCEWithLogitsLoss
 
-    def __init__(self, path_tree, path_wnids, dataset):
+    def __init__(self, path_graph, path_wnids, dataset):
         super().__init__()
-        self.nodes = Node.get_nodes(path_tree, path_wnids, dataset.classes)
+        self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.dataset = dataset
         # NOTE: the below is used for computing num_classes, which is ignored
         # anyways. Also, this will break the confusion matrix code
@@ -223,11 +223,11 @@ class CIFAR10JointNodes(JointNodesDataset):
 
     def __init__(self,
             *args,
-            path_tree=DEFAULT_CIFAR10_TREE,
+            path_graph=DEFAULT_CIFAR10_TREE,
             path_wnids=DEFAULT_CIFAR10_WNIDS,
             root='./data',
             **kwargs):
-        super().__init__(path_tree, path_wnids,
+        super().__init__(path_graph, path_wnids,
             dataset=datasets.CIFAR10(*args, root=root, **kwargs))
 
 
@@ -235,11 +235,11 @@ class CIFAR100JointNodes(JointNodesDataset):
 
     def __init__(self,
             *args,
-            path_tree=DEFAULT_CIFAR100_TREE,
+            path_graph=DEFAULT_CIFAR100_TREE,
             path_wnids=DEFAULT_CIFAR100_WNIDS,
             root='./data',
             **kwargs):
-        super().__init__(path_tree, path_wnids,
+        super().__init__(path_graph, path_wnids,
             dataset=datasets.CIFAR100(*args, root=root, **kwargs))
 
 
@@ -247,23 +247,23 @@ class TinyImagenet200JointNodes(JointNodesDataset):
 
     def __init__(self,
             *args,
-            path_tree=DEFAULT_TINYIMAGENET200_TREE,
+            path_graph=DEFAULT_TINYIMAGENET200_TREE,
             path_wnids=DEFAULT_TINYIMAGENET200_WNIDS,
             root='./data',
             **kwargs):
-        super().__init__(path_tree, path_wnids,
+        super().__init__(path_graph, path_wnids,
             dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs))
 
 
 class PathSanityDataset(Dataset):
     """returns samples that assume all node classifiers are perfect"""
 
-    def __init__(self, path_tree, path_wnids, dataset):
+    def __init__(self, path_graph, path_wnids, dataset):
         super().__init__()
-        self.path_tree = path_tree
+        self.path_graph = path_graph
         self.path_wnids = path_wnids
 
-        self.nodes = Node.get_nodes(path_tree, path_wnids, dataset.classes)
+        self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.dataset = dataset
         self.classes = dataset.classes
 
@@ -314,11 +314,11 @@ class CIFAR10PathSanity(PathSanityDataset):
 
     def __init__(self,
             *args,
-            path_tree=DEFAULT_CIFAR10_TREE,
+            path_graph=DEFAULT_CIFAR10_TREE,
             path_wnids=DEFAULT_CIFAR10_WNIDS,
             root='./data',
             **kwargs):
-        super().__init__(path_tree, path_wnids,
+        super().__init__(path_graph, path_wnids,
             dataset=datasets.CIFAR10(*args, root=root, **kwargs))
 
 
@@ -326,11 +326,11 @@ class CIFAR100PathSanity(PathSanityDataset):
 
     def __init__(self,
             *args,
-            path_tree=DEFAULT_CIFAR100_TREE,
+            path_graph=DEFAULT_CIFAR100_TREE,
             path_wnids=DEFAULT_CIFAR100_WNIDS,
             root='./data',
             **kwargs):
-        super().__init__(path_tree, path_wnids,
+        super().__init__(path_graph, path_wnids,
             dataset=datasets.CIFAR100(*args, root=root, **kwargs))
 
 
@@ -338,11 +338,11 @@ class TinyImagenet200PathSanity(PathSanityDataset):
 
     def __init__(self,
             *args,
-            path_tree=DEFAULT_TINYIMAGENET200_TREE,
+            path_graph=DEFAULT_TINYIMAGENET200_TREE,
             path_wnids=DEFAULT_TINYIMAGENET200_WNIDS,
             root='./data',
             **kwargs):
-        super().__init__(path_tree, path_wnids,
+        super().__init__(path_graph, path_wnids,
             dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs))
 
 

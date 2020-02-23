@@ -188,7 +188,7 @@ def get_fname(args):
     return generate_fname(args)
 
 
-def generate_fname(dataset, model, path_tree, wnid=None, name='',
+def generate_fname(dataset, model, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
         include_classes=(), num_samples=0, **kwargs):
     fname = 'ckpt'
@@ -198,9 +198,9 @@ def generate_fname(dataset, model, path_tree, wnid=None, name='',
         fname += '-' + wnid
     if name:
         fname += '-' + name
-    if path_tree:
-        path = Path(path_tree)
-        fname += '-' + path.stem.replace('tree-', '', 1).replace('graph-', '', 1)
+    if path_graph:
+        path = Path(path_graph)
+        fname += '-' + path.stem.replace('graph-', '', 1)
     else:
         fname += '-wordnet'  # WARNING: hard-coded
     if include_labels:

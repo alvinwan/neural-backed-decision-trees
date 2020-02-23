@@ -117,7 +117,7 @@ dataset_kwargs = {}
 if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
 
-for key in ('path_tree', 'include_labels', 'exclude_labels', 'include_classes',
+for key in ('path_graph', 'include_labels', 'exclude_labels', 'include_classes',
             'probability_labels'):
     value = getattr(args, key)
     if getattr(dataset, f'accepts_{key}', False) and value:
@@ -147,12 +147,12 @@ model = getattr(models, args.model)
 # TODO(alvin): should dataset trees be passed to models, isntead of re-passing
 # the tree path?
 model_kwargs = {}
-if getattr(model, 'accepts_path_tree', False) and args.path_tree:
-    model_kwargs['path_tree'] = args.path_tree
-elif args.path_tree:
+if getattr(model, 'accepts_path_graph', False) and args.path_graph:
+    model_kwargs['path_graph'] = args.path_graph
+elif args.path_graph:
     Colors.red(
         f' => Warning: Model {args.model} does not support custom '
-        f'tree paths: {args.path_tree}')
+        f'graph paths: {args.path_graph}')
 
 net = model(
     num_classes=len(trainset.classes),
