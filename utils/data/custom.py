@@ -163,12 +163,11 @@ class NodeDataset(Dataset):
         self.classes = self.node.classes
 
     @staticmethod
-    def one_hot(node, labels):
-        return torch.eye(node.num_classes)[labels]
-
-    @staticmethod
     def multi_label_to_k_hot(node, labels):
-        return torch.sum(NodeDataset.one_hot(node, labels), dim=0)
+        k_hot = [0] * node.num_classes
+        for label in labels:
+            k_hot[label] = 1
+        return torch.Tensor(k_hot)
 
     def __getitem__(self, i):
         sample, old_label = self.dataset[i]
