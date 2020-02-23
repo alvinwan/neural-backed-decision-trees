@@ -195,7 +195,7 @@ class CIFAR100Node(NodeDataset):
 
 class JointNodesDataset(Dataset):
 
-    accepts_path_tree = True
+    accepts_path_graph = True
     criterion = nn.BCEWithLogitsLoss
 
     def __init__(self, path_graph, path_wnids, dataset):

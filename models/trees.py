@@ -111,7 +111,7 @@ class JointNodes(nn.Module):
     except all nodes share convolutions. Thus, all nodes are trained jointly.
     """
 
-    accepts_path_tree = True
+    accepts_path_graph = True
 
     def __init__(self, path_graph, path_wnids, dataset, balance_classes=False,
             freeze_backbone=False, balance_class_weights=False):
