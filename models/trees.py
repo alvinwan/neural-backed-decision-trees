@@ -213,10 +213,13 @@ class JointNodes(nn.Module):
 class JointNodesSingle(JointNodes):
 
     def custom_loss(self, criterion, outputs, targets):
-        """With some probability, drop over-represented classes"""
         loss = 0
         for output, target, node in zip(outputs, targets.T, self.nodes):
-            if target < 0:
+            selector = target >= 0
+
+            if not selector.all():
+                output, target = output[selector], target[selector]
+            if not selector.any():
                 continue
 
             weights = 1.

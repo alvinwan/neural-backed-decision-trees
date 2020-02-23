@@ -32,7 +32,8 @@ class Node:
 
     def __init__(self, wnid, classes,
             path_graph=DEFAULT_CIFAR10_TREE,
-            path_wnids=DEFAULT_CIFAR10_WNIDS):
+            path_wnids=DEFAULT_CIFAR10_WNIDS,
+            other_class=False):
         self.wnid = wnid
         self.wnids = get_wnids(path_wnids)
         self.G = read_graph(path_graph)
@@ -41,15 +42,18 @@ class Node:
         self.num_original_classes = len(self.wnids)
 
         assert not self.is_leaf(), 'Cannot build dataset for leaf'
+        self.has_other = other_class and not (self.is_root() or self.is_leaf())
         self.num_children = len(self.get_children())
-        self.num_classes = self.num_children
+        self.num_classes = self.num_children + int(self.has_other)
 
         self.old_to_new_classes, self.new_to_old_classes = \
             self.build_class_mappings()
         self.classes = self.build_classes()
 
         assert len(self.classes) == self.num_classes, (
-            self.classes, self.num_classes)
+            f'Number of classes {self.num_classes} does not equal number of '
+            f'class names found ({len(self.classes)}): {self.classes}'
+        )
 
         self._probabilities = None
         self._class_weights = None
@@ -74,12 +78,22 @@ class Node:
                 old_index = self.wnids.index(leaf)
                 old_to_new[old_index].append(new_index)
                 new_to_old[new_index].append(old_index)
+        if not self.has_other:
+            return old_to_new, new_to_old
+
+        new_index = self.num_children
+        for old in range(self.num_original_classes):
+            if old not in old_to_new:
+                old_to_new[old].append(new_index)
+                new_to_old[new_index].append(old)
         return old_to_new, new_to_old
 
     def build_classes(self):
+        # TODO(alvin): warning, .values() results in non-deterministic ordering
         return [
-            ','.join([self.original_classes[old_index] for old_index in old_indices])
-            for old_indices in self.new_to_old_classes.values()
+            ','.join([self.original_classes[old] for old in old_indices])
+            for new_index, old_indices in sorted(
+                self.new_to_old_classes.items(), key=lambda t: t[0])
         ]
 
     @property
