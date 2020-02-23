@@ -35,7 +35,8 @@ __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
            'TinyImagenet200ReweightedJointTree',
            'CIFAR10IdInitReweightedJointTree',
            'CIFAR100IdInitReweightedJointTree',
-           'TinyImagenet200IdInitReweightedJointTree')
+           'TinyImagenet200IdInitReweightedJointTree',
+           'CIFAR10TreeSup', 'CIFAR100TreeSup', 'TinyImagenet200TreeSup')
 
 
 @contextmanager
@@ -734,3 +735,62 @@ class CIFAR100JointDecisionTree(JointDecisionTree):
             DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
             net=CIFAR100JointNodes(), num_classes=num_classes,
             pretrained=pretrained)
+
+class TreeSup(nn.Module):
+
+    accepts_path_graph = True
+
+    def __init__(self, path_graph, path_wnids, dataset):
+        super().__init__()
+        import models
+
+        self.net = models.ResNet10()
+        self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
+        self.dataset = dataset
+
+    def load_backbone(self, path):
+        checkpoint = torch.load(path)
+        state_dict = {
+            key.replace('module.', '', 1): value
+            for key, value in checkpoint['net'].items()
+        }
+        self.net.load_state_dict(state_dict, strict=False)
+
+    def custom_loss(self, criterion, outputs, targets):
+        loss = criterion(outputs, targets)
+        for output, target in zip(outputs, targets):
+            old_label = int(target)
+            for node in self.nodes:
+                node_contains_label = node.old_to_new_classes[target]
+                if not node_contains_label:
+                    continue
+                output_sub = torch.cat([
+                    torch.sum(output[node.new_to_old_classes[new_label]])
+                    for new_label in range(node.num_classes)
+                ])
+                loss += criterion(output_sub, target)
+        return loss
+
+    def forward(self, x):
+        return self.net(x)
+
+
+class CIFAR10TreeSup(TreeSup):
+
+    def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=None):
+        super().__init__(path_graph, DEFAULT_CIFAR10_WNIDS,
+            dataset=datasets.CIFAR10(root='./data'))
+
+
+class CIFAR100TreeSup(TreeSup):
+
+    def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=None):
+        super().__init__(path_graph, DEFAULT_CIFAR100_WNIDS,
+            dataset=datasets.CIFAR100(root='./data'))
+
+
+class TinyImagenet200TreeSup(TreeSup):
+
+    def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=None):
+        super().__init__(path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
+            dataset=data.TinyImagenet200(root='./data'))

@@ -23,7 +23,7 @@ __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
                    'CIFAR10ExcludeLabels', 'CIFAR100ExcludeLabels',
                    'TinyImagenet200ExcludeLabels',
                    'CIFAR10ResampleLabels', 'CIFAR100ResampleLabels',
-                   'TinyImagenet200ResampleLabels')
+                   'TinyImagenet200ResampleLabels',)
 
 
 class Node:
@@ -196,23 +196,45 @@ class CIFAR100Node(NodeDataset):
 class JointNodesDataset(Dataset):
 
     accepts_path_graph = True
-    criterion = nn.BCEWithLogitsLoss
 
-    def __init__(self, path_graph, path_wnids, dataset):
+    def __init__(self, path_graph, path_wnids, dataset, single_path=False):
         super().__init__()
         self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.dataset = dataset
+        self.single_path = single_path
+        self.path_graph = path_graph
         # NOTE: the below is used for computing num_classes, which is ignored
         # anyways. Also, this will break the confusion matrix code
         self.original_classes = dataset.classes
         self.classes = self.nodes[0].classes
 
-    def __getitem__(self, i):
-        sample, old_label = self.dataset[i]
-        new_label = torch.cat([
+    @property
+    def criterion(self):
+        if self.single_path:
+            return nn.CrossEntropyLoss
+        return nn.BCEWithLogitsLoss
+
+    def get_label(self, old_label):
+        if self.single_path:
+            path_length_per_leaf = [
+                len(node.old_to_new_classes[old_label])
+                for node in self.nodes
+            ]
+            assert all([length <= 1 for length in path_length_per_leaf]), (
+                f'Dataset asks for single_path=True but tree {self.path_graph}'
+                f' has leaves with multiple paths: {path_lengths_per_leaf}'
+            )
+            return torch.Tensor([
+                (node.old_to_new_classes[old_label] or [-1])[0]
+                for node in self.nodes])
+        return torch.cat([
             NodeDataset.multi_label_to_k_hot(node, node.old_to_new_classes[old_label])
             for node in self.nodes
         ], dim=0)
+
+    def __getitem__(self, i):
+        sample, old_label = self.dataset[i]
+        new_label = self.get_label(old_label)
         return sample, new_label
 
     def __len__(self):
