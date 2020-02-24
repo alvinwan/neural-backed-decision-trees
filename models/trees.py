@@ -6,6 +6,8 @@ import torch.nn as nn
 import random
 import os
 import csv
+import numpy as np
+from collections import defaultdict
 
 from utils import data
 import torchvision.datasets as datasets
@@ -212,11 +214,20 @@ class JointNodes(nn.Module):
 
 class JointNodesSingle(JointNodes):
 
+    def filter_output_target(self, output, target):
+        selector = target >= 0
+
+        if not selector.all():
+            output, target = output[selector], target[selector]
+        if not selector.any():
+            return None, None
+        return output, target
+
     def custom_loss(self, criterion, outputs, targets):
-        """With some probability, drop over-represented classes"""
         loss = 0
         for output, target, node in zip(outputs, targets.T, self.nodes):
-            if target < 0:
+            output, target = self.filter_output_target(output, target)
+            if output is None:
                 continue
 
             weights = 1.
@@ -230,6 +241,8 @@ class JointNodesSingle(JointNodes):
                 criterion = nn.CrossEntropyLoss(weight=weights)
 
             loss += criterion(output, target)
+        assert not isinstance(loss, int), \
+            f'No applicable loss term found for targets {targets}'
         return loss
 
     def custom_prediction(self, outputs):
@@ -240,6 +253,9 @@ class JointNodesSingle(JointNodes):
         predicted = torch.cat(preds, dim=1)
         return predicted
 
+    def custom_evaluation(self, predicted, targets):
+        predicted, targets = self.filter_output_target(predicted, targets)
+        return predicted.eq(targets).sum().item(), np.prod(targets.size())
 
 # num_classes is ignored
 class CIFAR10JointNodes(JointNodes):
@@ -574,7 +590,7 @@ class TinyImagenet200IdInitJointTree(IdInitJointTree):
 class CIFAR10IdInitJointTreeSingle(IdInitJointTree):
 
     def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10, pretrained=True):
-        super().__init__('CIFAR10JointNodesSingle', 'CIFAR10JointNodes',
+        super().__init__('CIFAR10JointNodesSingle', 'CIFAR10JointNodesSingle',
             path_graph, DEFAULT_CIFAR10_WNIDS,
             net=CIFAR10JointNodesSingle(path_graph), num_classes=num_classes,
             pretrained=pretrained,
@@ -584,7 +600,7 @@ class CIFAR10IdInitJointTreeSingle(IdInitJointTree):
 class CIFAR100IdInitJointTreeSingle(IdInitJointTree):
 
     def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=100, pretrained=True):
-        super().__init__('CIFAR100JointNodesSingle', 'CIFAR100JointNodes',
+        super().__init__('CIFAR100JointNodesSingle', 'CIFAR100JointNodesSingle',
             path_graph, DEFAULT_CIFAR100_WNIDS,
             net=CIFAR100JointNodesSingle(path_graph), num_classes=num_classes,
             pretrained=pretrained,
@@ -594,7 +610,7 @@ class CIFAR100IdInitJointTreeSingle(IdInitJointTree):
 class TinyImagenet200IdInitJointTreeSingle(IdInitJointTree):
 
     def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=200, pretrained=True):
-        super().__init__('TinyImagenet200JointNodesSingle', 'TinyImagenet200JointNodes',
+        super().__init__('TinyImagenet200JointNodesSingle', 'TinyImagenet200JointNodesSingle',
             path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
             net=TinyImagenet200JointNodesSingle(path_graph), num_classes=num_classes,
             pretrained=pretrained,
@@ -826,13 +842,15 @@ class TreeSup(nn.Module):
 
     accepts_path_graph = True
 
-    def __init__(self, path_graph, path_wnids, dataset, num_classes=10):
+    def __init__(self, path_graph, path_wnids, dataset, num_classes=10,
+            max_leaves_supervised=-1):
         super().__init__()
         import models
 
         self.net = models.ResNet10(num_classes)
         self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.dataset = dataset
+        self.max_leaves_supervised = max_leaves_supervised
 
     def load_backbone(self, path):
         checkpoint = torch.load(path)
@@ -843,20 +861,42 @@ class TreeSup(nn.Module):
         self.net.load_state_dict(state_dict, strict=False)
 
     def custom_loss(self, criterion, outputs, targets):
+        """
+        The supplementary losses are all uniformly down-weighted so that on
+        average, each sample incurs half of its loss from standard cross entropy
+        and half of its loss from all nodes.
+        """
         loss = criterion(outputs, targets)
-        for output, target in zip(outputs, targets):
-            old_label = int(target)
-            for node in self.nodes:
-                new_labels = node.old_to_new_classes[old_label]
-                if not new_labels:  # if new_label = [], node does not include target
-                    continue
-                output_sub = torch.flatten(torch.cat([
-                    torch.sum(output[node.new_to_old_classes[new_label]])[None]
-                    for new_label in range(node.num_classes)
-                ], dim=0))[None]
-                target_sub = torch.tensor(new_labels[0])[None].to(output.device)
-                assert 0 <= target_sub < node.num_classes
-                loss += criterion(output_sub, target_sub)
+        num_losses = outputs.size(0) * len(self.nodes) / 2.
+
+        outputs_subs = defaultdict(lambda: [])
+        targets_subs = defaultdict(lambda: [])
+        for node in self.nodes:
+            if self.max_leaves_supervised > 0 and \
+                    node.num_leaves > self.max_leaves_supervised:
+                continue
+
+            classes = [node.old_to_new_classes[int(target)] for target in targets]
+            selector = [bool(cls) for cls in classes]
+            targets_sub = [cls[0] for cls in classes if cls]
+
+            _outputs = outputs[selector]
+            outputs_sub = torch.stack([
+                _outputs.T[node.new_to_old_classes[new_label]].mean(dim=0)
+                for new_label in range(node.num_classes)
+            ]).T
+
+            key = node.num_classes
+            outputs_subs[key].append(outputs_sub)
+            targets_subs[key].extend(targets_sub)
+
+        for key in outputs_subs:
+            outputs_sub = torch.cat(outputs_subs[key], dim=0)
+            targets_sub = torch.Tensor(targets_subs[key]).long().to(outputs_sub.device)
+
+            if not outputs_sub.size(0):
+                continue
+            loss += criterion(outputs_sub, targets_sub) / num_losses
         return loss
 
     def forward(self, x):

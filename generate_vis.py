@@ -57,15 +57,16 @@ def main():
 
     G = read_graph(path)
 
-    num_roots = len(list(get_roots(G)))
+    roots = list(get_roots(G))
+    num_roots = len(roots)
     root = next(get_roots(G))
     tree = build_tree(G, root)
     graph = build_graph(G)
 
     if num_roots > 1:
-        Colors.red(f'==> Found {num_roots} roots! Should be only 1.')
+        Colors.red(f'Found {num_roots} roots! Should be only 1: {roots}')
     else:
-        Colors.green(f'==> Found just {num_roots} root.')
+        print(f'Found just {num_roots} root.')
 
     fname = generate_fname(**vars(args)).replace('graph-', '', 1)
     generate_vis('vis/tree-template.html', tree, 'tree', fname)

@@ -1,6 +1,7 @@
 from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME, Colors
 from utils.graph import get_parser, get_wnids_from_dataset, read_graph, \
-    get_leaves, generate_fname, get_directory, get_graph_path_from_args
+    get_leaves, generate_fname, get_directory, get_graph_path_from_args, \
+    get_roots
 from pathlib import Path
 import argparse
 import os
@@ -58,8 +59,16 @@ def main():
     leaves_seen, wnid_set2 = match_wnid_nodes(wnids, G, G_name)
     print_stats(leaves_seen, wnid_set2, G_name, 'nodes')
 
-    if len(wnid_set1) == len(wnid_set2) == 0:
+    num_roots = len(list(get_roots(G)))
+    if num_roots == 1:
+        Colors.green('Found just 1 root.')
+    else:
+        Colors.red(f'Found {num_roots} roots. Should be only 1.')
+
+    if len(wnid_set1) == len(wnid_set2) == 0 and num_roots == 1:
         Colors.green("==> All checks pass!")
+    else:
+        Colors.red('==> Test failed')
 
 
 if __name__ == '__main__':
