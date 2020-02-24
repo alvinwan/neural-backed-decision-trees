@@ -842,7 +842,7 @@ class TreeSup(nn.Module):
     accepts_path_graph = True
 
     def __init__(self, path_graph, path_wnids, dataset, num_classes=10,
-            max_leaves_supervised=2):
+            max_leaves_supervised=-1):
         super().__init__()
         import models
 
@@ -860,22 +860,37 @@ class TreeSup(nn.Module):
         self.net.load_state_dict(state_dict, strict=False)
 
     def custom_loss(self, criterion, outputs, targets):
+        """
+        The supplementary losses are all uniformly down-weighted so that on
+        average, each sample incurs half of its loss from standard cross entropy
+        and half of its loss from all nodes.
+        """
         loss = criterion(outputs, targets)
+        num_losses = outputs.size(0) * len(self.nodes) / 2.
+
+        outputs_sub = []
+        targets_sub = []
         for output, target in zip(outputs, targets):
             old_label = int(target)
             for node in self.nodes:
-                if node.num_leaves > self.max_leaves_supervised:
+                if self.max_leaves_supervised > 0 and \
+                        node.num_leaves > self.max_leaves_supervised:
                     continue
                 new_labels = node.old_to_new_classes[old_label]
                 if not new_labels:  # if new_label = [], node does not include target
                     continue
-                output_sub = torch.flatten(torch.cat([
-                    output[node.new_to_old_classes[new_label]].mean()[None]
+                outputs_sub.append(torch.stack([
+                    output[node.new_to_old_classes[new_label]].mean()
                     for new_label in range(node.num_classes)
-                ], dim=0))[None]
-                target_sub = torch.tensor(new_labels[0])[None].to(output.device)
-                assert 0 <= target_sub < node.num_classes
-                loss += criterion(output_sub, target_sub)
+                ])[None])
+                targets_sub.append(new_labels[0])
+                assert 0 <= new_labels[0] < node.num_classes
+
+        # only move one tensor to GPU instead of moving in one per loop above
+        targets_sub = torch.Tensor(targets_sub).long().to(outputs.device)
+
+        for output_sub, target_sub in zip(outputs_sub, targets_sub.T):
+            loss += criterion(output_sub, target_sub[None]) / num_losses
         return loss
 
     def forward(self, x):
