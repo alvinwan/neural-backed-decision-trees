@@ -841,6 +841,7 @@ class CIFAR100JointDecisionTree(JointDecisionTree):
 class TreeSup(nn.Module):
 
     accepts_path_graph = True
+    accepts_max_leaves_supervised = True
 
     def __init__(self, path_graph, path_wnids, dataset, num_classes=10,
             max_leaves_supervised=-1):
@@ -913,23 +914,29 @@ class TreeSup(nn.Module):
 
 class CIFAR10TreeSup(TreeSup):
 
-    def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10):
+    def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10,
+            max_leaves_supervised=-1):
         super().__init__(path_graph, DEFAULT_CIFAR10_WNIDS,
             dataset=datasets.CIFAR10(root='./data'),
-            num_classes=num_classes)
+            num_classes=num_classes,
+            max_leaves_supervised=max_leaves_supervised)
 
 
 class CIFAR100TreeSup(TreeSup):
 
-    def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=10):
+    def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=10,
+            max_leaves_supervised=-1):
         super().__init__(path_graph, DEFAULT_CIFAR100_WNIDS,
             dataset=datasets.CIFAR100(root='./data'),
-            num_classes=num_classes)
+            num_classes=num_classes,
+            max_leaves_supervised=max_leaves_supervised)
 
 
 class TinyImagenet200TreeSup(TreeSup):
 
-    def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=10):
+    def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=10,
+            max_leaves_supervised=-1):
         super().__init__(path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
             dataset=data.TinyImagenet200(root='./data'),
-            num_classes=num_classes)
+            num_classes=num_classes,
+            max_leaves_supervised=max_leaves_supervised)

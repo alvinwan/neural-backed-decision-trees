@@ -51,6 +51,9 @@ parser.add_argument('--test-path', action='store_true',
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
 
+parser.add_argument('--max-leaves-supervised', type=int, default=-1,
+                    help='Maximum number of leaves a node can have to '
+                    'contribute loss, in tree-supervised training.')
 parser.add_argument('--probability-labels', nargs='*', type=float)
 parser.add_argument('--include-labels', nargs='*', type=int)
 parser.add_argument('--exclude-labels', nargs='*', type=int)
@@ -112,21 +115,27 @@ both_joint_nodes = is_both_joint or is_neither_joint, (
 
 dataset = getattr(data, args.dataset)
 
+
+def populate_kwargs(kwargs, object, name='Dataset', keys=()):
+    for key in keys:
+        value = getattr(args, key)
+        if getattr(object, f'accepts_{key}', False) and value:
+            kwargs[key] = value
+            Colors.cyan(f'{key}:\t{value}')
+        elif value:
+            Colors.red(
+                f'Warning: {name} {args.dataset} does not support custom '
+                f'{key}: {value}')
+
+
 dataset_args = ()
-dataset_kwargs = {}
 if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
 
-for key in ('path_graph', 'include_labels', 'exclude_labels', 'include_classes',
-            'probability_labels'):
-    value = getattr(args, key)
-    if getattr(dataset, f'accepts_{key}', False) and value:
-        dataset_kwargs[key] = value
-        Colors.cyan(f'{key}:\t{value}')
-    elif value:
-        Colors.red(
-            f'Warning: Dataset {args.dataset} does not support custom '
-            f'{key}: {value}')
+dataset_kwargs = {}
+populate_kwargs(dataset_kwargs, dataset, name='Dataset', keys=(
+    'path_graph', 'include_labels', 'exclude_labels', 'include_classes',
+    'probability_labels'))
 
 # TODO: if root changes, it needs to be passed to the sanity dataset in IdInitJointTree models
 # and jointNodes
@@ -147,12 +156,8 @@ model = getattr(models, args.model)
 # TODO(alvin): should dataset trees be passed to models, isntead of re-passing
 # the tree path?
 model_kwargs = {}
-if getattr(model, 'accepts_path_graph', False) and args.path_graph:
-    model_kwargs['path_graph'] = args.path_graph
-elif args.path_graph:
-    Colors.red(
-        f' => Warning: Model {args.model} does not support custom '
-        f'graph paths: {args.path_graph}')
+populate_kwargs(model_kwargs, model, name='Model', keys=(
+    'path_graph', 'max_leaves_supervised'))
 
 net = model(
     num_classes=len(trainset.classes),
