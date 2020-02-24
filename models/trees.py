@@ -7,6 +7,7 @@ import random
 import os
 import csv
 import numpy as np
+from collections import defaultdict
 
 from utils import data
 import torchvision.datasets as datasets
@@ -868,29 +869,34 @@ class TreeSup(nn.Module):
         loss = criterion(outputs, targets)
         num_losses = outputs.size(0) * len(self.nodes) / 2.
 
-        outputs_sub = []
-        targets_sub = []
-        for output, target in zip(outputs, targets):
-            old_label = int(target)
-            for node in self.nodes:
-                if self.max_leaves_supervised > 0 and \
-                        node.num_leaves > self.max_leaves_supervised:
-                    continue
-                new_labels = node.old_to_new_classes[old_label]
-                if not new_labels:  # if new_label = [], node does not include target
-                    continue
-                outputs_sub.append(torch.stack([
-                    output[node.new_to_old_classes[new_label]].mean()
-                    for new_label in range(node.num_classes)
-                ])[None])
-                targets_sub.append(new_labels[0])
-                assert 0 <= new_labels[0] < node.num_classes
+        outputs_subs = defaultdict(lambda: [])
+        targets_subs = defaultdict(lambda: [])
+        for node in self.nodes:
+            if self.max_leaves_supervised > 0 and \
+                    node.num_leaves > self.max_leaves_supervised:
+                continue
 
-        # only move one tensor to GPU instead of moving in one per loop above
-        targets_sub = torch.Tensor(targets_sub).long().to(outputs.device)
+            classes = [node.old_to_new_classes[int(target)] for target in targets]
+            selector = [bool(cls) for cls in classes]
+            targets_sub = [cls[0] for cls in classes if cls]
 
-        for output_sub, target_sub in zip(outputs_sub, targets_sub.T):
-            loss += criterion(output_sub, target_sub[None]) / num_losses
+            _outputs = outputs[selector]
+            outputs_sub = torch.stack([
+                _outputs.T[node.new_to_old_classes[new_label]].mean(dim=0)
+                for new_label in range(node.num_classes)
+            ]).T
+
+            key = node.num_classes
+            outputs_subs[key].append(outputs_sub)
+            targets_subs[key].extend(targets_sub)
+
+        for key in outputs_subs:
+            outputs_sub = torch.cat(outputs_subs[key], dim=0)
+            targets_sub = torch.Tensor(targets_subs[key]).long().to(outputs_sub.device)
+
+            if not outputs_sub.size(0):
+                continue
+            loss += criterion(outputs_sub, targets_sub) / num_losses
         return loss
 
     def forward(self, x):
