@@ -589,7 +589,7 @@ class TinyImagenet200IdInitJointTree(IdInitJointTree):
 class CIFAR10IdInitJointTreeSingle(IdInitJointTree):
 
     def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10, pretrained=True):
-        super().__init__('CIFAR10JointNodesSingle', 'CIFAR10JointNodes',
+        super().__init__('CIFAR10JointNodesSingle', 'CIFAR10JointNodesSingle',
             path_graph, DEFAULT_CIFAR10_WNIDS,
             net=CIFAR10JointNodesSingle(path_graph), num_classes=num_classes,
             pretrained=pretrained,
@@ -599,7 +599,7 @@ class CIFAR10IdInitJointTreeSingle(IdInitJointTree):
 class CIFAR100IdInitJointTreeSingle(IdInitJointTree):
 
     def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=100, pretrained=True):
-        super().__init__('CIFAR100JointNodesSingle', 'CIFAR100JointNodes',
+        super().__init__('CIFAR100JointNodesSingle', 'CIFAR100JointNodesSingle',
             path_graph, DEFAULT_CIFAR100_WNIDS,
             net=CIFAR100JointNodesSingle(path_graph), num_classes=num_classes,
             pretrained=pretrained,
@@ -609,7 +609,7 @@ class CIFAR100IdInitJointTreeSingle(IdInitJointTree):
 class TinyImagenet200IdInitJointTreeSingle(IdInitJointTree):
 
     def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=200, pretrained=True):
-        super().__init__('TinyImagenet200JointNodesSingle', 'TinyImagenet200JointNodes',
+        super().__init__('TinyImagenet200JointNodesSingle', 'TinyImagenet200JointNodesSingle',
             path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
             net=TinyImagenet200JointNodesSingle(path_graph), num_classes=num_classes,
             pretrained=pretrained,
