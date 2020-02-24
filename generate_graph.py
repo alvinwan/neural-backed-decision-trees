@@ -1,7 +1,7 @@
 """Generates various graphs for independent node training"""
 
 from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
-from utils.graph import build_minimal_wordnet_graph, \
+from utils.graph import build_minimal_wordnet_graph, build_random_graph, \
     prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
     get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args, \
     augment_graph
@@ -32,7 +32,12 @@ def main():
     args = parser.parse_args()
     wnids = get_wnids_from_dataset(args.dataset)
 
-    G = build_minimal_wordnet_graph(wnids, args.single_path)
+    if args.method == 'build':
+        G = build_minimal_wordnet_graph(wnids, args.single_path)
+    elif args.method == 'random':
+        G = build_random_graph(wnids, seed=args.seed, branching_factor=args.branching_factor)
+    else:
+        raise NotImplementedError(f'Method "{args.method}" not yet handled.')
     print_graph_stats(G, 'matched', args)
     assert_all_wnids_in_graph(G, wnids)
 

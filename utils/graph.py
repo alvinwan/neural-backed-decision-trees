@@ -2,7 +2,7 @@ import networkx as nx
 import json
 import random
 from nltk.corpus import wordnet as wn
-from utils.utils import DATASETS, DATASET_TO_FOLDER_NAME
+from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from networkx.readwrite.json_graph import node_link_data, node_link_graph
 import argparse
 import os
@@ -28,14 +28,28 @@ def get_parser():
     parser.add_argument('--no-prune', action='store_true', help='Do not prune.')
     parser.add_argument('--fname', type=str,
         help='Override all settings and just provide a path to a graph')
+    parser.add_argument('--method', choices=METHODS,
+        help='structure_released.xml apparently is missing many CIFAR100 classes. '
+        'As a result, pruning does not work for CIFAR100. Random will randomly '
+        'join clusters together, iteratively, to make a roughly-binary tree.',
+        default='build')
+    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--branching-factor', type=int, default=2)
     return parser
 
 
-def generate_fname(extra=0, no_prune=False, fname='', single_path=False, **kwargs):
+def generate_fname(method, seed=0, branching_factor=2, extra=0, 
+                   no_prune=False, fname='', single_path=False, **kwargs):
     if fname:
         return fname
 
     fname = f'graph-wordnet'
+    if method == 'random':
+        fname += f'-{method}'
+        if seed != 0:
+            fname += f'-seed{seed}'
+        if branching_factor != 2:
+            fname += f'-branch{branching_factor}'
     if extra > 0:
         fname += f'-extra{extra}'
     if no_prune:
@@ -117,6 +131,10 @@ def set_node_label(G, synset):
     }, 'label')
 
 
+def set_random_node_label(G, i):
+    nx.set_node_attributes(G, {i: ''}, 'label')
+
+
 def build_minimal_wordnet_graph(wnids, single_path=False):
     G = nx.DiGraph()
 
@@ -143,6 +161,56 @@ def build_minimal_wordnet_graph(wnids, single_path=False):
         children = [(key, wnid_to_synset(key).name()) for key in G.succ[wnid]]
         assert len(children) == 0, \
             f'Node {wnid} ({synset.name()}) is not a leaf. Children: {children}'
+    return G
+
+
+def build_random_graph(wnids, seed=0, branching_factor=2):
+    random.seed(seed)
+
+    G = nx.DiGraph()
+
+    random.shuffle(wnids)
+    current = None
+    remaining = wnids
+
+    # Build the graph from the leaves up
+    while len(remaining) > 1:
+        current, remaining = remaining, []
+        while current:
+            nodes, current = current[:branching_factor], current[branching_factor:]
+            remaining.append(nodes)
+
+    # Construct networkx graph from root down
+    G.add_node('0')
+    set_random_node_label(G, '0')
+    next = [(remaining[0], '0')]
+    i = 1
+    while next:
+        group, parent = next.pop(0)
+        if len(group) == 1:
+            if isinstance(group[0], str):
+                G.add_node(group[0])
+                synset = wnid_to_synset(group[0])
+                set_node_label(G, synset)
+                G.add_edge(parent, group[0])
+            else:
+                next.append((group[0], parent))
+            continue
+
+        for candidate in group:
+            is_leaf = not isinstance(candidate, list)
+            wnid = candidate if is_leaf else str(i)
+            G.add_node(wnid)
+            if is_leaf:
+                synset = wnid_to_synset(wnid)
+                set_node_label(G, synset)
+            else:
+                set_random_node_label(G, wnid)
+            G.add_edge(parent, wnid)
+            i += 1
+
+            if not is_leaf:
+                next.append((candidate, wnid))
     return G
 
 
