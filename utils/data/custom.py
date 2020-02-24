@@ -55,6 +55,9 @@ class Node:
             f'class names found ({len(self.classes)}): {self.classes}'
         )
 
+        self.leaves = list(self.get_leaves())
+        self.num_leaves = len(self.leaves)
+
         self._probabilities = None
         self._class_weights = None
 
@@ -63,6 +66,9 @@ class Node:
 
     def get_children(self):
         return self.G.succ[self.wnid]
+
+    def get_leaves(self):
+        return get_leaves(self.G, self.wnid)
 
     def is_leaf(self):
         return len(self.get_children()) == 0
@@ -74,7 +80,7 @@ class Node:
         old_to_new = defaultdict(lambda: [])
         new_to_old = defaultdict(lambda: [])
         for new_index, child in enumerate(self.get_children()):
-            for leaf in get_leaves(self.G, child, include_root=True):
+            for leaf in get_leaves(self.G, child):
                 old_index = self.wnids.index(leaf)
                 old_to_new[old_index].append(new_index)
                 new_to_old[new_index].append(old_index)

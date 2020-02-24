@@ -841,13 +841,15 @@ class TreeSup(nn.Module):
 
     accepts_path_graph = True
 
-    def __init__(self, path_graph, path_wnids, dataset, num_classes=10):
+    def __init__(self, path_graph, path_wnids, dataset, num_classes=10,
+            max_leaves_supervised=2):
         super().__init__()
         import models
 
         self.net = models.ResNet10(num_classes)
         self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.dataset = dataset
+        self.max_leaves_supervised = max_leaves_supervised
 
     def load_backbone(self, path):
         checkpoint = torch.load(path)
@@ -862,6 +864,8 @@ class TreeSup(nn.Module):
         for output, target in zip(outputs, targets):
             old_label = int(target)
             for node in self.nodes:
+                if node.num_leaves > self.max_leaves_supervised:
+                    continue
                 new_labels = node.old_to_new_classes[old_label]
                 if not new_labels:  # if new_label = [], node does not include target
                     continue
