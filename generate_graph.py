@@ -32,7 +32,7 @@ def main():
     args = parser.parse_args()
     wnids = get_wnids_from_dataset(args.dataset)
 
-    if args.method == 'build':
+    if args.method == 'wordnet':
         G = build_minimal_wordnet_graph(wnids, args.single_path)
     elif args.method == 'random':
         G = build_random_graph(wnids, seed=args.seed, branching_factor=args.branching_factor)

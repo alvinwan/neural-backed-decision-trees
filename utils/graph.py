@@ -32,20 +32,19 @@ def get_parser():
         help='structure_released.xml apparently is missing many CIFAR100 classes. '
         'As a result, pruning does not work for CIFAR100. Random will randomly '
         'join clusters together, iteratively, to make a roughly-binary tree.',
-        default='build')
+        default='wordnet')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--branching-factor', type=int, default=2)
     return parser
 
 
-def generate_fname(method, seed=0, branching_factor=2, extra=0, 
+def generate_fname(method, seed=0, branching_factor=2, extra=0,
                    no_prune=False, fname='', single_path=False, **kwargs):
     if fname:
         return fname
 
-    fname = f'graph-wordnet'
+    fname = f'graph-{method}'
     if method == 'random':
-        fname += f'-{method}'
         if seed != 0:
             fname += f'-seed{seed}'
         if branching_factor != 2:
