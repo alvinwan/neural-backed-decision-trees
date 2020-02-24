@@ -52,10 +52,13 @@ The above script will output the following.
 ==> Wrote HTML to out/wordnet-graph.html
 ```
 
-Open up `out/wordnet-graph.html` in your browser to view the d3 visualization.
+There are two visualizations. Open up `out/wordnet-tree.html` in your browser
+to view the d3 tree visualization.
 
 <img width="1436" alt="Screen Shot 2020-02-22 at 1 52 51 AM" src="https://user-images.githubusercontent.com/2068077/75101893-ca8f4b80-5598-11ea-9b47-7adcc3fc3027.png">
 
+Open up `out/wordnet-graph.html` in your browser to view the d3 graph
+visualization.
 
 ### Random Graphs
 
@@ -65,11 +68,17 @@ random trees feature two more flags:
 - `--seed` to generate random leaf orderings and
 - `--branching-factor` to generate trees with different branching factors.
 
+### Random Augmentations
+
+<!-- TODO(alvin): describe extra nodes being added and different ways of adding them -->
+
 ### Datasets
 
 For all of the above calls, you may use any of the `CIFAR10`, `CIFAR100`, `TinyImagenet200` datasets, by passing the `--dataset` flag.
 
 ## Training
+
+<!-- TODO(alvin): add in tree supervised training -->
 
 To get started: First, train the nodes, with a shared backbone. Optionally pass in a `--path-graph=...` to customize your tree.
 
@@ -85,15 +94,11 @@ python main.py --model=CIFAR100JointTree --dataset=CIFAR100 --lr=0.01
 
 This is the 'standard' pipeline. There are a few other pipelines to be aware of.
 
-### Models
+### Cross Entropy v. Binary Cross Entropy
 
-There are other models that do not need special flags. You can simply swap out the models in the 'standard' pipeline.
+<!-- TODO (alvin): add notes about cross entropy v binary cross entropy versions -->
 
-- `CIFAR10*`
-- `TinyImagenet200*`
-- `CIFAR100BalancedJointNodes`, `CIFAR100BalancedJointTree` (not helpful)
-
-#### Frozen Backbone
+### Frozen Backbone
 
 So far, our best models are fine-tuned, where the shared backbone is pretrained and frozen. The commands below train the frozen variants of the model.
 
@@ -102,7 +107,15 @@ python main.py --model=CIFAR100FreezeJointNodes --dataset=CIFAR100JointNodes --b
 python main.py --model=CIFAR100FreezeJointTree --dataset=CIFAR100 --lr=0.01
 ```
 
-#### Individual Nodes
+### Identity Initialization
+
+<!-- TODO(alvin) -->
+
+### Balancing
+
+<!-- TODO(alvin) class imbalance + loss imbalance -->
+
+### Individual Nodes
 
 One of our earliest experiments was to train each node individually, without sharing backbones. Consider all wnids in the tree, that are *not* leaves.
 
