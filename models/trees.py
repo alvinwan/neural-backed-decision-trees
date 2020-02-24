@@ -865,18 +865,25 @@ class TreeSup(nn.Module):
         The supplementary losses are all uniformly down-weighted so that on
         average, each sample incurs half of its loss from standard cross entropy
         and half of its loss from all nodes.
+
+        The code below is structured weirdly to minimize number of tensors
+        constructed and moved from CPU to GPU or vice versa. In short,
+        all outputs and targets for nodes with 2 children are gathered and
+        moved onto GPU at once. Same with those with 3, with 4 etc. On CIFAR10,
+        the max is 2. On CIFAR100, the max is 8.
         """
         loss = criterion(outputs, targets)
         num_losses = outputs.size(0) * len(self.nodes) / 2.
 
         outputs_subs = defaultdict(lambda: [])
         targets_subs = defaultdict(lambda: [])
+        targets_ints = [int(target) for target in targets.cpu().long()]
         for node in self.nodes:
             if self.max_leaves_supervised > 0 and \
                     node.num_leaves > self.max_leaves_supervised:
                 continue
 
-            classes = [node.old_to_new_classes[int(target)] for target in targets]
+            classes = [node.old_to_new_classes[int(t)] for t in targets_ints]
             selector = [bool(cls) for cls in classes]
             targets_sub = [cls[0] for cls in classes if cls]
 
@@ -896,7 +903,8 @@ class TreeSup(nn.Module):
 
             if not outputs_sub.size(0):
                 continue
-            loss += criterion(outputs_sub, targets_sub) / num_losses
+            fraction = outputs_sub.size(0) / float(num_losses)
+            loss += criterion(outputs_sub, targets_sub) * fraction
         return loss
 
     def forward(self, x):
