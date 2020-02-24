@@ -232,8 +232,9 @@ def train(epoch, analyzer):
 
         train_loss += loss.item()
         predicted = get_prediction(outputs)
-        total += np.prod(targets.size())
-        correct += predicted.eq(targets).sum().item()
+        _correct, _total = get_evaluation(predicted, targets)
+        correct += _correct
+        total += _total
 
         analyzer.update_batch(outputs, predicted, targets)
 
@@ -241,6 +242,11 @@ def train(epoch, analyzer):
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
     analyzer.end_train(epoch)
+
+def get_evaluation(predicted, targets):
+    if hasattr(get_net(), 'custom_evaluation'):
+        return get_net().custom_evaluation(predicted, targets)
+    return predicted.eq(targets).sum().item(), np.prod(targets.size())
 
 def get_prediction(outputs):
     if hasattr(get_net(), 'custom_prediction'):
@@ -269,8 +275,9 @@ def test(epoch, analyzer, checkpoint=True):
 
             test_loss += loss.item()
             predicted = get_prediction(outputs)
-            total += np.prod(targets.size())
-            correct += predicted.eq(targets).sum().item()
+            _correct, _total = get_evaluation(predicted, targets)
+            correct += _correct
+            total += _total
 
             if device == 'cuda':
                 predicted = predicted.cpu()

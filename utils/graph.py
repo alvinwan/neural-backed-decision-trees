@@ -125,8 +125,12 @@ def build_minimal_wordnet_graph(wnids, single_path=False):
         synset = wnid_to_synset(wnid)
         set_node_label(G, synset)
 
-        if wnid == 'n10129825':  # hardcode 'girl' to be a child of 'female', not 'woman'
-            G.add_edge('n09619168', 'n10129825')
+        if wnid == 'n10129825':  # hardcode 'girl' to not be child of 'woman'
+            if single_path:
+                G.add_edge('n09624168', 'n10129825')  # child of 'male' (sibling to 'male_child')
+            else:
+                G.add_edge('n09619168', 'n10129825')  # child of 'female'
+            G.add_edge('n09619168', 'n10129825')  # child of 'female'
             continue
 
         hypernyms = [synset]

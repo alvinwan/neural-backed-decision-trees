@@ -253,9 +253,14 @@ class JointNodesSingleDataset(JointNodesDataset):
             f' has leaves with multiple paths: {path_length_per_leaf}. '
             'Did you mean to use --path-graph to pass a new graph?'
         )
-        return torch.Tensor([
+        new_label = torch.Tensor([
             (node.old_to_new_classes[old_label] or [-1])[0]
             for node in self.nodes]).long()
+        assert (new_label > -1).any(), (
+            f'Label {old_label} not applicable to any node. This likely means '
+            f'this label belongs to a root that has not been loaded.'
+        )
+        return new_label
 
 
 class CIFAR10JointNodes(JointNodesDataset):

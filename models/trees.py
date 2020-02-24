@@ -6,6 +6,7 @@ import torch.nn as nn
 import random
 import os
 import csv
+import numpy as np
 
 from utils import data
 import torchvision.datasets as datasets
@@ -212,14 +213,20 @@ class JointNodes(nn.Module):
 
 class JointNodesSingle(JointNodes):
 
+    def filter_output_target(self, output, target):
+        selector = target >= 0
+
+        if not selector.all():
+            output, target = output[selector], target[selector]
+        if not selector.any():
+            return None, None
+        return output, target
+
     def custom_loss(self, criterion, outputs, targets):
         loss = 0
         for output, target, node in zip(outputs, targets.T, self.nodes):
-            selector = target >= 0
-
-            if not selector.all():
-                output, target = output[selector], target[selector]
-            if not selector.any():
+            output, target = self.filter_output_target(output, target)
+            if output is None:
                 continue
 
             weights = 1.
@@ -233,6 +240,8 @@ class JointNodesSingle(JointNodes):
                 criterion = nn.CrossEntropyLoss(weight=weights)
 
             loss += criterion(output, target)
+        assert not isinstance(loss, int), \
+            f'No applicable loss term found for targets {targets}'
         return loss
 
     def custom_prediction(self, outputs):
@@ -243,6 +252,9 @@ class JointNodesSingle(JointNodes):
         predicted = torch.cat(preds, dim=1)
         return predicted
 
+    def custom_evaluation(self, predicted, targets):
+        predicted, targets = self.filter_output_target(predicted, targets)
+        return predicted.eq(targets).sum().item(), np.prod(targets.size())
 
 # num_classes is ignored
 class CIFAR10JointNodes(JointNodes):
