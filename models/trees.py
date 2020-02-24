@@ -870,7 +870,7 @@ class TreeSup(nn.Module):
                 if not new_labels:  # if new_label = [], node does not include target
                     continue
                 output_sub = torch.flatten(torch.cat([
-                    torch.sum(output[node.new_to_old_classes[new_label]])[None]
+                    output[node.new_to_old_classes[new_label]].mean()[None]
                     for new_label in range(node.num_classes)
                 ], dim=0))[None]
                 target_sub = torch.tensor(new_labels[0])[None].to(output.device)
