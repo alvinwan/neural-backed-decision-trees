@@ -99,10 +99,14 @@ def synset_to_name(synset):
     return synset.name().split('.')[0]
 
 
+def is_leaf(G, node):
+    return len(G.succ[node]) == 0
+
+
 def get_leaves(G, root=None):
     nodes = G.nodes if root is None else nx.descendants(G, root) | {root}
     for node in nodes:
-        if len(G.succ[node]) == 0:
+        if is_leaf(G, node):
             yield node
 
 

@@ -1,8 +1,15 @@
+from models.trees import TreeSup
+from utils.graph import get_root, get_wnids
+from utils.utils import DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS
+from utils.data.custom import Node
+import torch
 import numpy as np
 import csv
 
 
-__all__ = names = ('Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes', 'IgnoredSamples')
+__all__ = names = (
+    'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
+    'IgnoredSamples', 'DecisionTreePrior')
 
 
 class Noop:
@@ -140,3 +147,66 @@ class IgnoredSamples(Noop):
     def end_test(self, epoch):
         super().end_test(epoch)
         print("Ignored Samples: {}".format(self.ignored))
+
+
+class DecisionTreePrior(Noop):
+    """Evaluate model on decision tree prior. Evaluation is deterministic."""
+
+    accepts_path_graph = True
+
+    def __init__(self, trainset, testset,
+            path_graph=DEFAULT_CIFAR10_TREE,
+            path_wnids=DEFAULT_CIFAR10_WNIDS):
+        super().__init__(trainset, testset)
+        self.nodes = Node.get_nodes(path_graph, path_wnids, trainset.classes)
+        self.G = self.nodes[0].G
+        self.wnid_to_node = {node.wnid: node for node in self.nodes}
+
+        self.wnids = get_wnids(path_wnids)
+        self.classes = trainset.classes
+        self.wnid_to_class = {wnid: cls for wnid, cls in zip(self.wnids, self.classes)}
+
+        self.correct = 0
+        self.total = 0
+
+    def update_batch(self, outputs, _, targets):
+        super().update_batch(outputs, _, targets)
+
+        targets_ints = [int(target) for target in targets.cpu().long()]
+        wnid_to_pred_selector = {}
+        for node in self.nodes:
+            selector, outputs_sub, targets_sub = TreeSup.inference(node, outputs, targets)
+            _, preds_sub = torch.max(outputs_sub, dim=1)
+            preds_sub = list(map(int, preds_sub.cpu()))
+            wnid_to_pred_selector[node.wnid] = (preds_sub, selector)
+
+        n_samples = outputs.size(0)
+        predicted = self.traverse_tree(wnid_to_pred_selector, n_samples).to(targets.device)
+        self.total += n_samples
+        self.correct += (predicted == targets).sum().item()
+        accuracy = round(self.correct / float(self.total), 4) * 100
+        return f'TreePrior: {accuracy}%'
+
+    def traverse_tree(self, wnid_to_pred_selector, n_samples):
+        wnid = get_root(self.G)
+        node = self.wnid_to_node[wnid]
+        preds = []
+        for index in range(n_samples):
+            while node is not None:
+                pred_sub, selector = wnid_to_pred_selector[node.wnid]
+                if not selector[index]:  # we took a wrong turn. wrong.
+                    wnid = node = None
+                    break
+                index_new = sum(selector[:index]) - 1
+                index_child = pred_sub[index_new]
+                wnid = node.children[index_child]
+                node = self.wnid_to_node.get(wnid, None)
+            cls = self.wnid_to_class.get(wnid, None)
+            pred = -1 if cls is None else self.classes.index(cls)
+            preds.append(pred)
+        return torch.Tensor(preds).long()
+
+    def end_test(self, epoch):
+        super().end_test(epoch)
+        accuracy = self.correct / self.total
+        print(f'DecisionTreePrior Accuracy: {accuracy}%')

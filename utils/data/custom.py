@@ -55,6 +55,7 @@ class Node:
             f'class names found ({len(self.classes)}): {self.classes}'
         )
 
+        self.children = list(self.get_children())
         self.leaves = list(self.get_leaves())
         self.num_leaves = len(self.leaves)
 

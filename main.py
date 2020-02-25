@@ -244,10 +244,12 @@ def train(epoch, analyzer):
         correct += _correct
         total += _total
 
-        analyzer.update_batch(outputs, predicted, targets)
+        stat = analyzer.update_batch(outputs, predicted, targets)
+        if stat:
+            extra = f'| {stat}'
 
-        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-            % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s'
+            % (train_loss/(batch_idx+1), 100.*correct/total, correct, total, extra))
 
     analyzer.end_train(epoch)
 
@@ -291,10 +293,12 @@ def test(epoch, analyzer, checkpoint=True):
                 predicted = predicted.cpu()
                 targets = targets.cpu()
 
-            analyzer.update_batch(outputs, predicted, targets)
+            stat = analyzer.update_batch(outputs, predicted, targets)
+            if stat:
+                extra = f'| {stat}'
 
-            progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
+            progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s'
+                % (test_loss/(batch_idx+1), 100.*correct/total, correct, total, extra))
 
     # Save checkpoint.
     acc = 100.*correct/total
@@ -323,7 +327,10 @@ def test(epoch, analyzer, checkpoint=True):
 
 
 generate = getattr(analysis, args.analysis) if args.analysis else analysis.Noop
-analyzer = generate(trainset, testset)
+
+analyzer_kwargs = {}
+populate_kwargs({}, generate, name='Analyzer', keys=('path_graph',))
+analyzer = generate(trainset, testset, **analyzer_kwargs)
 
 if args.eval:
     if not args.resume:

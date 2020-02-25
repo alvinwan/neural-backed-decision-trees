@@ -890,15 +890,7 @@ class TreeSup(nn.Module):
                     node.num_leaves < self.min_leaves_supervised:
                 continue
 
-            classes = [node.old_to_new_classes[int(t)] for t in targets_ints]
-            selector = [bool(cls) for cls in classes]
-            targets_sub = [cls[0] for cls in classes if cls]
-
-            _outputs = outputs[selector]
-            outputs_sub = torch.stack([
-                _outputs.T[node.new_to_old_classes[new_label]].mean(dim=0)
-                for new_label in range(node.num_classes)
-            ]).T
+            _, outputs_sub, targets_sub = TreeSup.inference(node, outputs, targets_ints)
 
             key = node.num_classes
             outputs_subs[key].append(outputs_sub)
@@ -913,6 +905,19 @@ class TreeSup(nn.Module):
             fraction = outputs_sub.size(0) / float(num_losses)
             loss += criterion(outputs_sub, targets_sub) * fraction
         return loss
+
+    @staticmethod
+    def inference(node, outputs, targets):
+        classes = [node.old_to_new_classes[int(t)] for t in targets]
+        selector = [bool(cls) for cls in classes]
+        targets_sub = [cls[0] for cls in classes if cls]
+
+        _outputs = outputs[selector]
+        outputs_sub = torch.stack([
+            _outputs.T[node.new_to_old_classes[new_label]].mean(dim=0)
+            for new_label in range(node.num_classes)
+        ]).T
+        return selector, outputs_sub, targets_sub
 
     def forward(self, x):
         return self.net(x)
