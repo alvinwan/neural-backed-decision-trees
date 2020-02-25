@@ -1,6 +1,10 @@
 from models.trees import TreeSup
 from utils.graph import get_root, get_wnids
-from utils.utils import DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS
+from utils.utils import (
+    DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
+    DEFAULT_CIFAR100_WNIDS, DEFAULT_TINYIMAGENET200_TREE,
+    DEFAULT_TINYIMAGENET200_WNIDS
+)
 from utils.data.custom import Node
 import torch
 import numpy as np
@@ -154,9 +158,7 @@ class DecisionTreePrior(Noop):
 
     accepts_path_graph_analysis = True
 
-    def __init__(self, trainset, testset,
-            path_graph_analysis=DEFAULT_CIFAR10_TREE,
-            path_wnids=DEFAULT_CIFAR10_WNIDS):
+    def __init__(self, trainset, testset, path_graph_analysis, path_wnids):
         super().__init__(trainset, testset)
         self.nodes = Node.get_nodes(path_graph_analysis, path_wnids, trainset.classes)
         self.G = self.nodes[0].G
@@ -212,3 +214,27 @@ class DecisionTreePrior(Noop):
         super().end_test(epoch)
         accuracy = round(self.correct / self.total * 100., 2)
         print(f'TreePrior Accuracy: {accuracy}%, {self.correct}/{self.total}')
+
+
+class CIFAR10DecisionTreePrior(DecisionTreePrior):
+
+    def __init__(self, trainset, testset,
+        path_graph_analysis=DEFAULT_CIFAR10_TREE,
+        path_wnids=DEFAULT_CIFAR10_WNIDS):
+        super().__init__(trainset, testset, path_graph_analysis, path_wnids)
+
+
+class CIFAR100DecisionTreePrior(DecisionTreePrior):
+
+    def __init__(self, trainset, testset,
+        path_graph_analysis=DEFAULT_CIFAR100_TREE,
+        path_wnids=DEFAULT_CIFAR100_WNIDS):
+        super().__init__(trainset, testset, path_graph_analysis, path_wnids)
+
+
+class TinyImagenet200DecisionTreePrior(DecisionTreePrior):
+
+    def __init__(self, trainset, testset,
+        path_graph_analysis=DEFAULT_TINYIMAGENET200_TREE,
+        path_wnids=DEFAULT_TINYIMAGENET200_WNIDS):
+        super().__init__(trainset, testset, path_graph_analysis, path_wnids)
