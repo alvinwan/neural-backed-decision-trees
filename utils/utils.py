@@ -190,7 +190,8 @@ def get_fname(args):
 
 def generate_fname(dataset, model, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
-        include_classes=(), num_samples=0, max_leaves_supervised=-1, **kwargs):
+        include_classes=(), num_samples=0, max_leaves_supervised=-1,
+        min_leaves_supervised=-1, tree_supervision_weight=0.5, **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
     fname += '-' + model
@@ -215,5 +216,10 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
     if num_samples != 0 and num_samples is not None:
         fname += f'-samples{num_samples}'
     if 'TreeSup' in model:
-        fname += f'-mls{max_leaves_supervised}'
+        if max_leaves_supervised > 0:
+            fname += f'-mxls{max_leaves_supervised}'
+        if min_leaves_supervised > 0:
+            fname += f'-mnls{min_leaves_supervised}'
+        if tree_supervision_weight is not None:
+            fname += f'-tsw{tree_supervision_weight}'
     return fname

@@ -51,6 +51,8 @@ parser.add_argument('--test-path', action='store_true',
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
 
+parser.add_argument('--tree-supervision-weight', default=0.5,
+                    help='Weight assigned to tree supervision losses')
 parser.add_argument('--path-graph-analysis', help='Graph path, only for analysis')
 parser.add_argument('--max-leaves-supervised', type=int, default=-1,
                     help='Maximum number of leaves a node can have to '
@@ -161,7 +163,8 @@ model = getattr(models, args.model)
 # the tree path?
 model_kwargs = {}
 populate_kwargs(model_kwargs, model, name=f'Model {args.model}', keys=(
-    'path_graph', 'max_leaves_supervised', 'min_leaves_supervised'))
+    'path_graph', 'max_leaves_supervised', 'min_leaves_supervised',
+    'tree_supervision_weight'))
 
 net = model(
     num_classes=len(trainset.classes),
