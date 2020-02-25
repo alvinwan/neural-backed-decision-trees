@@ -51,7 +51,7 @@ parser.add_argument('--test-path', action='store_true',
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
 
-parser.add_argument('--tree-supervision-weight', default=0.5, type=float,
+parser.add_argument('--tree-supervision-weight', type=float,
                     help='Weight assigned to tree supervision losses')
 parser.add_argument('--path-graph-analysis', help='Graph path, only for analysis')
 parser.add_argument('--max-leaves-supervised', type=int, default=-1,

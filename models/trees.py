@@ -847,7 +847,7 @@ class TreeSup(nn.Module):
 
     def __init__(self, path_graph, path_wnids, dataset, num_classes=10,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=0.5):
+            tree_supervision_weight=1.):
         super().__init__()
         import models
 
@@ -879,7 +879,7 @@ class TreeSup(nn.Module):
         the max is 2. On CIFAR100, the max is 8.
         """
         loss = criterion(outputs, targets)
-        num_losses = outputs.size(0) * len(self.nodes) * self.tree_supervision_weight
+        num_losses = outputs.size(0) * len(self.nodes) / 2.
 
         outputs_subs = defaultdict(lambda: [])
         targets_subs = defaultdict(lambda: [])
@@ -905,7 +905,8 @@ class TreeSup(nn.Module):
 
             if not outputs_sub.size(0):
                 continue
-            fraction = outputs_sub.size(0) / float(num_losses)
+            fraction = outputs_sub.size(0) / float(num_losses) \
+                * self.tree_supervision_weight
             loss += criterion(outputs_sub, targets_sub) * fraction
         return loss
 
@@ -930,7 +931,7 @@ class CIFAR10TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=0.5):
+            tree_supervision_weight=1.):
         super().__init__(path_graph, DEFAULT_CIFAR10_WNIDS,
             dataset=datasets.CIFAR10(root='./data'),
             num_classes=num_classes,
@@ -943,7 +944,7 @@ class CIFAR100TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=10,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=0.5):
+            tree_supervision_weight=1.):
         super().__init__(path_graph, DEFAULT_CIFAR100_WNIDS,
             dataset=datasets.CIFAR100(root='./data'),
             num_classes=num_classes,
@@ -956,7 +957,7 @@ class TinyImagenet200TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=10,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=0.5):
+            tree_supervision_weight=1.):
         super().__init__(path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
             dataset=data.TinyImagenet200(root='./data'),
             num_classes=num_classes,
