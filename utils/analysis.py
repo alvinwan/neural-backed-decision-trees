@@ -13,7 +13,8 @@ import csv
 
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
-    'IgnoredSamples', 'DecisionTreePrior')
+    'IgnoredSamples', 'DecisionTreePrior', 'CIFAR10DecisionTreePrior',
+    'CIFAR100DecisionTreePrior', 'TinyImagenet200DecisionTreePrior')
 
 
 class Noop:
