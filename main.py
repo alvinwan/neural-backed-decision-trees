@@ -246,8 +246,7 @@ def train(epoch, analyzer):
         total += _total
 
         stat = analyzer.update_batch(outputs, predicted, targets)
-        if stat:
-            extra = f'| {stat}'
+        extra = f'| {stat}' if stat else ''
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total, extra))
@@ -295,8 +294,7 @@ def test(epoch, analyzer, checkpoint=True):
                 targets = targets.cpu()
 
             stat = analyzer.update_batch(outputs, predicted, targets)
-            if stat:
-                extra = f'| {stat}'
+            extra = f'| {stat}' if stat else ''
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total, extra))
