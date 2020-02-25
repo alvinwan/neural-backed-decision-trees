@@ -842,9 +842,10 @@ class TreeSup(nn.Module):
 
     accepts_path_graph = True
     accepts_max_leaves_supervised = True
+    accepts_min_leaves_supervised = True
 
     def __init__(self, path_graph, path_wnids, dataset, num_classes=10,
-            max_leaves_supervised=-1):
+            max_leaves_supervised=-1, min_leaves_supervised=-1):
         super().__init__()
         import models
 
@@ -852,6 +853,7 @@ class TreeSup(nn.Module):
         self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.dataset = dataset
         self.max_leaves_supervised = max_leaves_supervised
+        self.min_leaves_supervised = min_leaves_supervised
 
     def load_backbone(self, path):
         checkpoint = torch.load(path)
@@ -882,6 +884,10 @@ class TreeSup(nn.Module):
         for node in self.nodes:
             if self.max_leaves_supervised > 0 and \
                     node.num_leaves > self.max_leaves_supervised:
+                continue
+
+            if self.min_leaves_supervised > 0 and \
+                    node.num_leaves < self.min_leaves_supervised:
                 continue
 
             classes = [node.old_to_new_classes[int(t)] for t in targets_ints]
@@ -915,28 +921,31 @@ class TreeSup(nn.Module):
 class CIFAR10TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10,
-            max_leaves_supervised=-1):
+            max_leaves_supervised=-1, min_leaves_supervised=-1):
         super().__init__(path_graph, DEFAULT_CIFAR10_WNIDS,
             dataset=datasets.CIFAR10(root='./data'),
             num_classes=num_classes,
-            max_leaves_supervised=max_leaves_supervised)
+            max_leaves_supervised=max_leaves_supervised,
+            min_leaves_supervised=min_leaves_supervised)
 
 
 class CIFAR100TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=10,
-            max_leaves_supervised=-1):
+            max_leaves_supervised=-1, min_leaves_supervised=-1):
         super().__init__(path_graph, DEFAULT_CIFAR100_WNIDS,
             dataset=datasets.CIFAR100(root='./data'),
             num_classes=num_classes,
-            max_leaves_supervised=max_leaves_supervised)
+            max_leaves_supervised=max_leaves_supervised,
+            min_leaves_supervised=min_leaves_supervised)
 
 
 class TinyImagenet200TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=10,
-            max_leaves_supervised=-1):
+            max_leaves_supervised=-1, min_leaves_supervised=-1):
         super().__init__(path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
             dataset=data.TinyImagenet200(root='./data'),
             num_classes=num_classes,
-            max_leaves_supervised=max_leaves_supervised)
+            max_leaves_supervised=max_leaves_supervised,
+            min_leaves_supervised=min_leaves_supervised)

@@ -54,6 +54,9 @@ parser.add_argument('--analysis', choices=analysis.names,
 parser.add_argument('--max-leaves-supervised', type=int, default=-1,
                     help='Maximum number of leaves a node can have to '
                     'contribute loss, in tree-supervised training.')
+parser.add_argument('--min-leaves-supervised', type=int, default=-1,
+                    help='Minimum number of leaves a node must have to '
+                    'contribute loss, in tree-supervised training.')
 parser.add_argument('--probability-labels', nargs='*', type=float)
 parser.add_argument('--include-labels', nargs='*', type=int)
 parser.add_argument('--exclude-labels', nargs='*', type=int)
@@ -157,7 +160,7 @@ model = getattr(models, args.model)
 # the tree path?
 model_kwargs = {}
 populate_kwargs(model_kwargs, model, name='Model', keys=(
-    'path_graph', 'max_leaves_supervised'))
+    'path_graph', 'max_leaves_supervised', 'min_leaves_supervised'))
 
 net = model(
     num_classes=len(trainset.classes),
