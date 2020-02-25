@@ -176,7 +176,8 @@ def build_random_graph(wnids, seed=0, branching_factor=2):
 
     G = nx.DiGraph()
 
-    random.shuffle(wnids)
+    if seed >= 0:
+        random.shuffle(wnids)
     current = None
     remaining = wnids
 
