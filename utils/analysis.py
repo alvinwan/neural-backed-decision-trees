@@ -152,7 +152,7 @@ class IgnoredSamples(Noop):
 class DecisionTreePrior(Noop):
     """Evaluate model on decision tree prior. Evaluation is deterministic."""
 
-    accepts_path_graph = True
+    accepts_path_graph_analysis = True
 
     def __init__(self, trainset, testset,
             path_graph_analysis=DEFAULT_CIFAR10_TREE,
