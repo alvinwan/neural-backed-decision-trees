@@ -209,4 +209,4 @@ class DecisionTreePrior(Noop):
     def end_test(self, epoch):
         super().end_test(epoch)
         accuracy = round(self.correct / self.total * 100., 2)
-        print(f'DecisionTreePrior Accuracy: {accuracy}%')
+        print(f'TreePrior Accuracy: {accuracy}%, {self.correct}/{self.total}')

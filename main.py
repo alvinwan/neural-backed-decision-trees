@@ -127,7 +127,7 @@ def populate_kwargs(kwargs, object, name='Dataset', keys=()):
             Colors.cyan(f'{key}:\t{value}')
         elif value:
             Colors.red(
-                f'Warning: {name} {args.dataset} does not support custom '
+                f'Warning: {name} does not support custom '
                 f'{key}: {value}')
 
 
@@ -136,7 +136,7 @@ if getattr(dataset, 'needs_wnid', False):
     dataset_args = (args.wnid,)
 
 dataset_kwargs = {}
-populate_kwargs(dataset_kwargs, dataset, name='Dataset', keys=(
+populate_kwargs(dataset_kwargs, dataset, name=f'Dataset {args.dataset}', keys=(
     'path_graph', 'include_labels', 'exclude_labels', 'include_classes',
     'probability_labels'))
 
@@ -159,7 +159,7 @@ model = getattr(models, args.model)
 # TODO(alvin): should dataset trees be passed to models, isntead of re-passing
 # the tree path?
 model_kwargs = {}
-populate_kwargs(model_kwargs, model, name='Model', keys=(
+populate_kwargs(model_kwargs, model, name=f'Model {args.model}', keys=(
     'path_graph', 'max_leaves_supervised', 'min_leaves_supervised'))
 
 net = model(
@@ -329,7 +329,7 @@ def test(epoch, analyzer, checkpoint=True):
 generate = getattr(analysis, args.analysis) if args.analysis else analysis.Noop
 
 analyzer_kwargs = {}
-populate_kwargs({}, generate, name='Analyzer', keys=('path_graph',))
+populate_kwargs({}, generate, name=f'Analyzer {args.analysis}', keys=('path_graph',))
 analyzer = generate(trainset, testset, **analyzer_kwargs)
 
 if args.eval:
