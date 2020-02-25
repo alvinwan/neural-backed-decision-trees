@@ -169,8 +169,8 @@ class DecisionTreePrior(Noop):
         self.correct = 0
         self.total = 0
 
-    def update_batch(self, outputs, _, targets):
-        super().update_batch(outputs, _, targets)
+    def update_batch(self, outputs, predicted, targets):
+        super().update_batch(outputs, predicted, targets)
 
         targets_ints = [int(target) for target in targets.cpu().long()]
         wnid_to_pred_selector = {}
@@ -181,13 +181,14 @@ class DecisionTreePrior(Noop):
             wnid_to_pred_selector[node.wnid] = (preds_sub, selector)
 
         n_samples = outputs.size(0)
-        predicted = self.traverse_tree(wnid_to_pred_selector, n_samples).to(targets.device)
+        predicted = self.traverse_tree(
+            predicted, wnid_to_pred_selector, n_samples).to(targets.device)
         self.total += n_samples
         self.correct += (predicted == targets).sum().item()
         accuracy = round(self.correct / float(self.total), 4) * 100
         return f'TreePrior: {accuracy}%'
 
-    def traverse_tree(self, wnid_to_pred_selector, n_samples):
+    def traverse_tree(self, _, wnid_to_pred_selector, n_samples):
         wnid = get_root(self.G)
         node = self.wnid_to_node[wnid]
         preds = []
@@ -197,7 +198,7 @@ class DecisionTreePrior(Noop):
                 if not selector[index]:  # we took a wrong turn. wrong.
                     wnid = node = None
                     break
-                index_new = sum(selector[:index]) - 1
+                index_new = sum(selector[:index + 1]) - 1
                 index_child = pred_sub[index_new]
                 wnid = node.children[index_child]
                 node = self.wnid_to_node.get(wnid, None)

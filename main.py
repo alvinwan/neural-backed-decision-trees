@@ -330,7 +330,7 @@ def test(epoch, analyzer, checkpoint=True):
 generate = getattr(analysis, args.analysis) if args.analysis else analysis.Noop
 
 analyzer_kwargs = {}
-populate_kwargs({}, generate, name=f'Analyzer {args.analysis}', keys=(
+populate_kwargs(analyzer_kwargs, generate, name=f'Analyzer {args.analysis}', keys=(
     'path_graph_analysis',))
 analyzer = generate(trainset, testset, **analyzer_kwargs)
 
