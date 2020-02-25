@@ -189,10 +189,11 @@ class DecisionTreePrior(Noop):
         return f'TreePrior: {accuracy}%'
 
     def traverse_tree(self, _, wnid_to_pred_selector, n_samples):
-        wnid = get_root(self.G)
-        node = self.wnid_to_node[wnid]
+        wnid_root = get_root(self.G)
+        node_root = self.wnid_to_node[wnid_root]
         preds = []
         for index in range(n_samples):
+            wnid, node = wnid_root, node_root
             while node is not None:
                 pred_sub, selector = wnid_to_pred_selector[node.wnid]
                 if not selector[index]:  # we took a wrong turn. wrong.
