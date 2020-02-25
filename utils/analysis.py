@@ -155,10 +155,10 @@ class DecisionTreePrior(Noop):
     accepts_path_graph = True
 
     def __init__(self, trainset, testset,
-            path_graph=DEFAULT_CIFAR10_TREE,
+            path_graph_analysis=DEFAULT_CIFAR10_TREE,
             path_wnids=DEFAULT_CIFAR10_WNIDS):
         super().__init__(trainset, testset)
-        self.nodes = Node.get_nodes(path_graph, path_wnids, trainset.classes)
+        self.nodes = Node.get_nodes(path_graph_analysis, path_wnids, trainset.classes)
         self.G = self.nodes[0].G
         self.wnid_to_node = {node.wnid: node for node in self.nodes}
 

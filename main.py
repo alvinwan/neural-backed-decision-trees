@@ -51,6 +51,7 @@ parser.add_argument('--test-path', action='store_true',
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
 
+parser.add_argument('--path-graph-analysis', help='Graph path, only for analysis')
 parser.add_argument('--max-leaves-supervised', type=int, default=-1,
                     help='Maximum number of leaves a node can have to '
                     'contribute loss, in tree-supervised training.')
@@ -329,7 +330,8 @@ def test(epoch, analyzer, checkpoint=True):
 generate = getattr(analysis, args.analysis) if args.analysis else analysis.Noop
 
 analyzer_kwargs = {}
-populate_kwargs({}, generate, name=f'Analyzer {args.analysis}', keys=('path_graph',))
+populate_kwargs({}, generate, name=f'Analyzer {args.analysis}', keys=(
+    'path_graph_analysis',))
 analyzer = generate(trainset, testset, **analyzer_kwargs)
 
 if args.eval:
