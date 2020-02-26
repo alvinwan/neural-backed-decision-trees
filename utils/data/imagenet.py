@@ -8,7 +8,7 @@ import shutil
 
 
 
-__all__ = names = ('TinyImagenet200', 'ImageNet',)
+__all__ = names = ('TinyImagenet200', 'Imagenet1000',)
 
 
 class TinyImagenet200(Dataset):
@@ -100,7 +100,7 @@ class _TinyImagenet200Val(datasets.ImageFolder):
         return super().__len__()
 
 
-class ImageNet(Dataset):
+class Imagenet1000(Dataset):
     """ImageNet dataloader"""
 
     transform_train = transforms.Compose([
@@ -125,14 +125,14 @@ class ImageNet(Dataset):
 
         if download:
             self.download(root=root)
-        dataset = _ImageNetTrain if train else _ImageNetVal
+        dataset = _Imagenet1000Train if train else _Imagenet1000Val
         self.root = root
         self.dataset = dataset(root, *args, **kwargs)
         self.classes = self.dataset.classes
         self.class_to_idx = {cls: i for i, cls in enumerate(self.classes)}
 
     def download(self, root='./'):
-        dir = os.path.join(root, 'imagenet')
+        dir = os.path.join(root, 'imagenet-1000')
         dir_train = os.path.join(dir, 'train')
         if os.path.exists(dir) and os.path.exists(dir_train):
             print('==> Already downloaded.')
@@ -148,13 +148,13 @@ class ImageNet(Dataset):
         return len(self.dataset)
 
 
-class _ImageNetTrain(datasets.ImageFolder):
+class _Imagenet1000Train(datasets.ImageFolder):
 
     def __init__(self, root='./data', *args, **kwargs):
-        super().__init__(os.path.join(root, 'imagenet/train'), *args, **kwargs)
+        super().__init__(os.path.join(root, 'imagenet-1000/train'), *args, **kwargs)
 
 
-class _ImageNetVal(datasets.ImageFolder):
+class _Imagenet1000Val(datasets.ImageFolder):
 
     def __init__(self, root='./data', *args, **kwargs):
-        super().__init__(os.path.join(root, 'imagenet/val'), *args, **kwargs)
+        super().__init__(os.path.join(root, 'imagenet-1000/val'), *args, **kwargs)

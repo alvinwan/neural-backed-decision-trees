@@ -15,12 +15,12 @@ from pathlib import Path
 
 # tree-generation consntants
 METHODS = ('prune', 'wordnet', 'random', 'image')
-DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200', 'ImageNet')
+DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200', 'Imagenet1000')
 DATASET_TO_FOLDER_NAME = {
     'CIFAR10': 'CIFAR10',
     'CIFAR100': 'CIFAR100',
     'TinyImagenet200': 'tiny-imagenet-200',
-    'ImageNet' : 'imagenet',
+    'Imagenet1000' : 'imagenet-1000',
 }
 
 # main script constants
@@ -33,8 +33,8 @@ DEFAULT_CIFAR100_TREE = './data/CIFAR100/graph-wordnet.json'
 DEFAULT_CIFAR100_WNIDS = './data/CIFAR100/wnids.txt'
 DEFAULT_TINYIMAGENET200_TREE = './data/tiny-imagenet-200/graph-wordnet.json'
 DEFAULT_TINYIMAGENET200_WNIDS = './data/tiny-imagenet-200/wnids.txt'
-DEFAULT_IMAGENET_TREE = './data/imagenet/graph-wordnet.json'
-DEFAULT_IMAGENET_WNIDS = './data/imagenet/wnids.txt'
+DEFAULT_IMAGENET1000_TREE = './data/imagenet-1000/graph-wordnet.json'
+DEFAULT_IMAGENET1000_WNIDS = './data/imagenet-1000/wnids.txt'
 
 
 class Colors:
