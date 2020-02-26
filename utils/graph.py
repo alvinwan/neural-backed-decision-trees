@@ -298,11 +298,7 @@ def build_induced_graph(wnids, checkpoint, branching_factor=2):
 
 
 def get_centers(checkpoint):
-    load_kwargs = {}
-    if not torch.cuda.is_available():
-        load_kwargs['map_location'] = torch.device('cpu')
-
-    data = torch.load(checkpoint, **load_kwargs)
+    data = torch.load(checkpoint, map_location=torch.device('cpu'))
     net = data['net']
 
     keys = ('linear.weight', 'module.linear.weight')
