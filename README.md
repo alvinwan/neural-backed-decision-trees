@@ -140,6 +140,12 @@ CUDA_VISIBLE_DEVICES=1 python main.py --dataset=CIFAR100 --model=CIFAR100TreeSup
 for weight in 0.5 1 25 50 100; do CUDA_VISIBLE_DEVICES=1 python main.py --dataset=TinyImagenet200 --model=TinyImagenet200TreeSup --analysis=TinyImagenet200DecisionTreePrior --tree-supervision-weight=${weight} --eval --resume --path-graph=./data/TinyImagenet200/graph-wordnet-single.json --path-graph-analysis=./data/TinyImagenet200/graph-wordnet-single.json; done
 ```
 
+### Induced Graph
+
+```
+python generate_graph.py --method=induced --dataset=CIFAR10 --checkpoint=./checkpoint/ckpt-CIFAR10-ResNet10.pth
+```
+
 ## Results
 
 https://docs.google.com/spreadsheets/d/1DrvP4msf8Bn0dF1qnpdI5fjLgEp8K6xFbxXntSn1j2s/edit#gid=0
