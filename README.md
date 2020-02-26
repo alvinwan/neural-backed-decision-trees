@@ -136,6 +136,8 @@ CUDA_VISIBLE_DEVICES=1 python main.py --dataset=CIFAR10 --model=ResNet10 --analy
 # ours
 CUDA_VISIBLE_DEVICES=1 python main.py --dataset=CIFAR10 --model=CIFAR10TreeSup --analysis=CIFAR10DecisionTreePrior --eval --resume --path-graph=./data/CIFAR10/graph-wordnet-single.json --path-graph-analysis=./data/CIFAR10/graph-wornet-single.json
 CUDA_VISIBLE_DEVICES=1 python main.py --dataset=CIFAR100 --model=CIFAR100TreeSup --analysis=CIFAR100DecisionTreePrior --eval --resume --path-graph=./data/CIFAR100/graph-wordnet-single.json --path-graph-analysis=./data/CIFAR100/graph-wordnet-single.json
+
+for weight in 0.5 1 25 50 100; do CUDA_VISIBLE_DEVICES=1 python main.py --dataset=TinyImagenet200 --model=TinyImagenet200TreeSup --analysis=TinyImagenet200DecisionTreePrior --tree-supervision-weight=${weight} --eval --resume --path-graph=./data/TinyImagenet200/graph-wordnet-single.json --path-graph-analysis=./data/TinyImagenet200/graph-wordnet-single.json; done
 ```
 
 ## Results
