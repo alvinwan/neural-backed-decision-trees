@@ -143,7 +143,7 @@ for weight in 0.5 1 25 50 100; do CUDA_VISIBLE_DEVICES=1 python main.py --datase
 ### Induced Graph
 
 ```
-python generate_graph.py --method=induced --dataset=CIFAR10 --checkpoint=./checkpoint/ckpt-CIFAR10-ResNet10.pth
+python generate_graph.py --method=induced --dataset=CIFAR10 --induced-checkpoint=./checkpoint/ckpt-CIFAR10-ResNet10.pth
 ```
 
 ## Results

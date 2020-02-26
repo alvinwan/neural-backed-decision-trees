@@ -39,18 +39,17 @@ def get_parser():
         default='wordnet')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--branching-factor', type=int, default=2)
-    parser.add_argument('--checkpoint', type=str,
+    parser.add_argument('--induced-checkpoint', type=str,
         help='(induced graph) Checkpoint to load into model. The fc weights '
         'are used for clustering.')
-    parser.add_argument('--model', type=str,
-        choices=list(models.get_model_choices()),
-        help='(induced graph) Model to load pretrained weights into. This '
-        'model must support a `.linear` attribute, containing an fc.')
+    parser.add_argument('--induced-linkage', type=str,
+        help='(induced graph) Linkage type used for agglomerative clustering')
     return parser
 
 
 def generate_fname(method, seed=0, branching_factor=2, extra=0,
-                   no_prune=False, fname='', single_path=False, **kwargs):
+                   no_prune=False, fname='', single_path=False,
+                   induced_linkage='ward', **kwargs):
     if fname:
         return fname
 
@@ -58,6 +57,9 @@ def generate_fname(method, seed=0, branching_factor=2, extra=0,
     if method == 'random':
         if seed != 0:
             fname += f'-seed{seed}'
+    if method == 'induced':
+        if induced_linkage != 'ward':
+            fname += f'-linkage{induced_linkage}'
     if method in ('random', 'induced'):
         if branching_factor != 2:
             fname += f'-branch{branching_factor}'
@@ -265,7 +267,8 @@ def read_graph(path):
 ################
 
 
-def build_induced_graph(wnids, checkpoint, branching_factor=2):
+def build_induced_graph(wnids, checkpoint, linkage='ward',
+        branching_factor=2):
     centers = get_centers(checkpoint)
     n_classes = centers.size(0)
 
@@ -277,7 +280,10 @@ def build_induced_graph(wnids, checkpoint, branching_factor=2):
         set_node_label(G, wnid_to_synset(wnid))
 
     # add rest of tree
-    clustering = AgglomerativeClustering().fit(centers)
+    clustering = AgglomerativeClustering(
+        linkage=linkage,
+        branching_factor=branching_factor
+    ).fit(centers)
     children = clustering.children_
     index_to_wnid = {}
 
