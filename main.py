@@ -107,6 +107,10 @@ if 'TinyImagenet200' in args.dataset:
     transform_train = data.TinyImagenet200.transform_train
     transform_test = data.TinyImagenet200.transform_val
 
+if 'Imagenet1000' in args.dataset:
+    transform_train = data.Imagenet1000.transform_train
+    transform_test = data.Imagenet1000.transform_val
+
 if args.test_path_sanity or args.test_path:
     assert 'PathSanity' in args.dataset
 
