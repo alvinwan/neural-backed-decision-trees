@@ -282,7 +282,7 @@ def build_induced_graph(wnids, checkpoint, linkage='ward',
     # add rest of tree
     clustering = AgglomerativeClustering(
         linkage=linkage,
-        branching_factor=branching_factor
+        n_clusters=branching_factor
     ).fit(centers)
     children = clustering.children_
     index_to_wnid = {}
