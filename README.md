@@ -130,6 +130,10 @@ These inference modes do not require the second fully-connected layer training. 
 
 Notes:
 ```
+# baseline
+CUDA_VISIBLE_DEVICES=1 python main.py --dataset=CIFAR10 --model=ResNet10 --analysis=CIFAR10DecisionTreePrior --eval --resume --path-graph-analysis=./data/CIFAR10/graph-wordnet-single.json
+
+# ours
 CUDA_VISIBLE_DEVICES=1 python main.py --dataset=CIFAR10 --model=CIFAR10TreeSup --analysis=CIFAR10DecisionTreePrior --eval --resume --path-graph=./data/CIFAR10/graph-wordnet-single.json --path-graph-analysis=./data/CIFAR10/graph-wornet-single.json
 CUDA_VISIBLE_DEVICES=1 python main.py --dataset=CIFAR100 --model=CIFAR100TreeSup --analysis=CIFAR100DecisionTreePrior --eval --resume --path-graph=./data/CIFAR100/graph-wordnet-single.json --path-graph-analysis=./data/CIFAR100/graph-wordnet-single.json
 ```

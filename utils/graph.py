@@ -128,6 +128,14 @@ def get_root(G):
     return roots[0]
 
 
+def get_depth(G):
+    def _get_depth(node):
+        if not G.succ[node]:
+            return 1
+        return max([_get_depth(child) for child in G.succ[node]]) + 1
+    return max([_get_depth(root) for root in get_roots(G)])
+
+
 def set_node_label(G, synset):
     nx.set_node_attributes(G, {
         synset_to_wnid(synset): synset_to_name(synset)

@@ -200,6 +200,9 @@ class DecisionTreePrior(Noop):
         for index in range(n_samples):
             wnid, node = wnid_root, node_root
             while node is not None:
+                if node.wnid not in wnid_to_pred_selector:
+                    wnid = node = None
+                    break
                 pred_sub, selector = wnid_to_pred_selector[node.wnid]
                 if not selector[index]:  # we took a wrong turn. wrong.
                     wnid = node = None
