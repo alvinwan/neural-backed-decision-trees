@@ -37,7 +37,7 @@ __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
            'CIFAR10IdInitFreezeJointTree', 'CIFAR100IdInitFreezeJointTree',
            'TinyImagenet200IdInitFreezeJointTree', 'ImageNetIdInitFreezeJointTree',
            'CIFAR10ReweightedJointNodes', 'CIFAR100ReweightedJointNodes',
-           'TinyImagenet200ReweightedJointNodes', 'ImageNetReweightedJointNodes'
+           'TinyImagenet200ReweightedJointNodes', 'ImageNetReweightedJointNodes',
            'CIFAR10ReweightedJointTree', 'CIFAR100ReweightedJointTree',
            'TinyImagenet200ReweightedJointTree', 'ImageNetReweightedJointTree',
            'CIFAR10IdInitReweightedJointTree', 'CIFAR100IdInitReweightedJointTree',
