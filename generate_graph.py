@@ -4,7 +4,7 @@ from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from utils.graph import build_minimal_wordnet_graph, build_random_graph, \
     prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
     get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args, \
-    augment_graph
+    augment_graph, get_depth
 from utils.utils import Colors
 import xml.etree.ElementTree as ET
 import argparse
@@ -16,7 +16,7 @@ def print_graph_stats(G, name, args):
     print('[{}] \t Nodes: {} \t Depth: {} \t Max Children: {}'.format(
         name,
         len(G.nodes),
-        0,  # compute_depth(tree),
+        get_depth(G),
         max(num_children)))
 
 

@@ -179,6 +179,8 @@ class DecisionTreePrior(Noop):
         wnid_to_pred_selector = {}
         for node in self.nodes:
             selector, outputs_sub, targets_sub = TreeSup.inference(node, outputs, targets)
+            if not any(selector):
+                continue
             _, preds_sub = torch.max(outputs_sub, dim=1)
             preds_sub = list(map(int, preds_sub.cpu()))
             wnid_to_pred_selector[node.wnid] = (preds_sub, selector)
@@ -198,6 +200,9 @@ class DecisionTreePrior(Noop):
         for index in range(n_samples):
             wnid, node = wnid_root, node_root
             while node is not None:
+                if node.wnid not in wnid_to_pred_selector:
+                    wnid = node = None
+                    break
                 pred_sub, selector = wnid_to_pred_selector[node.wnid]
                 if not selector[index]:  # we took a wrong turn. wrong.
                     wnid = node = None

@@ -124,8 +124,16 @@ def get_roots(G):
 
 def get_root(G):
     roots = list(get_roots(G))
-    assert len(roots) == 1
+    assert len(roots) == 1, f'Multiple ({len(roots)}) found'
     return roots[0]
+
+
+def get_depth(G):
+    def _get_depth(node):
+        if not G.succ[node]:
+            return 1
+        return max([_get_depth(child) for child in G.succ[node]]) + 1
+    return max([_get_depth(root) for root in get_roots(G)])
 
 
 def set_node_label(G, synset):
