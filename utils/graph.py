@@ -42,7 +42,7 @@ def get_parser():
     parser.add_argument('--induced-checkpoint', type=str,
         help='(induced graph) Checkpoint to load into model. The fc weights '
         'are used for clustering.')
-    parser.add_argument('--induced-linkage', type=str,
+    parser.add_argument('--induced-linkage', type=str, default='ward',
         help='(induced graph) Linkage type used for agglomerative clustering')
     return parser
 
@@ -58,7 +58,7 @@ def generate_fname(method, seed=0, branching_factor=2, extra=0,
         if seed != 0:
             fname += f'-seed{seed}'
     if method == 'induced':
-        if induced_linkage != 'ward':
+        if induced_linkage != 'ward' and induced_linkage is not None:
             fname += f'-linkage{induced_linkage}'
     if method in ('random', 'induced'):
         if branching_factor != 2:
