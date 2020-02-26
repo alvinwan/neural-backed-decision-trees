@@ -179,6 +179,8 @@ class DecisionTreePrior(Noop):
         wnid_to_pred_selector = {}
         for node in self.nodes:
             selector, outputs_sub, targets_sub = TreeSup.inference(node, outputs, targets)
+            if not any(selector):
+                continue
             _, preds_sub = torch.max(outputs_sub, dim=1)
             preds_sub = list(map(int, preds_sub.cpu()))
             wnid_to_pred_selector[node.wnid] = (preds_sub, selector)

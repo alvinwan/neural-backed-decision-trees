@@ -124,7 +124,7 @@ def get_roots(G):
 
 def get_root(G):
     roots = list(get_roots(G))
-    assert len(roots) == 1
+    assert len(roots) == 1, f'Multiple ({len(roots)}) found'
     return roots[0]
 
 
