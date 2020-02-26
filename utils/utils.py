@@ -223,6 +223,6 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
             fname += f'-mxls{max_leaves_supervised}'
         if min_leaves_supervised > 0:
             fname += f'-mnls{min_leaves_supervised}'
-        if tree_supervision_weight is not None:
+        if tree_supervision_weight is not None and tree_supervision_weight != 1:
             fname += f'-tsw{tree_supervision_weight}'
     return fname
