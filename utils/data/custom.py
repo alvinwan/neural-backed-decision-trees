@@ -6,7 +6,8 @@ from collections import defaultdict
 from utils.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
     DEFAULT_CIFAR100_WNIDS, DEFAULT_TINYIMAGENET200_TREE,
-    DEFAULT_TINYIMAGENET200_WNIDS
+    DEFAULT_TINYIMAGENET200_WNIDS, DEFAULT_IMAGENET_TREE,
+    DEFAULT_IMAGENET_WNIDS,
 )
 from collections import defaultdict
 from utils.graph import get_wnids, read_graph, get_leaves, get_non_leaves
@@ -17,15 +18,17 @@ import random
 
 __all__ = names = ('CIFAR10Node', 'CIFAR10JointNodes', 'CIFAR10PathSanity',
                    'CIFAR100Node', 'CIFAR100JointNodes',
-                   'TinyImagenet200JointNodes', 'CIFAR100PathSanity',
-                   'TinyImagenet200PathSanity', 'CIFAR10IncludeLabels',
+                   'TinyImagenet200JointNodes', 'ImageNetJointNodes',
+                   'CIFAR100PathSanity', 'TinyImagenet200PathSanity',
+                   'ImageNetPathSanity', 'CIFAR10IncludeLabels',
                    'CIFAR100IncludeLabels', 'TinyImagenet200IncludeLabels',
-                   'CIFAR10ExcludeLabels', 'CIFAR100ExcludeLabels',
-                   'TinyImagenet200ExcludeLabels',
-                   'CIFAR10ResampleLabels', 'CIFAR100ResampleLabels',
-                   'TinyImagenet200ResampleLabels',
-                   'CIFAR10JointNodesSingle', 'CIFAR100JointNodesSingle',
-                   'TinyImagenet200JointNodesSingle')
+                   'ImageNetIncludeLabels', 'CIFAR10ExcludeLabels',
+                   'CIFAR100ExcludeLabels', 'TinyImagenet200ExcludeLabels',
+                   'ImageNetExcludeLabels', 'CIFAR10ResampleLabels',
+                   'CIFAR100ResampleLabels', 'TinyImagenet200ResampleLabels',
+                   'ImageNetResampleLabels', 'CIFAR10JointNodesSingle',
+                   'CIFAR100JointNodesSingle', 'TinyImagenet200JointNodesSingle',
+                   'ImageNetJointNodesSingle',)
 
 
 class Node:
@@ -306,6 +309,18 @@ class TinyImagenet200JointNodes(JointNodesDataset):
             dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs))
 
 
+class ImageNetJointNodes(JointNodesDataset):
+
+    def __init__(self,
+            *args,
+            path_graph=DEFAULT_IMAGENET_TREE,
+            path_wnids=DEFAULT_IMAGENET_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_graph, path_wnids,
+            dataset=datasets.ImageNet(*args, root=root, **kwargs))
+
+
 class CIFAR10JointNodesSingle(JointNodesSingleDataset):
 
     def __init__(self,
@@ -340,6 +355,18 @@ class TinyImagenet200JointNodesSingle(JointNodesSingleDataset):
             **kwargs):
         super().__init__(path_graph, path_wnids,
             dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs))
+
+
+class ImageNetJointNodesSingle(JointNodesSingleDataset):
+
+    def __init__(self,
+            *args,
+            path_graph=DEFAULT_IMAGENET_TREE,
+            path_wnids=DEFAULT_IMAGENET_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_graph, path_wnids,
+            dataset=datasets.ImageNet(*args, root=root, **kwargs))
 
 
 class PathSanityDataset(Dataset):
@@ -431,6 +458,18 @@ class TinyImagenet200PathSanity(PathSanityDataset):
             **kwargs):
         super().__init__(path_graph, path_wnids,
             dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs))
+
+
+class ImageNetPathSanity(PathSanityDataset):
+
+    def __init__(self,
+            *args,
+            path_graph=DEFAULT_IMAGENET_TREE,
+            path_wnids=DEFAULT_IMAGENET_WNIDS,
+            root='./data',
+            **kwargs):
+        super().__init__(path_graph, path_wnids,
+            dataset=datasets.ImageNet(*args, root=root, **kwargs))
 
 
 class ResampleLabelsDataset(Dataset):
@@ -545,6 +584,14 @@ class TinyImagenet200ResampleLabels(ResampleLabelsDataset):
             probability_labels=probability_labels)
 
 
+class ImageNetResampleLabels(ResampleLabelsDataset):
+
+    def __init__(self, *args, root='./data', probability_labels=1, **kwargs):
+        super().__init__(
+            dataset=datasets.ImageNet(*args, root=root, **kwargs),
+            probability_labels=probability_labels)
+
+
 class IncludeClassesDataset(IncludeLabelsDataset):
     """
     Dataset that includes only the labels provided, with a limited number of
@@ -584,6 +631,14 @@ class TinyImagenet200IncludeLabels(IncludeLabelsDataset):
             include_labels=include_labels)
 
 
+class ImageNetIncludeLabels(IncludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', include_labels=(0,), **kwargs):
+        super().__init__(
+            dataset=datasets.ImageNet(*args, root=root, **kwargs),
+            include_labels=include_labels)
+
+
 class ExcludeLabelsDataset(IncludeLabelsDataset):
 
     accepts_include_labels = False
@@ -618,4 +673,12 @@ class TinyImagenet200ExcludeLabels(ExcludeLabelsDataset):
     def __init__(self, *args, root='./data', exclude_labels=(0,), **kwargs):
         super().__init__(
             dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs),
+            exclude_labels=exclude_labels)
+
+
+class ImageNetExcludeLabels(ExcludeLabelsDataset):
+
+    def __init__(self, *args, root='./data', exclude_labels=(0,), **kwargs):
+        super().__init__(
+            dataset=datasets.ImageNet(*args, root=root, **kwargs),
             exclude_labels=exclude_labels)
