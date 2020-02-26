@@ -40,6 +40,7 @@ def main():
         G = build_induced_graph(wnids,
             checkpoint=args.induced_checkpoint,
             linkage=args.induced_linkage,
+            affinity=args.induced_affinity,
             branching_factor=args.branching_factor)
     else:
         raise NotImplementedError(f'Method "{args.method}" not yet handled.')

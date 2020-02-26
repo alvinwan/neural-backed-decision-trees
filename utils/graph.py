@@ -44,12 +44,15 @@ def get_parser():
         'are used for clustering.')
     parser.add_argument('--induced-linkage', type=str, default='ward',
         help='(induced graph) Linkage type used for agglomerative clustering')
+    parser.add_argument('--induced-affinity', type=str, default='euclidean',
+        help='(induced graph) Metric used for computing similarity')
     return parser
 
 
 def generate_fname(method, seed=0, branching_factor=2, extra=0,
                    no_prune=False, fname='', single_path=False,
-                   induced_linkage='ward', **kwargs):
+                   induced_linkage='ward', induced_affinity='euclidean',
+                   **kwargs):
     if fname:
         return fname
 
@@ -60,6 +63,8 @@ def generate_fname(method, seed=0, branching_factor=2, extra=0,
     if method == 'induced':
         if induced_linkage != 'ward' and induced_linkage is not None:
             fname += f'-linkage{induced_linkage}'
+        if induced_affinity != 'euclidean' and induced_affinity is not None:
+            fname += f'-affinity{induced_affinity}'
     if method in ('random', 'induced'):
         if branching_factor != 2:
             fname += f'-branch{branching_factor}'
@@ -267,7 +272,7 @@ def read_graph(path):
 ################
 
 
-def build_induced_graph(wnids, checkpoint, linkage='ward',
+def build_induced_graph(wnids, checkpoint, linkage='ward', affinity='euclidean',
         branching_factor=2):
     centers = get_centers(checkpoint)
     n_classes = centers.size(0)
@@ -282,7 +287,8 @@ def build_induced_graph(wnids, checkpoint, linkage='ward',
     # add rest of tree
     clustering = AgglomerativeClustering(
         linkage=linkage,
-        n_clusters=branching_factor
+        n_clusters=branching_factor,
+        affinity=affinity,
     ).fit(centers)
     children = clustering.children_
     index_to_wnid = {}
