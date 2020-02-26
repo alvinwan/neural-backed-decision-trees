@@ -318,7 +318,7 @@ class ImageNetJointNodes(JointNodesDataset):
             root='./data',
             **kwargs):
         super().__init__(path_graph, path_wnids,
-            dataset=datasets.ImageNet(*args, root=root, **kwargs))
+            dataset=imagenet.ImageNet(*args, root=root, **kwargs))
 
 
 class CIFAR10JointNodesSingle(JointNodesSingleDataset):
@@ -366,7 +366,7 @@ class ImageNetJointNodesSingle(JointNodesSingleDataset):
             root='./data',
             **kwargs):
         super().__init__(path_graph, path_wnids,
-            dataset=datasets.ImageNet(*args, root=root, **kwargs))
+            dataset=imagenet.ImageNet(*args, root=root, **kwargs))
 
 
 class PathSanityDataset(Dataset):
@@ -469,7 +469,7 @@ class ImageNetPathSanity(PathSanityDataset):
             root='./data',
             **kwargs):
         super().__init__(path_graph, path_wnids,
-            dataset=datasets.ImageNet(*args, root=root, **kwargs))
+            dataset=imagenet.ImageNet(*args, root=root, **kwargs))
 
 
 class ResampleLabelsDataset(Dataset):
@@ -588,7 +588,7 @@ class ImageNetResampleLabels(ResampleLabelsDataset):
 
     def __init__(self, *args, root='./data', probability_labels=1, **kwargs):
         super().__init__(
-            dataset=datasets.ImageNet(*args, root=root, **kwargs),
+            dataset=imagenet.ImageNet(*args, root=root, **kwargs),
             probability_labels=probability_labels)
 
 
@@ -635,7 +635,7 @@ class ImageNetIncludeLabels(IncludeLabelsDataset):
 
     def __init__(self, *args, root='./data', include_labels=(0,), **kwargs):
         super().__init__(
-            dataset=datasets.ImageNet(*args, root=root, **kwargs),
+            dataset=imagenet.ImageNet(*args, root=root, **kwargs),
             include_labels=include_labels)
 
 
@@ -680,5 +680,5 @@ class ImageNetExcludeLabels(ExcludeLabelsDataset):
 
     def __init__(self, *args, root='./data', exclude_labels=(0,), **kwargs):
         super().__init__(
-            dataset=datasets.ImageNet(*args, root=root, **kwargs),
+            dataset=imagenet.ImageNet(*args, root=root, **kwargs),
             exclude_labels=exclude_labels)

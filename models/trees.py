@@ -287,7 +287,7 @@ class ImageNetJointNodes(JointNodes):
 
     def __init__(self, path_graph=DEFAULT_IMAGENET_TREE, num_classes=None):
         super().__init__(path_graph, DEFAULT_IMAGENET_WNIDS,
-            dataset=datasets.ImageNet(root='./data'))
+            dataset=data.ImageNet(root='./data'))
 
 
 class CIFAR10JointNodesSingle(JointNodesSingle):
@@ -315,7 +315,7 @@ class ImageNetJointNodesSingle(JointNodesSingle):
 
     def __init__(self, path_graph=DEFAULT_IMAGENET_TREE, num_classes=None):
         super().__init__(path_graph, DEFAULT_IMAGENET_WNIDS,
-            dataset=datasets.ImageNet(root='./data'))
+            dataset=data.ImageNet(root='./data'))
 
 
 class CIFAR10FreezeJointNodes(JointNodes):
@@ -348,7 +348,7 @@ class ImageNetFreezeJointNodes(JointNodes):
             path_graph,
             DEFAULT_IMAGENET_WNIDS,
             freeze_backbone=True,
-            dataset=datasets.ImageNet(root='./data'))
+            dataset=data.ImageNet(root='./data'))
 
 
 class CIFAR10BalancedJointNodes(JointNodes):
@@ -382,7 +382,7 @@ class ImageNetBalancedJointNodes(JointNodes):
             path_graph,
             DEFAULT_IMAGENET_WNIDS,
             balance_classes=True,
-            dataset=datasets.ImageNet(root='./data'))
+            dataset=data.ImageNet(root='./data'))
 
 
 class CIFAR10ReweightedJointNodes(JointNodes):
@@ -416,7 +416,7 @@ class ImageNetReweightedJointNodes(JointNodes):
             path_graph,
             DEFAULT_IMAGENET_WNIDS,
             balance_class_weights=True,
-            dataset=datasets.ImageNet(root='./data'))
+            dataset=data.ImageNet(root='./data'))
 
 
 class CIFAR100BalancedFreezeJointNodes(JointNodes):
@@ -1096,7 +1096,7 @@ class ImageNetTreeSup(TreeSup):
             max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1.):
         super().__init__(path_graph, DEFAULT_IMAGENET_WNIDS,
-            dataset=datasets.ImageNet(root='./data'),
+            dataset=data.ImageNet(root='./data'),
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,

@@ -22,7 +22,7 @@ from utils.utils import (
 
 
 set_np_printoptions()
-datasets = ('CIFAR10', 'CIFAR100', 'ImageNet') + data.imagenet.names + data.custom.names
+datasets = ('CIFAR10', 'CIFAR100') + data.imagenet.names + data.custom.names
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
@@ -108,19 +108,8 @@ if 'TinyImagenet200' in args.dataset:
     transform_test = data.TinyImagenet200.transform_val
 
 if 'ImageNet' in args.dataset:
-    transform_train = transforms.Compose([
-        transforms.RandomSizedCrop(224),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-    ])
-
-    transform_val = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-    ])
+    transform_train = data.ImageNet.transform_train
+    transform_test = data.ImageNet.transform_val
 
 if args.test_path_sanity or args.test_path:
     assert 'PathSanity' in args.dataset

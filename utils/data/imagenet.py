@@ -8,7 +8,7 @@ import shutil
 
 
 
-__all__ = names = ('TinyImagenet200',)
+__all__ = names = ('TinyImagenet200', 'ImageNet',)
 
 
 class TinyImagenet200(Dataset):
@@ -98,3 +98,63 @@ class _TinyImagenet200Val(datasets.ImageFolder):
 
     def __len__(self):
         return super().__len__()
+
+
+class ImageNet(Dataset):
+    """ImageNet dataloader"""
+
+    transform_train = transforms.Compose([
+        transforms.RandomSizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+    ])
+
+    transform_val = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+    ])
+
+    dataset = None
+
+    def __init__(self, root='./data',
+            *args, train=True, download=False, **kwargs):
+        super().__init__()
+
+        if download:
+            self.download(root=root)
+        dataset = _ImageNetTrain if train else _ImageNetVal
+        self.root = root
+        self.dataset = dataset(root, *args, **kwargs)
+        self.classes = self.dataset.classes
+        self.class_to_idx = {cls: i for i, cls in enumerate(self.classes)}
+
+    def download(self, root='./'):
+        dir = os.path.join(root, 'imagenet')
+        dir_train = os.path.join(dir, 'train')
+        if os.path.exists(dir) and os.path.exists(dir_train):
+            print('==> Already downloaded.')
+            return
+
+        msg = ("Please symlink existing ImageNet dataset rather than downloading.")
+        raise RuntimeError(msg)
+
+    def __getitem__(self, i):
+        return self.dataset[i]
+
+    def __len__(self):
+        return len(self.dataset)
+
+
+class _ImageNetTrain(datasets.ImageFolder):
+
+    def __init__(self, root='./data', *args, **kwargs):
+        super().__init__(os.path.join(root, 'imagenet/train'), *args, **kwargs)
+
+
+class _ImageNetVal(datasets.ImageFolder):
+
+    def __init__(self, root='./data', *args, **kwargs):
+        super().__init__(os.path.join(root, 'imagenet/val'), *args, **kwargs)
