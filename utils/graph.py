@@ -4,11 +4,15 @@ import random
 from nltk.corpus import wordnet as wn
 from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from networkx.readwrite.json_graph import node_link_data, node_link_graph
+from sklearn.cluster import AgglomerativeClustering
+import torch
 import argparse
 import os
 
 
 def get_parser():
+    import models
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--dataset',
@@ -35,6 +39,13 @@ def get_parser():
         default='wordnet')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--branching-factor', type=int, default=2)
+    parser.add_argument('--checkpoint', type=str,
+        help='(induced graph) Checkpoint to load into model. The fc weights '
+        'are used for clustering.')
+    parser.add_argument('--model', type=str,
+        choices=list(models.get_model_choices()),
+        help='(induced graph) Model to load pretrained weights into. This '
+        'model must support a `.linear` attribute, containing an fc.')
     return parser
 
 
@@ -47,6 +58,7 @@ def generate_fname(method, seed=0, branching_factor=2, extra=0,
     if method == 'random':
         if seed != 0:
             fname += f'-seed{seed}'
+    if method in ('random', 'induced'):
         if branching_factor != 2:
             fname += f'-branch{branching_factor}'
     if extra > 0:
@@ -246,6 +258,61 @@ def write_graph(G, path):
 def read_graph(path):
     with open(path) as f:
         return node_link_graph(json.load(f))
+
+
+################
+# INDUCED TREE #
+################
+
+
+def build_induced_graph(wnids, checkpoint, branching_factor=2):
+    centers = get_centers(checkpoint)
+    n_classes = centers.size(0)
+
+    G = nx.DiGraph()
+
+    # add leaves
+    for wnid in wnids:
+        G.add_node(wnid)
+        set_node_label(G, wnid_to_synset(wnid))
+
+    # add rest of tree
+    clustering = AgglomerativeClustering().fit(centers)
+    children = clustering.children_
+    index_to_wnid = {}
+
+    for index, pair in enumerate(map(tuple, children)):
+        parent = FakeSynset.create_from_offset(len(G.nodes))
+        G.add_node(parent.wnid)
+        index_to_wnid[index] = parent.wnid
+
+        for child in pair:
+            if child < n_classes:
+                child_wnid = wnids[child]
+            else:
+                child_wnid = index_to_wnid[child - n_classes]
+            G.add_edge(parent.wnid, child_wnid)
+
+    assert len(list(get_roots(G))) == 1, list(get_roots(G))
+    return G
+
+
+def get_centers(checkpoint):
+    load_kwargs = {}
+    if not torch.cuda.is_available():
+        load_kwargs['map_location'] = torch.device('cpu')
+
+    data = torch.load(checkpoint, **load_kwargs)
+    net = data['net']
+
+    keys = ('linear.weight', 'module.linear.weight')
+    fc = None
+    for key in keys:
+        if key in net:
+            fc = net[key]
+            break
+    assert fc is not None, f'Could not find FC weights in {checkpoint}'
+    return fc
 
 
 ####################
