@@ -10,10 +10,6 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--path-graph', default='./data/CIFAR10/graph-wordnet-single.json')
-parser.add_argument('--method', choices=('shuffle', 'contract'), default='shuffle')
-parser.add_argument('--seed', default=0, type=int)
-parser.add_argument('--contract-every', default=1, type=int,
-                    help='(contract) contract every kth node in a dfs')
 args = parser.parse_args()
 
 
@@ -30,6 +26,7 @@ def contract(node, keep=True):
     return keep
 
 
+print_graph_stats(G, 'original', args)
 contract(get_root(G))
 print_graph_stats(G, 'contracted', args)
 
