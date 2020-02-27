@@ -1194,3 +1194,39 @@ class Imagenet1000TreeSup(TreeSup):
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
             tree_supervision_weight=tree_supervision_weight)
+
+
+class TreeBayesianSup(TreeSup):
+
+    def __init__(self, path_graph, path_wnids, dataset, num_classes=10,
+            max_leaves_supervised=-1, min_leaves_supervised=-1,
+            tree_supervision_weight=1., weighted_average=False):
+        super().__init__(path_graph, path_wnids, dataset, num_classes,
+            max_leaves_supervised, min_leaves_supervised,
+            tree_supervision_weight, weighted_average)
+        self.softmax = nn.Softmax(dim=1)
+
+    def custom_loss(self, criterion, outputs, targets):
+        loss = criterion(outputs, targets)
+        bayesian_outputs = TreeBayesianSup.inference(self.nodes, outputs, self.weighted_average)
+        loss += criterion(bayesian_outputs, targets)
+        return loss
+
+    @classmethod
+    def inference(cls, nodes, outputs, weighted_average=False):
+        # Collect wnid to corresponding outputs
+        wnid_to_output = {}
+        for node in nodes:
+            node_outputs = cls.get_output_sub(outputs, node, weighted_average)
+            wnid_to_output[node.wnid] = node_outputs
+
+        # Compute bayesian class probability outputs
+        class_probs = torch.ones((outputs.size(0), self.num_classes))
+        for node in nodes:
+            output = wnid_to_output[node.wnid]
+            output = self.softmax(output)
+            for index_child in range(len(node.children)):
+                old_indexes = node.new_to_old_classes[index_child]
+                class_probs[:,old_indexes] *= output[:,index_child:index_child+1]
+        return class_outputs
+
