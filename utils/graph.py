@@ -5,6 +5,7 @@ from nltk.corpus import wordnet as wn
 from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from networkx.readwrite.json_graph import node_link_data, node_link_graph
 from sklearn.cluster import AgglomerativeClustering
+from pathlib import Path
 import torch
 import argparse
 import os
@@ -52,7 +53,7 @@ def get_parser():
 def generate_fname(method, seed=0, branching_factor=2, extra=0,
                    no_prune=False, fname='', single_path=False,
                    induced_linkage='ward', induced_affinity='euclidean',
-                   **kwargs):
+                   induced_checkpoint=None, **kwargs):
     if fname:
         return fname
 
@@ -61,10 +62,16 @@ def generate_fname(method, seed=0, branching_factor=2, extra=0,
         if seed != 0:
             fname += f'-seed{seed}'
     if method == 'induced':
+        assert induced_checkpoint is not None, \
+            'Cannot build induced graph without a checkpoint'
         if induced_linkage != 'ward' and induced_linkage is not None:
             fname += f'-linkage{induced_linkage}'
         if induced_affinity != 'euclidean' and induced_affinity is not None:
             fname += f'-affinity{induced_affinity}'
+        checkpoint_stem = Path(induced_checkpoint).stem
+        checkpoint_suffix = '-'.join(checkpoint_stem.split('-')[2:])
+        checkpoint_fname = checkpoint_suffix.replace('-induced', '')
+        fname += f'-{checkpoint_fname}'
     if method in ('random', 'induced'):
         if branching_factor != 2:
             fname += f'-branch{branching_factor}'
@@ -313,13 +320,14 @@ def get_centers(checkpoint):
     data = torch.load(checkpoint, map_location=torch.device('cpu'))
     net = data['net']
 
-    keys = ('linear.weight', 'module.linear.weight')
+    keys = ('linear.weight', 'module.linear.weight', 'module.net.linear.weight')
     fc = None
     for key in keys:
         if key in net:
             fc = net[key]
             break
-    assert fc is not None, f'Could not find FC weights in {checkpoint}'
+    assert fc is not None, (
+        f'Could not find FC weights in {checkpoint} with keys: {net.keys()}')
     return fc
 
 
