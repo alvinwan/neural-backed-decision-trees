@@ -95,7 +95,7 @@ class Node:
 
     def move_leaf_weights_to(self, device):
         for new_index in self.new_to_leaf_weights:
-            self.new_to_leaf_weights[new_index] = self.new_to_leaf_weights[child].to(device)
+            self.new_to_leaf_weights[new_index] = self.new_to_leaf_weights[new_index].to(device)
 
     def get_new_to_leaf_weights(self):
         new_to_leaf_weights = {}

@@ -60,6 +60,9 @@ parser.add_argument('--max-leaves-supervised', type=int, default=-1,
 parser.add_argument('--min-leaves-supervised', type=int, default=-1,
                     help='Minimum number of leaves a node must have to '
                     'contribute loss, in tree-supervised training.')
+parser.add_argument('--weighted-average', action='store_true',
+                    help='Use weighted average instead of average, for cluster '
+                    'centers.')
 parser.add_argument('--probability-labels', nargs='*', type=float)
 parser.add_argument('--include-labels', nargs='*', type=int)
 parser.add_argument('--exclude-labels', nargs='*', type=int)
@@ -168,7 +171,7 @@ model = getattr(models, args.model)
 model_kwargs = {}
 populate_kwargs(model_kwargs, model, name=f'Model {args.model}', keys=(
     'path_graph', 'max_leaves_supervised', 'min_leaves_supervised',
-    'tree_supervision_weight'))
+    'tree_supervision_weight', 'weighted_average'))
 
 net = model(
     num_classes=len(trainset.classes),
@@ -336,7 +339,7 @@ generate = getattr(analysis, args.analysis) if args.analysis else analysis.Noop
 
 analyzer_kwargs = {}
 populate_kwargs(analyzer_kwargs, generate, name=f'Analyzer {args.analysis}', keys=(
-    'path_graph_analysis',))
+    'path_graph_analysis', 'weighted_average'))
 analyzer = generate(trainset, testset, **analyzer_kwargs)
 
 if args.eval:

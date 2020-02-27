@@ -1040,10 +1040,11 @@ class TreeSup(nn.Module):
     accepts_max_leaves_supervised = True
     accepts_min_leaves_supervised = True
     accepts_tree_supervision_weight = True
+    accepts_weighted_average = True
 
     def __init__(self, path_graph, path_wnids, dataset, num_classes=10,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1.):
+            tree_supervision_weight=1., weighted_average=False):
         super().__init__()
         import models
 
@@ -1053,6 +1054,7 @@ class TreeSup(nn.Module):
         self.max_leaves_supervised = max_leaves_supervised
         self.min_leaves_supervised = min_leaves_supervised
         self.tree_supervision_weight = tree_supervision_weight
+        self.weighted_average = weighted_average
 
     def load_backbone(self, path):
         checkpoint = torch.load(path)
@@ -1089,7 +1091,8 @@ class TreeSup(nn.Module):
                     node.num_leaves < self.min_leaves_supervised:
                 continue
 
-            _, outputs_sub, targets_sub = TreeSup.inference(node, outputs, targets_ints)
+            _, outputs_sub, targets_sub = TreeSup.inference(
+                node, outputs, targets_ints, self.weighted_average)
 
             key = node.num_classes
             assert outputs_sub.size(0) == len(targets_sub)
@@ -1107,8 +1110,8 @@ class TreeSup(nn.Module):
             loss += criterion(outputs_sub, targets_sub) * fraction
         return loss
 
-    @staticmethod
-    def inference(node, outputs, targets):
+    @classmethod
+    def inference(cls, node, outputs, targets, weighted_average=False):
         classes = [node.old_to_new_classes[int(t)] for t in targets]
         selector = [bool(cls) for cls in classes]
         targets_sub = [cls[0] for cls in classes if cls]
@@ -1116,13 +1119,23 @@ class TreeSup(nn.Module):
         _outputs = outputs[selector]
         if _outputs.size(0) == 0:
             return selector, _outputs[:, :node.num_classes], targets_sub
-
-        outputs_sub = torch.stack([
-            (_outputs * node.new_to_leaf_weights[new_label]).T
-            [node.new_to_old_classes[new_label]].mean(dim=0)
-            for new_label in range(node.num_classes)
-        ]).T
+        outputs_sub = cls.get_output_sub(_outputs, node, weighted_average)
         return selector, outputs_sub, targets_sub
+
+    @staticmethod
+    def get_output_sub(_outputs, node, weighted_average=False):
+        if weighted_average:
+            node.move_leaf_weights_to(_outputs.device)
+
+        weights = [
+            node.new_to_leaf_weights[new_label] if weighted_average else 1
+            for new_label in range(node.num_classes)
+        ]
+        return torch.stack([
+            (_outputs * weight).T
+            [node.new_to_old_classes[new_label]].mean(dim=0)
+            for new_label, weight in zip(range(node.num_classes), weights)
+        ]).T
 
     def forward(self, x):
         return self.net(x)
@@ -1132,39 +1145,42 @@ class CIFAR10TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1.):
+            tree_supervision_weight=1., weighted_average=False):
         super().__init__(path_graph, DEFAULT_CIFAR10_WNIDS,
             dataset=datasets.CIFAR10(root='./data'),
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
-            tree_supervision_weight=tree_supervision_weight)
+            tree_supervision_weight=tree_supervision_weight,
+            weighted_average=weighted_average)
 
 
 class CIFAR100TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=100,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1.):
+            tree_supervision_weight=1., weighted_average=False):
         super().__init__(path_graph, DEFAULT_CIFAR100_WNIDS,
             dataset=datasets.CIFAR100(root='./data'),
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
-            tree_supervision_weight=tree_supervision_weight)
+            tree_supervision_weight=tree_supervision_weight,
+            weighted_average=weighted_average)
 
 
 class TinyImagenet200TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=200,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1.):
+            tree_supervision_weight=1., weighted_average=False):
         super().__init__(path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
             dataset=data.TinyImagenet200(root='./data'),
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
-            tree_supervision_weight=tree_supervision_weight)
+            tree_supervision_weight=tree_supervision_weight,
+            weighted_average=weighted_average)
 
 
 class Imagenet1000TreeSup(TreeSup):
