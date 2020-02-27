@@ -271,6 +271,7 @@ class Imagenet1000DecisionTreePrior(DecisionTreePrior):
             weighted_average=weighted_average)
 
 
+# TODO(alvin): add weighted average input if works
 class DecisionTreeBayesianPrior(DecisionTreePrior):
     """Evaluate model on decision tree bayesian prior. Evaluation is stochastic."""
 

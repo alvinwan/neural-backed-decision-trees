@@ -104,6 +104,8 @@ class Node:
             for leaf, weight in self.leaf_weights.items():
                 old_index = self.wnid_to_class_index(leaf)
                 leaf_weights[old_index] = weight
+            assert abs(sum(leaf_weights) - 1) < 1e-3, \
+                'Leaf weights do not sum to 1.'
             new_to_leaf_weights[new_index] = torch.Tensor(leaf_weights)
         return new_to_leaf_weights
 

@@ -173,10 +173,11 @@ def get_leaf_weights(G, node, weight=1):
         return {node: weight}
     num_children = len(G.succ[node])
     weight_per_child = weight / float(num_children)
-    
+
     weights = {}
     for child in G.succ[node]:
-        weights.update(get_leaf_weights(G, child, weight_per_child))
+        for wnid, weight in get_leaf_weights(G, child, weight_per_child).items():
+            weights[wnid] = weights.get(wnid, 0) + weight
     return weights
 
 
