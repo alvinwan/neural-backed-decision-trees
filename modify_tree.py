@@ -30,26 +30,10 @@ print_graph_stats(G, 'original', args)
 contract(get_root(G))
 print_graph_stats(G, 'contracted', args)
 
-# tree = ET.parse(args.path_tree)
-# leaves = list(get_leaves(tree))
-#
-# leaves_data = [
-#     {key: leaf.get(key) for key in leaf.keys()}
-#     for leaf in leaves
-# ]
-# random.seed(args.seed)
-# random.shuffle(leaves_data)
-#
-# for leaf, data in zip(leaves, leaves_data):
-#     for key, value in data.items():
-#         leaf.set(key, value)
-#
-#
 path = Path(args.path_graph)
 path = path \
-    .with_name(f'{path.stem}-{args.method}') \
+    .with_name(f'{path.stem}-contract') \
     .with_suffix(path.suffix)
 
-# tree.write(str(path))
 write_graph(G, path)
 Colors.green(f'==> Wrote modified graph to {path}')
