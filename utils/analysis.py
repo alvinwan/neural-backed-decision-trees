@@ -19,7 +19,7 @@ __all__ = names = (
     'CIFAR100DecisionTreePrior', 'TinyImagenet200DecisionTreePrior',
     'Imagenet1000DecisionTreePrior', 'DecisionTreeBayesianPrior',
     'CIFAR10DecisionTreeBayesianPrior', 'CIFAR100DecisionTreeBayesianPrior',
-    'TinyImagenet1000DecisionTreeBayesianPrior', 'Imagenet1000DecisionTreeBayesianPrior')
+    'TinyImagenet200DecisionTreeBayesianPrior', 'Imagenet1000DecisionTreeBayesianPrior')
 
 
 class Noop:
