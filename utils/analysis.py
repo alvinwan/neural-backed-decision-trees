@@ -280,7 +280,6 @@ class DecisionTreeBayesianPrior(DecisionTreePrior):
     def __init__(self, trainset, testset, path_graph_analysis, path_wnids,
             weighted_average=False):
         super().__init__(trainset, testset, path_graph_analysis, path_wnids)
-        self.softmax = nn.Softmax(dim=1)
 
     def update_batch(self, outputs, predicted, targets):
         bayesian_outputs = TreeBayesianSup.inference(self.nodes, outputs, self.weighted_average)
