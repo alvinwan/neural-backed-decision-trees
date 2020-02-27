@@ -289,7 +289,7 @@ class DecisionTreeBayesianPrior(DecisionTreePrior):
         class_probs = np.ones((n_samples, len(self.classes)))
         for node in self.nodes:
             output = wnid_to_output[node.wnid]
-            output = self.softmax(output)
+            output = self.softmax(output).numpy()
             for index_child in range(len(node.children)):
                 old_indexes = node.new_to_old_classes[index_child]
                 class_probs[:,old_indexes] *= output[:,index_child:index_child+1]
