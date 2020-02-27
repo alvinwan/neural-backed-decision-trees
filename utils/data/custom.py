@@ -10,7 +10,8 @@ from utils.utils import (
     DEFAULT_IMAGENET1000_WNIDS,
 )
 from collections import defaultdict
-from utils.graph import get_wnids, read_graph, get_leaves, get_non_leaves
+from utils.graph import get_wnids, read_graph, get_leaves, get_non_leaves, \
+    get_leaf_weights
 from . import imagenet
 import torch.nn as nn
 import random
@@ -37,6 +38,9 @@ class Node:
             path_graph=DEFAULT_CIFAR10_TREE,
             path_wnids=DEFAULT_CIFAR10_WNIDS,
             other_class=False):
+        self.path_graph = path_graph
+        self.path_wnids = path_wnids
+
         self.wnid = wnid
         self.wnids = get_wnids(path_wnids)
         self.G = read_graph(path_graph)
@@ -62,8 +66,17 @@ class Node:
         self.leaves = list(self.get_leaves())
         self.num_leaves = len(self.leaves)
 
+        # I'm sure leaf_weights and output_weights could be recursive/share
+        # computation and be more efficient.... buuuuut this is only run once
+        # ANYways
+        self.leaf_weights = get_leaf_weights(self.G, self.wnid)
+        self.new_to_leaf_weights = self.get_new_to_leaf_weights()
+
         self._probabilities = None
         self._class_weights = None
+
+    def wnid_to_class_index(self, wnid):
+        return self.wnids.index(wnid)
 
     def get_parents(self):
         return self.G.pred[self.wnid]
@@ -80,12 +93,26 @@ class Node:
     def is_root(self):
         return len(self.get_parents()) == 0
 
+    def move_leaf_weights_to(self, device):
+        for new_index in self.new_to_leaf_weights:
+            self.new_to_leaf_weights[new_index] = self.new_to_leaf_weights[child].to(device)
+
+    def get_new_to_leaf_weights(self):
+        new_to_leaf_weights = {}
+        for new_index, child in enumerate(self.get_children()):
+            leaf_weights = [0] * self.num_original_classes
+            for leaf, weight in self.leaf_weights.items():
+                old_index = self.wnid_to_class_index(leaf)
+                leaf_weights[old_index] = weight
+            new_to_leaf_weights[new_index] = torch.Tensor(leaf_weights)
+        return new_to_leaf_weights
+
     def build_class_mappings(self):
         old_to_new = defaultdict(lambda: [])
         new_to_old = defaultdict(lambda: [])
         for new_index, child in enumerate(self.get_children()):
             for leaf in get_leaves(self.G, child):
-                old_index = self.wnids.index(leaf)
+                old_index = self.wnid_to_class_index(leaf)
                 old_to_new[old_index].append(new_index)
                 new_to_old[new_index].append(old_index)
         if not self.has_other:
@@ -170,6 +197,9 @@ class Node:
     @staticmethod
     def dim(nodes):
         return sum([node.num_classes for node in nodes])
+
+
+
 
 
 class NodeDataset(Dataset):

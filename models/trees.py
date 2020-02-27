@@ -1092,6 +1092,7 @@ class TreeSup(nn.Module):
             _, outputs_sub, targets_sub = TreeSup.inference(node, outputs, targets_ints)
 
             key = node.num_classes
+            assert outputs_sub.size(0) == len(targets_sub)
             outputs_subs[key].append(outputs_sub)
             targets_subs[key].extend(targets_sub)
 
@@ -1113,8 +1114,12 @@ class TreeSup(nn.Module):
         targets_sub = [cls[0] for cls in classes if cls]
 
         _outputs = outputs[selector]
+        if _outputs.size(0) == 0:
+            return selector, _outputs[:, :node.num_classes], targets_sub
+
         outputs_sub = torch.stack([
-            _outputs.T[node.new_to_old_classes[new_label]].mean(dim=0)
+            (_outputs * node.new_to_leaf_weights[new_label]).T
+            [node.new_to_old_classes[new_label]].mean(dim=0)
             for new_label in range(node.num_classes)
         ]).T
         return selector, outputs_sub, targets_sub
