@@ -46,7 +46,11 @@ __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
            'CIFAR10JointNodesSingle', 'CIFAR100JointNodesSingle',
            'TinyImagenet200JointNodesSingle', 'Imagenet1000JointNodesSingle',
            'CIFAR10IdInitJointTreeSingle', 'CIFAR100IdInitJointTreeSingle',
-           'TinyImagenet200IdInitJointTreeSingle', 'Imagenet1000IdInitJointTreeSingle')
+           'TinyImagenet200IdInitJointTreeSingle', 'Imagenet1000IdInitJointTreeSingle',
+           'CIFAR10FreezeJointNodesSingle', 'CIFAR100FreezeJointNodesSingle',
+           'TinyImagenet200FreezeJointNodesSingle', 'Imagenet1000FreezeJointNodesSingle',
+           'CIFAR10IdInitFreezeJointTreeSingle', 'CIFAR100IdInitFreezeJointTreeSingle',
+           'TinyImagenet200IdInitFreezeJointTreeSingle', 'Imagenet1000IdInitFreezeJointTreeSingle',)
 
 
 @contextmanager
@@ -349,6 +353,34 @@ class Imagenet1000FreezeJointNodes(JointNodes):
             DEFAULT_IMAGENET1000_WNIDS,
             freeze_backbone=True,
             dataset=data.Imagenet1000(root='./data'))
+
+
+class CIFAR10FreezeJointNodesSingle(JointNodesSingle):
+
+    def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=None):
+        super().__init__(path_graph, DEFAULT_CIFAR10_WNIDS,
+            freeze_backbone=True, dataset=datasets.CIFAR10(root='./data'))
+
+
+class CIFAR100FreezeJointNodesSingle(JointNodesSingle):
+
+    def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=None):
+        super().__init__(path_graph, DEFAULT_CIFAR100_WNIDS,
+            freeze_backbone=True, dataset=datasets.CIFAR100(root='./data'))
+
+
+class TinyImagenet200FreezeJointNodesSingle(JointNodesSingle):
+
+    def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=None):
+        super().__init__(path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
+            freeze_backbone=True, dataset=data.TinyImagenet200(root='./data'))
+
+
+class Imagenet1000FreezeJointNodesSingle(JointNodesSingle):
+
+    def __init__(self, path_graph=DEFAULT_IMAGENET1000_TREE, num_classes=None):
+        super().__init__(path_graph, DEFAULT_IMAGENET1000_WNIDS,
+            freeze_backbone=True, dataset=data.Imagenet1000(root='./data'))
 
 
 class CIFAR10BalancedJointNodes(JointNodes):
@@ -757,6 +789,46 @@ class Imagenet1000IdInitFreezeJointTree(IdInitJointTree):
         super().__init__('Imagenet1000FreezeJointNodes', 'Imagenet1000JointNodes',
             path_graph, DEFAULT_IMAGENET1000_WNIDS,
             net=Imagenet1000FreezeJointNodes(path_graph), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=data.Imagenet1000PathSanity(path_graph=path_graph))
+
+
+class CIFAR10IdInitFreezeJointTreeSingle(IdInitJointTree):
+
+    def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10, pretrained=True):
+        super().__init__('CIFAR10FreezeJointNodesSingle', 'CIFAR10JointNodesSingle',
+            path_graph, DEFAULT_CIFAR10_WNIDS,
+            net=CIFAR10FreezeJointNodesSingle(path_graph), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=data.CIFAR10PathSanity(path_graph=path_graph))
+
+
+class CIFAR100IdInitFreezeJointTreeSingle(IdInitJointTree):
+
+    def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=100, pretrained=True):
+        super().__init__('CIFAR100FreezeJointNodesSingle', 'CIFAR100JointNodesSingle',
+            path_graph, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100FreezeJointNodesSingle(path_graph), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=data.CIFAR100PathSanity(path_graph=path_graph))
+
+
+class TinyImagenet200IdInitFreezeJointTreeSingle(IdInitJointTree):
+
+    def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=200, pretrained=True):
+        super().__init__('TinyImagenet200FreezeJointNodesSingle', 'TinyImagenet200JointNodesSingle',
+            path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
+            net=TinyImagenet200FreezeJointNodesSingle(path_graph), num_classes=num_classes,
+            pretrained=pretrained,
+            initializer=data.TinyImagenet200PathSanity(path_graph=path_graph))
+
+
+class Imagenet1000IdInitFreezeJointTreeSingle(IdInitJointTree):
+
+    def __init__(self, path_graph=DEFAULT_IMAGENET1000_TREE, num_classes=1000, pretrained=True):
+        super().__init__('Imagenet1000FreezeJointNodesSingle', 'Imagenet1000JointNodesSingle',
+            path_graph, DEFAULT_IMAGENET1000_WNIDS,
+            net=Imagenet1000FreezeJointNodesSingle(path_graph), num_classes=num_classes,
             pretrained=pretrained,
             initializer=data.Imagenet1000PathSanity(path_graph=path_graph))
 
