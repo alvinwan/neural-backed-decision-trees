@@ -206,7 +206,7 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
     if path_graph:
         path = Path(path_graph)
         fname += '-' + path.stem.replace('graph-', '', 1)
-    else:
+    elif 'Joint' in model or 'Node' in model:
         fname += '-wordnet'  # WARNING: hard-coded
     if include_labels:
         labels = ",".join(map(str, include_labels))
