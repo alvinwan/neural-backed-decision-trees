@@ -269,8 +269,6 @@ class DecisionTreeBayesianPrior(DecisionTreePrior):
         self.softmax = nn.Softmax(dim=1)
 
     def update_batch(self, outputs, predicted, targets):
-        super().update_batch(outputs, predicted, targets)
-
         wnid_to_output = {}
         for node in self.nodes:
             node_outputs = torch.stack([
@@ -299,7 +297,6 @@ class DecisionTreeBayesianPrior(DecisionTreePrior):
         return torch.Tensor(preds).long()
 
     def end_test(self, epoch):
-        super().end_test(epoch)
         accuracy = round(self.correct / self.total * 100., 2)
         print(f'TreeBayesianPrior Accuracy: {accuracy}%, {self.correct}/{self.total}')
 
