@@ -1229,7 +1229,7 @@ class TreeBayesianSup(TreeSup):
             for index_child in range(len(node.children)):
                 old_indexes = node.new_to_old_classes[index_child]
                 for index_old in old_indexes:
-                    class_probs[:,index_old] = class_probs[:,index_old].clone() * output[:,index_child:index_child+1]
+                    class_probs[:,index_old] = class_probs[:,index_old].clone() * output[:,index_child]
         return class_probs
 
 
