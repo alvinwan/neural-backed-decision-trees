@@ -1,4 +1,4 @@
-from models.trees import TreeSup
+from models.trees import TreeSup, TreeBayesianSup
 from utils.graph import get_root, get_wnids
 from utils.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
@@ -277,37 +277,18 @@ class DecisionTreeBayesianPrior(DecisionTreePrior):
 
     accepts_path_graph_analysis = True
 
-    def __init__(self, trainset, testset, path_graph_analysis, path_wnids):
+    def __init__(self, trainset, testset, path_graph_analysis, path_wnids,
+            weighted_average=False):
         super().__init__(trainset, testset, path_graph_analysis, path_wnids)
-        self.softmax = nn.Softmax(dim=1)
 
     def update_batch(self, outputs, predicted, targets):
-        wnid_to_output = {}
-        for node in self.nodes:
-            node_outputs = torch.stack([
-                outputs.T[node.new_to_old_classes[new_label]].mean(dim=0)
-                for new_label in range(node.num_classes)
-            ]).T
-            wnid_to_output[node.wnid] = node_outputs.cpu()
-
+        bayesian_outputs = TreeBayesianSup.inference(self.nodes, outputs, self.weighted_average)
         n_samples = outputs.size(0)
-        predicted = self.traverse_tree(
-            predicted, wnid_to_output, n_samples).to(targets.device)
+        predicted = bayesian_outputs.max(1).to(targets.device)
         self.total += n_samples
         self.correct += (predicted == targets).sum().item()
         accuracy = round(self.correct / float(self.total), 4) * 100
         return f'TreeBayesianPrior: {accuracy}%'
-
-    def traverse_tree(self, _, wnid_to_output, n_samples):
-        class_probs = np.ones((n_samples, len(self.classes)))
-        for node in self.nodes:
-            output = wnid_to_output[node.wnid]
-            output = self.softmax(output).numpy()
-            for index_child in range(len(node.children)):
-                old_indexes = node.new_to_old_classes[index_child]
-                class_probs[:,old_indexes] *= output[:,index_child:index_child+1]
-        preds = list(np.argmax(class_probs, axis=1))
-        return torch.Tensor(preds).long()
 
     def end_test(self, epoch):
         accuracy = round(self.correct / self.total * 100., 2)
@@ -318,29 +299,37 @@ class CIFAR10DecisionTreeBayesianPrior(DecisionTreeBayesianPrior):
 
     def __init__(self, trainset, testset,
         path_graph_analysis=DEFAULT_CIFAR10_TREE,
-        path_wnids=DEFAULT_CIFAR10_WNIDS):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids)
+        path_wnids=DEFAULT_CIFAR10_WNIDS,
+        weighted_average=False):
+        super().__init__(trainset, testset, path_graph_analysis, path_wnids,
+            weighted_average=weighted_average)
 
 
 class CIFAR100DecisionTreeBayesianPrior(DecisionTreeBayesianPrior):
 
     def __init__(self, trainset, testset,
         path_graph_analysis=DEFAULT_CIFAR100_TREE,
-        path_wnids=DEFAULT_CIFAR100_WNIDS):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids)
+        path_wnids=DEFAULT_CIFAR100_WNIDS,
+        weighted_average=False):
+        super().__init__(trainset, testset, path_graph_analysis, path_wnids,
+            weighted_average=weighted_average)
 
 
 class TinyImagenet200DecisionTreeBayesianPrior(DecisionTreeBayesianPrior):
 
     def __init__(self, trainset, testset,
         path_graph_analysis=DEFAULT_TINYIMAGENET200_TREE,
-        path_wnids=DEFAULT_TINYIMAGENET200_WNIDS):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids)
+        path_wnids=DEFAULT_TINYIMAGENET200_WNIDS,
+        weighted_average=False):
+        super().__init__(trainset, testset, path_graph_analysis, path_wnids,
+            weighted_average=weighted_average)
 
 
 class Imagenet1000DecisionTreeBayesianPrior(DecisionTreeBayesianPrior):
 
     def __init__(self, trainset, testset,
         path_graph_analysis=DEFAULT_IMAGENET1000_TREE,
-        path_wnids=DEFAULT_IMAGENET1000_WNIDS):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids)
+        path_wnids=DEFAULT_IMAGENET1000_WNIDS,
+        weighted_average=False):
+        super().__init__(trainset, testset, path_graph_analysis, path_wnids,
+            weighted_average=weighted_average)
