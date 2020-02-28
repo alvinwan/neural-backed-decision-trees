@@ -219,7 +219,7 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
         fname += f'-incc{labels}'
     if num_samples != 0 and num_samples is not None:
         fname += f'-samples{num_samples}'
-    if 'TreeSup' in model:
+    if 'Sup' in model:
         if max_leaves_supervised > 0:
             fname += f'-mxls{max_leaves_supervised}'
         if min_leaves_supervised > 0:
