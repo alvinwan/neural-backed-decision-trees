@@ -1208,8 +1208,6 @@ class TreeBayesianSup(TreeSup):
         super().__init__(path_graph, path_wnids, dataset, num_classes,
             max_leaves_supervised, min_leaves_supervised,
             tree_supervision_weight, weighted_average)
-
-        self.softmax = nn.Softmax(dim=1)
         self.num_classes = len(self.dataset.classes)
 
     def custom_loss(self, criterion, outputs, targets):
