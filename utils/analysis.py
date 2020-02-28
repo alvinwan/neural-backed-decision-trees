@@ -276,13 +276,16 @@ class DecisionTreeBayesianPrior(DecisionTreePrior):
     """Evaluate model on decision tree bayesian prior. Evaluation is stochastic."""
 
     accepts_path_graph_analysis = True
+    accepts_weighted_average = True
 
     def __init__(self, trainset, testset, path_graph_analysis, path_wnids,
             weighted_average=False):
         super().__init__(trainset, testset, path_graph_analysis, path_wnids)
+        self.num_classes = len(trainset.classes)
 
     def update_batch(self, outputs, predicted, targets):
-        bayesian_outputs = TreeBayesianSup.inference(self.nodes, outputs, self.weighted_average)
+        bayesian_outputs = TreeBayesianSup.inference(
+            self.nodes, outputs, self.num_classes, self.weighted_average)
         n_samples = outputs.size(0)
         predicted = bayesian_outputs.max(1).to(targets.device)
         self.total += n_samples

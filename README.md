@@ -142,6 +142,9 @@ for weight in 0.5 1 25 50 100; do CUDA_VISIBLE_DEVICES=1 python main.py --datase
 # generating induced tree from tree-supervised model
 for weight in 0.5 1.0 2.0 4.0 10.0; do python generate_graph.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-CIFAR10TreeSup-induced-tsw${weight}.pth; done
 python generate_graph.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-CIFAR10TreeSup-induced-linkagecomplete-affinitycosine-tsw10.0.pth --induced-linkage=average --induced-affinity=cosine
+
+# 
+for weight in 1 200; do for dataset in TinyImagenet200; do for graph in induced induced-linkagecomplete-affinitycosine induced-linkageaverage-affinitycosine; do CUDA_VISIBLE_DEVICES=2 python main.py --dataset=${dataset} --model=${dataset}TreeSup --path-graph=/home/eecs/alvinwan/neuralmodularnetwork/data/${dataset}/graph-${graph}.json --analysis=${dataset}DecisionTreePrior --path-graph-analysis=/home/eecs/alvinwan/neuralmodularnetwork/data/${dataset}/graph-${graph}.json --eval --resume --tree-supervision-weight=${weight} --weighted-average; done; done; done
 ```
 
 ### Induced Graph

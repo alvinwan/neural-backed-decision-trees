@@ -9,6 +9,7 @@ import csv
 import numpy as np
 from collections import defaultdict
 
+import torch.nn.functional as F
 from utils import data
 import torchvision.datasets as datasets
 from utils.utils import (
@@ -1207,25 +1208,28 @@ class TreeBayesianSup(TreeSup):
         super().__init__(path_graph, path_wnids, dataset, num_classes,
             max_leaves_supervised, min_leaves_supervised,
             tree_supervision_weight, weighted_average)
+
         self.softmax = nn.Softmax(dim=1)
+        self.num_classes = len(self.dataset.classes)
 
     def custom_loss(self, criterion, outputs, targets):
         loss = criterion(outputs, targets)
-        bayesian_outputs = TreeBayesianSup.inference(self.nodes, outputs, self.weighted_average)
+        bayesian_outputs = TreeBayesianSup.inference(
+            self.nodes, outputs, self.num_classes, self.weighted_average)
         loss += criterion(bayesian_outputs, targets)
         return loss
 
     @classmethod
-    def inference(cls, nodes, outputs, weighted_average=False):
+    def inference(cls, nodes, outputs, num_classes, weighted_average=False):
         # Compute bayesian class probability outputs
-        class_probs = torch.ones((outputs.size(0), self.num_classes))
+        class_probs = torch.ones((outputs.size(0), num_classes))
         for node in nodes:
             output = cls.get_output_sub(outputs, node, weighted_average)
-            output = self.softmax(output)
+            output = F.softmax(output)
             for index_child in range(len(node.children)):
                 old_indexes = node.new_to_old_classes[index_child]
                 class_probs[:,old_indexes] *= output[:,index_child:index_child+1]
-        return class_outputs
+        return class_probs
 
 
 class CIFAR10TreeBayesianSup(TreeBayesianSup):
