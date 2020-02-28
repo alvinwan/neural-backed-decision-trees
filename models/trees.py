@@ -1222,13 +1222,14 @@ class TreeBayesianSup(TreeSup):
     @classmethod
     def inference(cls, nodes, outputs, num_classes, weighted_average=False):
         # Compute bayesian class probability outputs
-        class_probs = torch.ones((outputs.size(0), num_classes))
+        class_probs = torch.ones((outputs.size(0), num_classes)).to(outputs.device)
         for node in nodes:
             output = cls.get_output_sub(outputs, node, weighted_average)
             output = F.softmax(output)
             for index_child in range(len(node.children)):
                 old_indexes = node.new_to_old_classes[index_child]
-                class_probs[:,old_indexes] *= output[:,index_child:index_child+1]
+                for index_old in old_indexes:
+                    class_probs[:,index_old] = class_probs[:,index_old].clone() * output[:,index_child:index_child+1]
         return class_probs
 
 
