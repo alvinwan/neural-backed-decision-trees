@@ -195,7 +195,7 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
         include_classes=(), num_samples=0, max_leaves_supervised=-1,
         min_leaves_supervised=-1, tree_supervision_weight=0.5,
-        weighted_average=False, **kwargs):
+        weighted_average=False, fine_tune=False, **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
     fname += '-' + model
@@ -228,4 +228,6 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
             fname += f'-tsw{tree_supervision_weight}'
         if weighted_average:
             fname += '-weighted'
+    if fine_tune:
+        fname += '-finetune'
     return fname
