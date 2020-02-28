@@ -63,6 +63,9 @@ parser.add_argument('--min-leaves-supervised', type=int, default=-1,
 parser.add_argument('--weighted-average', action='store_true',
                     help='Use weighted average instead of average, for cluster '
                     'centers.')
+parser.add_argument('--fine-tune', action='store_true',
+                    help='Fine-tune only the fully-connected layer instead of '
+                    'training the model from scratch.')
 parser.add_argument('--probability-labels', nargs='*', type=float)
 parser.add_argument('--include-labels', nargs='*', type=int)
 parser.add_argument('--exclude-labels', nargs='*', type=int)
@@ -171,7 +174,7 @@ model = getattr(models, args.model)
 model_kwargs = {}
 populate_kwargs(model_kwargs, model, name=f'Model {args.model}', keys=(
     'path_graph', 'max_leaves_supervised', 'min_leaves_supervised',
-    'tree_supervision_weight', 'weighted_average'))
+    'tree_supervision_weight', 'weighted_average', 'fine_tune'))
 
 net = model(
     num_classes=len(trainset.classes),

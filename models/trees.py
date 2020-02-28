@@ -1044,10 +1044,12 @@ class TreeSup(nn.Module):
     accepts_min_leaves_supervised = True
     accepts_tree_supervision_weight = True
     accepts_weighted_average = True
+    accepts_fine_tune = True
 
     def __init__(self, path_graph, path_wnids, dataset, num_classes=10,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1., weighted_average=False):
+            tree_supervision_weight=1., weighted_average=False,
+            fine_tune=False):
         super().__init__()
         import models
 
@@ -1058,9 +1060,25 @@ class TreeSup(nn.Module):
         self.min_leaves_supervised = min_leaves_supervised
         self.tree_supervision_weight = tree_supervision_weight
         self.weighted_average = weighted_average
+        self.fine_tune = fine_tune
+
+        if self.fine_tune:
+            assert hasattr(self.net, 'featurize') and hasattr(self.net, 'linear'), (
+                f'Network {self.net} does not have both .featurize and .linear '
+                'methods/operations, which are needed to only fine-tune the '
+                'model.'
+            )
+
+        self._loaded_backbone = False
 
     def load_backbone(self, path):
-        checkpoint = torch.load(path)
+        self._loaded_backbone = True
+
+        kwargs = {}
+        if not torch.cuda.is_available():
+            kwargs['map_location'] = torch.device('cpu')
+
+        checkpoint = torch.load(path, **kwargs)
         state_dict = {
             key.replace('module.', '', 1): value
             for key, value in checkpoint['net'].items()
@@ -1141,6 +1159,14 @@ class TreeSup(nn.Module):
         ]).T
 
     def forward(self, x):
+        if self.fine_tune:
+            assert self._loaded_backbone, (
+                'Model is being fine-tuned but no backbone weights loaded. '
+                'Please pass the --backbone flag'
+            )
+            with torch.no_grad():
+                x = self.net.featurize(x)
+            return self.net.linear(x)
         return self.net(x)
 
 
@@ -1148,63 +1174,68 @@ class CIFAR10TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1., weighted_average=False):
+            tree_supervision_weight=1., weighted_average=False,
+            fine_tune=False):
         super().__init__(path_graph, DEFAULT_CIFAR10_WNIDS,
             dataset=datasets.CIFAR10(root='./data'),
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
             tree_supervision_weight=tree_supervision_weight,
-            weighted_average=weighted_average)
+            weighted_average=weighted_average, fine_tune=fine_tune)
 
 
 class CIFAR100TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=100,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1., weighted_average=False):
+            tree_supervision_weight=1., weighted_average=False,
+            fine_tune=False):
         super().__init__(path_graph, DEFAULT_CIFAR100_WNIDS,
             dataset=datasets.CIFAR100(root='./data'),
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
             tree_supervision_weight=tree_supervision_weight,
-            weighted_average=weighted_average)
+            weighted_average=weighted_average, fine_tune=fine_tune)
 
 
 class TinyImagenet200TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=200,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1., weighted_average=False):
+            tree_supervision_weight=1., weighted_average=False,
+            fine_tune=False):
         super().__init__(path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
             dataset=data.TinyImagenet200(root='./data'),
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
             tree_supervision_weight=tree_supervision_weight,
-            weighted_average=weighted_average)
+            weighted_average=weighted_average, fine_tune=fine_tune)
 
 
 class Imagenet1000TreeSup(TreeSup):
 
     def __init__(self, path_graph=DEFAULT_IMAGENET1000_TREE, num_classes=1000,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1., weighted_average=False):
+            tree_supervision_weight=1., weighted_average=False,
+            fine_tune=False):
         super().__init__(path_graph, DEFAULT_IMAGENET1000_WNIDS,
             dataset=data.Imagenet1000(root='./data'),
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
             tree_supervision_weight=tree_supervision_weight,
-            weighted_average=weighted_average)
+            weighted_average=weighted_average, fine_tune=fine_tune)
 
 
 class TreeBayesianSup(TreeSup):
 
     def __init__(self, path_graph, path_wnids, dataset, num_classes=10,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1., weighted_average=False):
+            tree_supervision_weight=1., weighted_average=False,
+            fine_tune=False):
         super().__init__(path_graph, path_wnids, dataset, num_classes,
             max_leaves_supervised, min_leaves_supervised,
             tree_supervision_weight, weighted_average)
@@ -1235,53 +1266,57 @@ class CIFAR10TreeBayesianSup(TreeBayesianSup):
 
     def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1., weighted_average=False):
+            tree_supervision_weight=1., weighted_average=False,
+            fine_tune=False):
         super().__init__(path_graph, DEFAULT_CIFAR10_WNIDS,
             dataset=datasets.CIFAR10(root='./data'),
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
             tree_supervision_weight=tree_supervision_weight,
-            weighted_average=weighted_average)
+            weighted_average=weighted_average, fine_tune=fine_tune)
 
 
 class CIFAR100TreeBayesianSup(TreeBayesianSup):
 
     def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=100,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1., weighted_average=False):
+            tree_supervision_weight=1., weighted_average=False,
+            fine_tune=False):
         super().__init__(path_graph, DEFAULT_CIFAR100_WNIDS,
             dataset=datasets.CIFAR100(root='./data'),
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
             tree_supervision_weight=tree_supervision_weight,
-            weighted_average=weighted_average)
+            weighted_average=weighted_average, fine_tune=fine_tune)
 
 
 class TinyImagenet200TreeBayesianSup(TreeBayesianSup):
 
     def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=200,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1., weighted_average=False):
+            tree_supervision_weight=1., weighted_average=False,
+            fine_tune=False):
         super().__init__(path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
             dataset=data.TinyImagenet200(root='./data'),
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
             tree_supervision_weight=tree_supervision_weight,
-            weighted_average=weighted_average)
+            weighted_average=weighted_average, fine_tune=fine_tune)
 
 
 class Imagenet1000TreeBayesianSup(TreeBayesianSup):
 
     def __init__(self, path_graph=DEFAULT_IMAGENET1000_TREE, num_classes=1000,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1., weighted_average=False):
+            tree_supervision_weight=1., weighted_average=False,
+            fine_tune=False):
         super().__init__(path_graph, DEFAULT_IMAGENET1000_WNIDS,
             dataset=data.Imagenet1000(root='./data'),
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
             tree_supervision_weight=tree_supervision_weight,
-            weighted_average=weighted_average)
+            weighted_average=weighted_average, fine_tune=fine_tune)
