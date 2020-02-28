@@ -1216,7 +1216,7 @@ class TreeBayesianSup(TreeSup):
         loss = criterion(outputs, targets)
         bayesian_outputs = TreeBayesianSup.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)
-        loss += criterion(bayesian_outputs, targets)
+        loss += criterion(bayesian_outputs, targets) * self.tree_supervision_weight
         return loss
 
     @classmethod
