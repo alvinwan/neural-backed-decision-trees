@@ -1071,7 +1071,7 @@ class TreeSup(nn.Module):
         super().__init__()
         import models
 
-        self.net = getattr(models, backbone)
+        self.net = getattr(models, backbone)(num_classes)
         self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.dataset = dataset
         self.max_leaves_supervised = max_leaves_supervised
