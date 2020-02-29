@@ -1062,14 +1062,19 @@ class TreeSup(nn.Module):
     accepts_tree_supervision_weight = True
     accepts_weighted_average = True
     accepts_fine_tune = True
+    accepts_backbone = True
 
-    def __init__(self, path_graph, path_wnids, dataset, backbone='ResNet10', 
+    def __init__(self, path_graph, path_wnids, dataset, backbone='ResNet10',
             num_classes=10, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
         super().__init__()
         import models
 
+        assert hasattr(models, backbone), (
+            f'The specified backbone {backbone} is not a valid backbone name. '
+            'Did you mean to use --path-backbone instead?'
+        )
         self.net = getattr(models, backbone)(num_classes)
         self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.dataset = dataset
@@ -1291,7 +1296,7 @@ class CIFAR10TreeBayesianSup(TreeBayesianSup):
             fine_tune=False):
         super().__init__(path_graph, DEFAULT_CIFAR10_WNIDS,
             dataset=datasets.CIFAR10(root='./data'),
-            backbone=backbone, 
+            backbone=backbone,
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,

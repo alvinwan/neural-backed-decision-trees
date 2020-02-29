@@ -36,9 +36,10 @@ parser.add_argument('--dataset', default='CIFAR10', choices=datasets)
 parser.add_argument('--model', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
-parser.add_argument('--backbone', '-b',
+parser.add_argument('--path-backbone', '-b',
                     help='Path to backbone network parameters to restore from')
 
+parser.add_argument('--backbone', default='ResNet10', help='Name of backbone network')
 parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
@@ -174,7 +175,7 @@ model = getattr(models, args.model)
 model_kwargs = {}
 populate_kwargs(model_kwargs, model, name=f'Model {args.model}', keys=(
     'path_graph', 'max_leaves_supervised', 'min_leaves_supervised',
-    'tree_supervision_weight', 'weighted_average', 'fine_tune'))
+    'tree_supervision_weight', 'weighted_average', 'fine_tune', 'backbone'))
 
 net = model(
     num_classes=len(trainset.classes),
