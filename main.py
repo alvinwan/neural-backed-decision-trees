@@ -198,14 +198,14 @@ def get_net():
         return net.module
     return net
 
-if args.backbone:
+if args.path_backbone:
     print('==> Loading backbone..')
     try:
-        checkpoint = torch.load(args.backbone)
+        checkpoint = torch.load(args.path_backbone)
         net.load_state_dict(checkpoint['net'])
     except:
         if hasattr(get_net(), 'load_backbone'):
-            get_net().load_backbone(args.backbone)
+            get_net().load_backbone(args.path_backbone)
         else:
             Colors.red('==> FAILED to load backbone. No `load_backbone` provided for model.')
 
