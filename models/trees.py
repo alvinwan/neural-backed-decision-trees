@@ -22,6 +22,7 @@ from utils.utils import (
 __all__ = ('CIFAR10Tree', 'CIFAR10JointNodes', 'CIFAR10JointTree',
            'CIFAR100Tree', 'CIFAR100JointNodes', 'CIFAR100JointTree',
            'CIFAR10JointDecisionTree', 'CIFAR100JointDecisionTree',
+            'CIFAR10FreezeJointDecisionTree', 'CIFAR100FreezeJointDecisionTree',
            'CIFAR10BalancedJointNodes', 'CIFAR100BalancedJointNodes',
            'CIFAR10BalancedJointTree', 'CIFAR100BalancedJointTree',
            'TinyImagenet200JointNodes', 'TinyImagenet200BalancedJointNodes',
@@ -137,11 +138,12 @@ class JointNodes(nn.Module):
 
         import models
         # hardcoded for ResNet10
-        self.net = models.ResNet10()
+        self.net = models.WideResNet28_10()
         self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.heads = nn.ModuleList([
             # hardcoded for ResNet10
-            nn.Linear(512, node.num_classes)
+            nn.Linear(640, node.num_classes)
+            #nn.Linear(512, node.num_classes)
             for node in self.nodes
         ])
         self.dataset = dataset
@@ -898,7 +900,7 @@ class JointDecisionTree(nn.Module):
                 model=model_name,
                 path_graph=path_graph
             )
-            print(fname)
+            print("lading from ", fname)
             load_checkpoint(net, f'./checkpoint/{fname}.pth')
         self.net = net.net
         self.nodes = net.nodes
@@ -955,7 +957,7 @@ class JointDecisionTree(nn.Module):
         assert hasattr(self.net, 'featurize')
         x = self.net.featurize(x)
 
-        outputs = torch.zeros(x.shape[0], self.num_classes)
+        outputs = torch.zeros(x.shape[0], 10)
         for i in range(len(x)):
             pred_old_index = -1
             curr_node = self.root_node
@@ -1000,7 +1002,7 @@ class JointDecisionTree(nn.Module):
                 else:
                     # Store path probability metric
                     path_probs.append(nn.functional.softmax(output)[pred_new_index])
-                    next_wnid = curr_node.children_wnids[pred_new_index]
+                    next_wnid = list(curr_node.get_children().keys())[pred_new_index]
                     global_path.append(next_wnid)
                     if next_wnid in self.wnids:
                         # Explore highest probability child
@@ -1011,7 +1013,7 @@ class JointDecisionTree(nn.Module):
                         nodes_explored += 1
                     else:
                         # Return leaf node
-                        pred_old_index = curr_node.new_to_old[pred_new_index][0]
+                        pred_old_index = curr_node.new_to_old_classes[pred_new_index][0]
                         curr_node = None
             if pred_old_index >= 0:
                 outputs[i,pred_old_index] = 1
@@ -1029,10 +1031,26 @@ class CIFAR10JointDecisionTree(JointDecisionTree):
             net=CIFAR10JointNodes(), num_classes=num_classes,
             pretrained=pretrained)
 
+class CIFAR10FreezeJointDecisionTree(JointDecisionTree):
+
+    def __init__(self, num_classes=10, pretrained=True):
+        super().__init__('CIFAR10FreezeJointNodes', 'CIFAR10JointNodes',
+                         DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS,
+                         net=CIFAR10JointNodes(), num_classes=num_classes,
+                         pretrained=pretrained)
+
+class CIFAR100FreezeJointDecisionTree(JointDecisionTree):
+
+    def __init__(self, num_classes=100, pretrained=True):
+        super().__init__('CIFAR100FreezeJointNodes', 'CIFAR100JointNodes',
+            DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
+            net=CIFAR100JointNodes(), num_classes=num_classes,
+            pretrained=pretrained)
+
 class CIFAR100JointDecisionTree(JointDecisionTree):
 
     def __init__(self, num_classes=100, pretrained=True):
-        super().__init__('CIFAR100JointNodes', 'CIFAR100JointNodes',
+        super().__init__('CIFAR100FreezeJointNodes', 'CIFAR100JointNodes',
             DEFAULT_CIFAR100_TREE, DEFAULT_CIFAR100_WNIDS,
             net=CIFAR100JointNodes(), num_classes=num_classes,
             pretrained=pretrained)
@@ -1046,14 +1064,14 @@ class TreeSup(nn.Module):
     accepts_weighted_average = True
     accepts_fine_tune = True
 
-    def __init__(self, path_graph, path_wnids, dataset, model='ResNet10', 
+    def __init__(self, path_graph, path_wnids, dataset, backbone='ResNet10', 
             num_classes=10, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
         super().__init__()
         import models
 
-        self.net = getattr(models, model)
+        self.net = getattr(models, backbone)
         self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.dataset = dataset
         self.max_leaves_supervised = max_leaves_supervised
@@ -1172,12 +1190,13 @@ class TreeSup(nn.Module):
 
 class CIFAR10TreeSup(TreeSup):
 
-    def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10,
-            max_leaves_supervised=-1, min_leaves_supervised=-1,
+    def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, backbone='ResNet10',
+            num_classes=10, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
         super().__init__(path_graph, DEFAULT_CIFAR10_WNIDS,
             dataset=datasets.CIFAR10(root='./data'),
+            backbone=backbone,
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
@@ -1187,12 +1206,13 @@ class CIFAR10TreeSup(TreeSup):
 
 class CIFAR100TreeSup(TreeSup):
 
-    def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=100,
-            max_leaves_supervised=-1, min_leaves_supervised=-1,
+    def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, backbone='ResNet10',
+            num_classes=100, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
         super().__init__(path_graph, DEFAULT_CIFAR100_WNIDS,
             dataset=datasets.CIFAR100(root='./data'),
+            backbone=backbone,
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
@@ -1202,12 +1222,13 @@ class CIFAR100TreeSup(TreeSup):
 
 class TinyImagenet200TreeSup(TreeSup):
 
-    def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=200,
-            max_leaves_supervised=-1, min_leaves_supervised=-1,
+    def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, backbone='ResNet10',
+            num_classes=200, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
         super().__init__(path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
             dataset=data.TinyImagenet200(root='./data'),
+            backbone=backbone,
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
@@ -1217,12 +1238,13 @@ class TinyImagenet200TreeSup(TreeSup):
 
 class Imagenet1000TreeSup(TreeSup):
 
-    def __init__(self, path_graph=DEFAULT_IMAGENET1000_TREE, num_classes=1000,
-            max_leaves_supervised=-1, min_leaves_supervised=-1,
+    def __init__(self, path_graph=DEFAULT_IMAGENET1000_TREE, backbone='ResNet10',
+            num_classes=1000, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
         super().__init__(path_graph, DEFAULT_IMAGENET1000_WNIDS,
             dataset=data.Imagenet1000(root='./data'),
+            backbone=backbone,
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
@@ -1232,12 +1254,12 @@ class Imagenet1000TreeSup(TreeSup):
 
 class TreeBayesianSup(TreeSup):
 
-    def __init__(self, path_graph, path_wnids, dataset, num_classes=10,
-            max_leaves_supervised=-1, min_leaves_supervised=-1,
+    def __init__(self, path_graph, path_wnids, dataset, backbone='ResNet10',
+            num_classes=10, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
         super().__init__(path_graph, path_wnids, dataset, num_classes,
-            max_leaves_supervised, min_leaves_supervised,
+            backbone=backbone, max_leaves_supervised, min_leaves_supervised,
             tree_supervision_weight, weighted_average)
         self.num_classes = len(self.dataset.classes)
 
@@ -1264,12 +1286,13 @@ class TreeBayesianSup(TreeSup):
 
 class CIFAR10TreeBayesianSup(TreeBayesianSup):
 
-    def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, num_classes=10,
-            max_leaves_supervised=-1, min_leaves_supervised=-1,
+    def __init__(self, path_graph=DEFAULT_CIFAR10_TREE, backbone='ResNet10',
+            num_classes=10, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
         super().__init__(path_graph, DEFAULT_CIFAR10_WNIDS,
             dataset=datasets.CIFAR10(root='./data'),
+            backbone=backbone, 
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
@@ -1279,12 +1302,13 @@ class CIFAR10TreeBayesianSup(TreeBayesianSup):
 
 class CIFAR100TreeBayesianSup(TreeBayesianSup):
 
-    def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, num_classes=100,
-            max_leaves_supervised=-1, min_leaves_supervised=-1,
+    def __init__(self, path_graph=DEFAULT_CIFAR100_TREE, backbone='ResNet10',
+            num_classes=100, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
         super().__init__(path_graph, DEFAULT_CIFAR100_WNIDS,
             dataset=datasets.CIFAR100(root='./data'),
+            backbone=backbone,
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
@@ -1294,12 +1318,13 @@ class CIFAR100TreeBayesianSup(TreeBayesianSup):
 
 class TinyImagenet200TreeBayesianSup(TreeBayesianSup):
 
-    def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, num_classes=200,
-            max_leaves_supervised=-1, min_leaves_supervised=-1,
+    def __init__(self, path_graph=DEFAULT_TINYIMAGENET200_TREE, backbone='ResNet10',
+            num_classes=200, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
         super().__init__(path_graph, DEFAULT_TINYIMAGENET200_WNIDS,
             dataset=data.TinyImagenet200(root='./data'),
+            backbone=backbone,
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
@@ -1309,12 +1334,13 @@ class TinyImagenet200TreeBayesianSup(TreeBayesianSup):
 
 class Imagenet1000TreeBayesianSup(TreeBayesianSup):
 
-    def __init__(self, path_graph=DEFAULT_IMAGENET1000_TREE, num_classes=1000,
-            max_leaves_supervised=-1, min_leaves_supervised=-1,
+    def __init__(self, path_graph=DEFAULT_IMAGENET1000_TREE, backbone='ResNet10',
+            num_classes=1000, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
         super().__init__(path_graph, DEFAULT_IMAGENET1000_WNIDS,
             dataset=data.Imagenet1000(root='./data'),
+            backbone=backbone,
             num_classes=num_classes,
             max_leaves_supervised=max_leaves_supervised,
             min_leaves_supervised=min_leaves_supervised,
