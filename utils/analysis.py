@@ -287,7 +287,7 @@ class DecisionTreeBayesianPrior(DecisionTreePrior):
         bayesian_outputs = TreeBayesianSup.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)
         n_samples = outputs.size(0)
-        predicted = bayesian_outputs.max(1).to(targets.device)
+        predicted = bayesian_outputs.max(1)[1].to(targets.device)
         self.total += n_samples
         self.correct += (predicted == targets).sum().item()
         accuracy = round(self.correct / float(self.total), 4) * 100
