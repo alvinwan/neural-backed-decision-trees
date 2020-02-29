@@ -192,20 +192,6 @@ if args.test_path_sanity:
     net.set_weight(trainset.get_weights())
 
 fname = generate_fname(**vars(args))
-if args.resume:
-    # Load checkpoint.
-    print('==> Resuming from checkpoint..')
-    assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    try:
-        checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
-        net.load_state_dict(checkpoint['net'])
-        best_acc = checkpoint['acc']
-        start_epoch = checkpoint['epoch']
-        Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
-              f'{best_acc} at {fname}')
-    except FileNotFoundError as e:
-        print('==> No checkpoint found. Skipping...')
-        print(e)
 def get_net():
     if device == 'cuda':
         return net.module
@@ -221,6 +207,21 @@ if args.backbone:
             get_net().load_backbone(args.backbone)
         else:
             Colors.red('==> FAILED to load backbone. No `load_backbone` provided for model.')
+
+if args.resume:
+    # Load checkpoint.
+    print('==> Resuming from checkpoint..')
+    assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
+    try:
+        checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
+        net.load_state_dict(checkpoint['net'])
+        best_acc = checkpoint['acc']
+        start_epoch = checkpoint['epoch']
+        Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
+              f'{best_acc} at {fname}')
+    except FileNotFoundError as e:
+        print('==> No checkpoint found. Skipping...')
+        print(e)
 
 criterion = getattr(trainset, 'criterion', nn.CrossEntropyLoss)()  # TODO(alvin): WARNING JointNodes custom_loss hard-coded to CrossEntropyLoss
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)

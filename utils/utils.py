@@ -27,13 +27,13 @@ DATASET_TO_FOLDER_NAME = {
 CIFAR10NODE = 'CIFAR10Node'
 CIFAR10PATHSANITY = 'CIFAR10PathSanity'
 
-DEFAULT_CIFAR10_TREE = './data/CIFAR10/graph-wordnet.json'
+DEFAULT_CIFAR10_TREE = './data/CIFAR10/graph-wordnet-single.json'
 DEFAULT_CIFAR10_WNIDS = './data/CIFAR10/wnids.txt'
-DEFAULT_CIFAR100_TREE = './data/CIFAR100/graph-wordnet.json'
+DEFAULT_CIFAR100_TREE = './data/CIFAR100/graph-wordnet-single.json'
 DEFAULT_CIFAR100_WNIDS = './data/CIFAR100/wnids.txt'
-DEFAULT_TINYIMAGENET200_TREE = './data/tiny-imagenet-200/graph-wordnet.json'
+DEFAULT_TINYIMAGENET200_TREE = './data/tiny-imagenet-200/graph-wordnet-single.json'
 DEFAULT_TINYIMAGENET200_WNIDS = './data/tiny-imagenet-200/wnids.txt'
-DEFAULT_IMAGENET1000_TREE = './data/imagenet-1000/graph-wordnet.json'
+DEFAULT_IMAGENET1000_TREE = './data/imagenet-1000/graph-wordnet-single.json'
 DEFAULT_IMAGENET1000_WNIDS = './data/imagenet-1000/wnids.txt'
 
 
