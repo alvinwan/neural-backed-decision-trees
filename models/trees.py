@@ -138,12 +138,11 @@ class JointNodes(nn.Module):
 
         import models
         # hardcoded for ResNet10
-        self.net = models.WideResNet28_10()
+        self.net = models.ResNet10()
         self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.heads = nn.ModuleList([
             # hardcoded for ResNet10
-            nn.Linear(640, node.num_classes)
-            #nn.Linear(512, node.num_classes)
+            nn.Linear(512, node.num_classes)
             for node in self.nodes
         ])
         self.dataset = dataset
