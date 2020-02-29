@@ -1046,14 +1046,14 @@ class TreeSup(nn.Module):
     accepts_weighted_average = True
     accepts_fine_tune = True
 
-    def __init__(self, path_graph, path_wnids, dataset, num_classes=10,
-            max_leaves_supervised=-1, min_leaves_supervised=-1,
+    def __init__(self, path_graph, path_wnids, dataset, model='ResNet10', 
+            num_classes=10, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
         super().__init__()
         import models
 
-        self.net = models.ResNet10(num_classes)
+        self.net = getattr(models, model)
         self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.dataset = dataset
         self.max_leaves_supervised = max_leaves_supervised
