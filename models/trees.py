@@ -1257,9 +1257,9 @@ class TreeBayesianSup(TreeSup):
             num_classes=10, max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False):
-        super().__init__(path_graph, path_wnids, dataset, num_classes,
-            backbone=backbone, max_leaves_supervised, min_leaves_supervised,
-            tree_supervision_weight, weighted_average)
+        super().__init__(path_graph, path_wnids, dataset, backbone,
+            num_classes, max_leaves_supervised, min_leaves_supervised,
+            tree_supervision_weight, weighted_average, fine_tune)
         self.num_classes = len(self.dataset.classes)
 
     def custom_loss(self, criterion, outputs, targets):
