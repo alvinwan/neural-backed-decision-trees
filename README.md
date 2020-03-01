@@ -156,6 +156,30 @@ for dataset in CIFAR100; do for weight in 0.05 0.1 0.25 0.5 1; do python main.py
 python generate_graph.py --method=induced --dataset=CIFAR10 --induced-checkpoint=./checkpoint/ckpt-CIFAR10-ResNet10.pth
 ```
 
+## Checkpoints
+
+To add new models present in [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch),
+just add a new line to `models/__init__.py` importing the models you want. For
+example, we added `from pytorchcv.models.wrn_cifar import *` for CIFAR wideresnet
+models. You can immediately start using this model with any of our utilities
+above, including the custom tree supervision losses and extracted decision trees.
+
+```
+python main.py --model=wrn28_10_cifar10 --eval
+python main.py --model=wrn28_10_cifar10 --eval --pretrained  # loads pretrained model
+python main.py --model=wrn28_10_cifar10 --eval --pretrained --analysis=CIFAR10DecisionTreePrior  # run the extracted hard decision tree
+python main.py --model=CIFAR10TreeSup --backbone=wrn28_10_cifar10 --batch-size=256  # train with tree supervision loss
+```
+
+To "convert" a pretrained checkpoint from a `pytorchcv` checkpoint to ours, use
+the following. This will also output train accuracy.
+
+```
+python main.py --model=wrn28_10_cifar10 --pretrained --lr=0 --epochs=1
+```
+
+Then, you can use the `--resume` flag instead of `--pretrained`.
+
 ## Results
 
 https://docs.google.com/spreadsheets/d/1DrvP4msf8Bn0dF1qnpdI5fjLgEp8K6xFbxXntSn1j2s/edit#gid=0
