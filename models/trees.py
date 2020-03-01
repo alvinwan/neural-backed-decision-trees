@@ -72,6 +72,26 @@ def load_checkpoint(net, path):
     net.load_state_dict(state_dict)
 
 
+def get_featurizer(net):
+    if hasattr(net, 'featurize'):
+        return net.featurize
+    elif hasattr(net, 'features'):  # for imgclsmob models
+        def featurize(x):
+            x = net.features(x)
+            x = x.view(x.size(0), -1)
+            return x
+        return featurize
+    raise UserWarning('Model needs either a `.features` or a `.featurize` method')
+
+
+def get_linear(net):
+    if hasattr(net, 'linear'):
+        return net.linear
+    elif hasattr(net, 'output'):   # for imgclsmob models
+        return net.output
+    raise UserWarning('Model needs either a `.linear` or a `.output` method')
+
+
 class Tree(nn.Module):
     """returns samples from all node classifiers"""
 
@@ -216,7 +236,7 @@ class JointNodes(nn.Module):
             'training'
         context = torch.no_grad() if self.freeze_backbone else noop()
         with context:
-            x = self.net.featurize(x)
+            x = get_featurizer(self.net)(x)
 
         outputs = []
         for head in self.heads:
@@ -954,7 +974,7 @@ class JointDecisionTree(nn.Module):
 
     def forward(self, x):
         assert hasattr(self.net, 'featurize')
-        x = self.net.featurize(x)
+        x = get_featurizer(self.net)(x)
 
         outputs = torch.zeros(x.shape[0], 10)
         for i in range(len(x)):
@@ -1187,8 +1207,8 @@ class TreeSup(nn.Module):
                 'Please pass the --backbone flag'
             )
             with torch.no_grad():
-                x = self.net.featurize(x)
-            return self.net.linear(x)
+                x = get_featurizer(self.net)(x)
+            return get_linear(self.net)(x)
         return self.net(x)
 
 
