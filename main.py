@@ -181,11 +181,13 @@ populate_kwargs(model_kwargs, model, name=f'Model {args.model}', keys=(
 
 if args.pretrained:
     try:
+        print('==> Loading pretrained model..')
         net = model(pretrained=True, **model_kwargs)
     except Exception as e:
         Colors.red(f'Fatal error: {e}')
         exit()
-net = model(**model_kwargs)
+else:
+    net = model(**model_kwargs)
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
@@ -353,8 +355,9 @@ populate_kwargs(analyzer_kwargs, generate, name=f'Analyzer {args.analysis}', key
 analyzer = generate(trainset, testset, **analyzer_kwargs)
 
 if args.eval:
-    if not args.resume:
-        Colors.red(' * Warning: Model is not loaded from checkpoint. Use --resume')
+    if not args.resume and not args.pretrained:
+        Colors.red(' * Warning: Model is not loaded from checkpoint. '
+        'Use --resume or --pretrained (if supported)')
 
     analyzer.start_epoch(0)
     test(0, analyzer, checkpoint=False)
