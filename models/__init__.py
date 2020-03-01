@@ -15,6 +15,7 @@ from .mobilenetv2 import *
 from .efficientnet import *
 from .linear import *
 from .trees import *
+from pytorchcv.models.wrn_cifar import *
 
 
 def get_model_choices():

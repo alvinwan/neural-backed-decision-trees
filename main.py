@@ -39,6 +39,8 @@ parser.add_argument('--resume', '-r', action='store_true', help='resume from che
 parser.add_argument('--path-backbone', '-b',
                     help='Path to backbone network parameters to restore from')
 
+parser.add_argument('--pretrained', action='store_true',
+                    help='Download pretrained model. Not all models support this.')
 parser.add_argument('--backbone', default='ResNet10', help='Name of backbone network')
 parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
@@ -172,15 +174,18 @@ model = getattr(models, args.model)
 
 # TODO(alvin): should dataset trees be passed to models, isntead of re-passing
 # the tree path?
-model_kwargs = {}
+model_kwargs = {'num_classes': len(trainset.classes)}
 populate_kwargs(model_kwargs, model, name=f'Model {args.model}', keys=(
     'path_graph', 'max_leaves_supervised', 'min_leaves_supervised',
     'tree_supervision_weight', 'weighted_average', 'fine_tune', 'backbone'))
 
-net = model(
-    num_classes=len(trainset.classes),
-    **model_kwargs
-)
+if args.pretrained:
+    try:
+        net = model(pretrained=True, **model_kwargs)
+    except Exception as e:
+        Colors.red(f'Fatal error: {e}')
+        exit()
+net = model(**model_kwargs)
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
@@ -213,16 +218,20 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    try:
-        checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
-        net.load_state_dict(checkpoint['net'])
-        best_acc = checkpoint['acc']
-        start_epoch = checkpoint['epoch']
-        Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
-              f'{best_acc} at {fname}')
-    except FileNotFoundError as e:
-        print('==> No checkpoint found. Skipping...')
-        print(e)
+    if args.path_checkpoint:
+        checkpoint = torch.load(args.path_checkpoint)
+        net.load_state_dict(checkpoint)
+    else:
+        try:
+            checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
+            net.load_state_dict(checkpoint['net'])
+            best_acc = checkpoint['acc']
+            start_epoch = checkpoint['epoch']
+            Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
+                  f'{best_acc} at {fname}')
+        except FileNotFoundError as e:
+            print('==> No checkpoint found. Skipping...')
+            print(e)
 
 criterion = getattr(trainset, 'criterion', nn.CrossEntropyLoss)()  # TODO(alvin): WARNING JointNodes custom_loss hard-coded to CrossEntropyLoss
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
