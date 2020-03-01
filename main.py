@@ -218,20 +218,16 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    if args.path_checkpoint:
-        checkpoint = torch.load(args.path_checkpoint)
-        net.load_state_dict(checkpoint)
-    else:
-        try:
-            checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
-            net.load_state_dict(checkpoint['net'])
-            best_acc = checkpoint['acc']
-            start_epoch = checkpoint['epoch']
-            Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
-                  f'{best_acc} at {fname}')
-        except FileNotFoundError as e:
-            print('==> No checkpoint found. Skipping...')
-            print(e)
+    try:
+        checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
+        net.load_state_dict(checkpoint['net'])
+        best_acc = checkpoint['acc']
+        start_epoch = checkpoint['epoch']
+        Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
+              f'{best_acc} at {fname}')
+    except FileNotFoundError as e:
+        print('==> No checkpoint found. Skipping...')
+        print(e)
 
 criterion = getattr(trainset, 'criterion', nn.CrossEntropyLoss)()  # TODO(alvin): WARNING JointNodes custom_loss hard-coded to CrossEntropyLoss
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
