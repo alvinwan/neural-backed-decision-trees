@@ -195,7 +195,8 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
         include_classes=(), num_samples=0, max_leaves_supervised=-1,
         min_leaves_supervised=-1, tree_supervision_weight=0.5,
-        weighted_average=False, fine_tune=False, backbone='ResNet10', **kwargs):
+        weighted_average=False, fine_tune=False, backbone='ResNet10',
+        lr_schedule_power=1, **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
     fname += '-' + model
@@ -232,4 +233,6 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
         fname += f'-backbone{backbone}'
     if fine_tune:
         fname += '-finetune'
+    if lr_schedule_power != 1 and lr_schedule_power is not None:
+        fname += f'-lrspow${lr_schedule_power}'
     return fname

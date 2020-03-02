@@ -53,10 +53,15 @@ parser.add_argument('--test-path', action='store_true',
                     help='test path classifier with random init')
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
-
 parser.add_argument('--input-size', type=int,
                     help='Set transform train and val. Samples are resized to '
                     'input-size + 32.')
+parser.add_argument('--lr-schedule-power', default=1., type=float,
+                    help='Raise step epochs to this power. Current schedule is '
+                    ' to decay at 150/350 and 250/350. Raise both epoch counts '
+                    'to this power. Values < 1 will extend period of training '
+                    'time with higher LR.')
+
 parser.add_argument('--tree-supervision-weight', type=float,
                     help='Weight assigned to tree supervision losses')
 parser.add_argument('--path-graph-analysis', help='Graph path, only for analysis')
@@ -238,9 +243,9 @@ criterion = getattr(trainset, 'criterion', nn.CrossEntropyLoss)()  # TODO(alvin)
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
 def adjust_learning_rate(epoch, lr):
-    if epoch <= 150 / 350. * args.epochs:  # 32k iterations
+    if epoch <= (150 / 350.) ** args.lr_schedule_power * args.epochs:
       return lr
-    elif epoch <= 250 / 350. * args.epochs:  # 48k iterations
+    elif epoch <= (250 / 350.) ** args.lr_schedule_power * args.epochs:
       return lr/10
     else:
       return lr/100
