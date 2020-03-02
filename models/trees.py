@@ -1121,10 +1121,13 @@ class TreeSup(nn.Module):
             kwargs['map_location'] = torch.device('cpu')
 
         checkpoint = torch.load(path, **kwargs)
-        state_dict = {
-            key.replace('module.', '', 1): value
-            for key, value in checkpoint['net'].items()
-        }
+        if 'net' in checkpoint.keys():
+            state_dict = {
+                key.replace('module.', '', 1): value
+                for key, value in checkpoint['net'].items()
+            }
+        else:
+            state_dict = checkpoint
         self.net.load_state_dict(state_dict, strict=False)
 
     def custom_loss(self, criterion, outputs, targets):
