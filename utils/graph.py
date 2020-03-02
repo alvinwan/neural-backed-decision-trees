@@ -343,7 +343,8 @@ def get_centers(checkpoint):
         net = data
 
     keys = ('fc.weight', 'linear.weight', 'module.linear.weight',
-            'module.net.linear.weight', 'output.weight', 'module.output.weight')
+            'module.net.linear.weight', 'output.weight', 'module.output.weight',
+            'output.fc.weight', 'module.output.fc.weight')
     fc = None
     for key in keys:
         if key in net:
