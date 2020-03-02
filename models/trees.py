@@ -1095,7 +1095,7 @@ class TreeSup(nn.Module):
             f'The specified backbone {backbone} is not a valid backbone name. '
             'Did you mean to use --path-backbone instead?'
         )
-        self.net = getattr(models, backbone)(num_classes)
+        self.net = getattr(models, backbone)(num_classes=num_classes)
         self.nodes = Node.get_nodes(path_graph, path_wnids, dataset.classes)
         self.dataset = dataset
         self.max_leaves_supervised = max_leaves_supervised
