@@ -54,7 +54,7 @@ parser.add_argument('--test-path', action='store_true',
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
 
-parser.add_argument('--input-size',
+parser.add_argument('--input-size', type=int,
                     help='Set transform train and val. Samples are resized to '
                     'input-size + 32.')
 parser.add_argument('--tree-supervision-weight', type=float,
