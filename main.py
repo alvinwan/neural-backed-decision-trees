@@ -54,6 +54,9 @@ parser.add_argument('--test-path', action='store_true',
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
 
+parser.add_argument('--input-size',
+                    help='Set transform train and val. Samples are resized to '
+                    'input-size + 32.')
 parser.add_argument('--tree-supervision-weight', type=float,
                     help='Weight assigned to tree supervision losses')
 parser.add_argument('--path-graph-analysis', help='Graph path, only for analysis')
@@ -113,12 +116,12 @@ transform_test = transforms.Compose([
 ])
 
 if 'TinyImagenet200' in args.dataset:
-    transform_train = data.TinyImagenet200.transform_train
-    transform_test = data.TinyImagenet200.transform_val
+    transform_train = data.TinyImagenet200.transform_train(args.input_size)
+    transform_test = data.TinyImagenet200.transform_val(args.input_size)
 
 if 'Imagenet1000' in args.dataset:
-    transform_train = data.Imagenet1000.transform_train
-    transform_test = data.Imagenet1000.transform_val
+    transform_train = data.Imagenet1000.transform_train(args.input_size)
+    transform_test = data.Imagenet1000.transform_val(args.input_size)
 
 if args.test_path_sanity or args.test_path:
     assert 'PathSanity' in args.dataset
@@ -369,4 +372,8 @@ for epoch in range(start_epoch, args.epochs):
     test(epoch, analyzer)
     analyzer.end_epoch(epoch)
 
+if args.epochs == 0:
+    analyzer.start_epoch(0)
+    test(0, analyzer)
+    analyzer.end_epoch(0)
 print(f'Best accuracy: {best_acc} // Checkpoint name: {fname}')

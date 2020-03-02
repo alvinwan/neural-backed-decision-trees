@@ -175,16 +175,10 @@ To "convert" a pretrained checkpoint from a `pytorchcv` checkpoint to ours, use
 the following. This will also output train accuracy.
 
 ```
-python main.py --model=wrn28_10_cifar10 --pretrained --lr=0 --epochs=1
+python main.py --model=wrn28_10_cifar10 --pretrained --lr=0 --epochs=0
 ```
 
-Then, you can use the `--resume` flag instead of `--pretrained`. Additionally,
-for scenarios where this epoch just to rename a file is prohibitive (e.g.,
-  EfficientNet on Imagenet), just rename like so,
-
-```
-cp /home/eecs/alvinwan/.torch/models/efficientnet_b0b-0702-ecf61b9b.pth checkpoint/ckpt-Imagenet1000-efficientnet_b0b.pth
-```
+Then, you can use the `--resume` flag instead of `--pretrained`.
 
 ## Results
 

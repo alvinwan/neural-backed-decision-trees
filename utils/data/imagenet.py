@@ -16,18 +16,6 @@ class TinyImagenet200(Dataset):
 
     url = 'http://cs231n.stanford.edu/tiny-imagenet-200.zip'
 
-    transform_train = transforms.Compose([
-        transforms.RandomCrop(64, padding=8),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize([0.4802, 0.4481, 0.3975], [0.2302, 0.2265, 0.2262]),
-    ])
-
-    transform_val = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize([0.4802, 0.4481, 0.3975], [0.2302, 0.2265, 0.2262]),
-    ])
-
     dataset = None
 
     def __init__(self, root='./data',
@@ -41,6 +29,22 @@ class TinyImagenet200(Dataset):
         self.dataset = dataset(root, *args, **kwargs)
         self.classes = self.dataset.classes
         self.class_to_idx = {cls: i for i, cls in enumerate(self.classes)}
+
+    @staticmethod
+    def transform_train(input_size=64):
+        return transforms.Compose([
+            transforms.RandomCrop(64, padding=8),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize([0.4802, 0.4481, 0.3975], [0.2302, 0.2265, 0.2262]),
+        ])
+
+    @staticmethod
+    def transform_val(input_size=-1):
+        return transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize([0.4802, 0.4481, 0.3975], [0.2302, 0.2265, 0.2262]),
+        ])
 
     def download(self, root='./'):
         """Download and unzip Imagenet200 files in the `root` directory."""
@@ -103,20 +107,6 @@ class _TinyImagenet200Val(datasets.ImageFolder):
 class Imagenet1000(Dataset):
     """ImageNet dataloader"""
 
-    transform_train = transforms.Compose([
-        transforms.RandomResizedCrop(224),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-    ])
-
-    transform_val = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-    ])
-
     dataset = None
 
     def __init__(self, root='./data',
@@ -140,6 +130,24 @@ class Imagenet1000(Dataset):
 
         msg = ("Please symlink existing ImageNet dataset rather than downloading.")
         raise RuntimeError(msg)
+
+    @staticmethod
+    def transform_train(input_size=224):
+        return transforms.Compose([
+            transforms.RandomResizedCrop(input_size),  # TODO: may need updating
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ])
+
+    @staticmethod
+    def transform_val(input_size=224):
+        return transforms.Compose([
+            transforms.Resize(input_size + 32),
+            transforms.CenterCrop(input_size),
+            transforms.ToTensor(),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ])
 
     def __getitem__(self, i):
         return self.dataset[i]
