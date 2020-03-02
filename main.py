@@ -116,12 +116,12 @@ transform_test = transforms.Compose([
 ])
 
 if 'TinyImagenet200' in args.dataset:
-    transform_train = data.TinyImagenet200.transform_train(args.input_size)
-    transform_test = data.TinyImagenet200.transform_val(args.input_size)
+    transform_train = data.TinyImagenet200.transform_train(args.input_size or 224)
+    transform_test = data.TinyImagenet200.transform_val(args.input_size or 224)
 
 if 'Imagenet1000' in args.dataset:
-    transform_train = data.Imagenet1000.transform_train(args.input_size)
-    transform_test = data.Imagenet1000.transform_val(args.input_size)
+    transform_train = data.Imagenet1000.transform_train(args.input_size or 224)
+    transform_test = data.Imagenet1000.transform_val(args.input_size or 224)
 
 if args.test_path_sanity or args.test_path:
     assert 'PathSanity' in args.dataset
