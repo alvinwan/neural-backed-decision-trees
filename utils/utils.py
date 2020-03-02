@@ -234,5 +234,5 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
     if fine_tune:
         fname += '-finetune'
     if lr_schedule_power != 1 and lr_schedule_power is not None:
-        fname += f'-lrspow${lr_schedule_power}'
+        fname += f'-lrspow{lr_schedule_power}'
     return fname
