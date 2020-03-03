@@ -1105,7 +1105,9 @@ class TreeSup(nn.Module):
         self.fine_tune = fine_tune
 
         if self.fine_tune:
-            assert hasattr(self.net, 'featurize') and hasattr(self.net, 'linear'), (
+            has_featurizer = hasattr(self.net, 'featurize') or hasattr(self.net, 'features')
+            has_linear = hasattr(self.net, 'linear') or hasattr(self.net, 'output')
+            assert has_featurizer and has_linear, (
                 f'Network {self.net} does not have both .featurize and .linear '
                 'methods/operations, which are needed to only fine-tune the '
                 'model.'
