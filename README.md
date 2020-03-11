@@ -1,46 +1,99 @@
-## Setup
+# Neural-Backed Decision Trees
 
-To get started,
+Run a decision tree that achieves accuracy within 1% of a recently state-of-the-art (WideResNet) neural network's accuracy on CIFAR10 and CIFAR100 and within 1.5% on TinyImagenet200.
 
-1. Generate the tree, per the section below.
-2. Then, launch training scripts, which use those trees.
+![pipeline](https://user-images.githubusercontent.com/2068077/76384774-1ffb8480-631d-11ea-973f-7cac2a60bb10.jpg)
 
-## Graphs
+Per the pipeline illustration above, we (1) [generate the hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#1-Hierarchies) and (2) train the neural network [with a tree supervision loss](https://github.com/alvinwan/neural-backed-decision-trees#2-Tree-Supervision-Loss). Then, we (3) [run inference](https://github.com/alvinwan/neural-backed-decision-trees#3-Inference) by featurizing images using the network backbone and running embedded decision rules.
 
-### Generation
+# Getting Started
 
-> Too lazy? Run `bash scripts/generate_trees.sh` to generate trees for all
-datasets with all methods.
+**To integrate neural-backed decision trees into your own neural network**, simply pip install this repository. (Coming soon: Use cli to generate induced-hierarchy from checkpoint. Use a simple wrapper to run classification network as nbdt. Use custom tsl with a simple function call. TODO) 
 
-First, generate the wnids. All the Imagenet datasets come with wnids. This is only needed for CIFAR{10,100}.
+**To reproduce experimental results**, start by cloning the repository and installing all requirements.
 
 ```
-python generate_wnids.py
+git clone git@github.com:alvinwan/neural-backed-decision-trees.git
+cd neural-backed-decision-trees
+pip install -r requirements.txt
 ```
 
-Next, build the tree. By default, the tree uses wordnet hierarchy and is built from scratch.
+To reproduce the core experimental results in our paper -- ignoring ablation studies -- simply run the following bash script:
 
 ```
-python generate_graph.py
+bash (TODO)
 ```
 
-### Test Graph
+The bash script above is equivalent to following steps in [Induced Hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#Induced-Hierarchy), [Soft Tree Supervision Loss](https://github.com/alvinwan/neural-backed-decision-trees#Tree-Supervision-Loss), and [Soft Inference](https://github.com/alvinwan/neural-backed-decision-trees#Soft-Inference).
 
-Finally, check the tree is somewhat sane.
+# 1. Hierarchies
+
+## Induced Hierarchy
+
+Run the following to generate and test induced hierarchies for CIFAR10, CIFAR100, based off of the WideResNet model. The script also downloads pretrained WideResNet models.
 
 ```
-python test_generated_graph.py
+bash scripts/generate_hierarchies_induced_wrn.sh
 ```
 
-Make sure that your output ends with `==> All checks pass!`.
+![induced_structure](https://user-images.githubusercontent.com/2068077/76388304-0e6aaa80-6326-11ea-8c9b-6d08cb89fafe.jpg)
 
-### Visualize Graph
+
+The below just explains the above `generate_hierarches_induced.sh`, using CIFAR10. You do not need to run the following after running the above bash script. Note that the following commands can be rerun with different checkpoints from different architectures, to produce different hierarchies.
+
+```
+# Step A. Download and evaluate pre-trained weights for WideResNet on CIFAR10. 
+python main.py --eval --pretrained --model=wrn28_10_cifar10 --dataset=CIFAR10
+
+# Step B through D. Generate induced hierarchies, using the pretrained checkpoints
+python generate_hierarchy.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --dataset=CIFAR10
+
+# Test hierarchy
+  python test_generated_graph.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --dataset=CIFAR100
+```
+
+## Wordnet Hierarchy
+
+Run the following to generate and test Wordnet hierarchies for CIFAR10, CIFAR100, and TinyImagenet200. The script also downloads the NLTK Wordnet corpus.
+
+```
+bash scripts/generate_hierarchies_wordnet.sh
+```
+
+The below just explains the above `generate_hierarchies_wordnet.sh`, using CIFAR10. You do not need to run the following after running the above bash script.
+
+```
+# Generate mapping from classes to WNID. This is required for CIFAR10 and CIFAR100.
+python generate_wnids.py --single-path --dataset=CIFAR10
+
+# Generate hierarchy, using the WNIDs. This is required for all datasets: CIFAR10, CIFAR100, TinyImagenet200
+python generate_hierarchy.py --single-path --dataset=CIFAR10
+
+# Test hierarchy. This is optional but supported for all datasets. Make sure that your output ends with `==> All checks pass!`.
+python test_generated_graph.py --single-path --dataset=CIFAR10
+```
+
+## Random Hierarchy
+
+Use `--method=random` to randomly generate a binary-ish hierarchy. Additionally,
+random trees feature two more flags:
+
+- `--seed` to generate random leaf orderings. Use `seed=-1` to *not* randomly shuffle leaves.
+- `--branching-factor` to generate trees with different branching factors. Setting branching factor to the number of classes is a nice sanity check. We used this for debugging, ourselves.
+
+For example, to generate a sanity check hierarchy for CIFAR10, use
+
+```
+python generate_hierarchy.py --seed=-1 --branching-factor=10 --single-path --dataset=CIFAR10
+```
+
+## Visualize Hierarchy
 
 Run the visualization generation script to obtain both the JSON representing
-the tree and the HTML file containing a d3 visualization.
+the hierarchy and the HTML file containing a d3 visualization.
 
 ```
-python generate_vis.py
+python generate_vis.py --single-path
 ```
 
 The above script will output the following.
@@ -60,101 +113,55 @@ to view the d3 tree visualization.
 Open up `out/wordnet-graph.html` in your browser to view the d3 graph
 visualization.
 
-### Random Graphs
+# 2. Tree Supervision Loss
 
-Use `--method=random` to randomly generate a binary-ish tree. Additionally,
-random trees feature two more flags:
+In the below training commands, we uniformly use `--path-backbone=<path/to/checkpoint> --lr=0.01` to fine-tune instead of training from scratch. Our results using a recently state-of-the-art pretrained checkpoint (WideResNet) were fine-tuned.
 
-- `--seed` to generate random leaf orderings and
-- `--branching-factor` to generate trees with different branching factors.
-
-### Random Augmentations
-
-<!-- TODO(alvin): describe extra nodes being added and different ways of adding them -->
-
-### Datasets
-
-For all of the above calls, you may use any of the `CIFAR10`, `CIFAR100`, `TinyImagenet200` datasets, by passing the `--dataset` flag.
-
-## Training
-
-<!-- TODO(alvin): add in tree supervised training -->
-
-To get started: First, train the nodes, with a shared backbone. Optionally pass in a `--path-graph=...` to customize your tree.
+Run the following bash script to fine-tune WideResNet with both hard and soft tree supervision loss on CIFAR10, CIFAR100.
 
 ```
-python main.py --model=CIFAR100JointNodes --dataset=CIFAR100JointNodes
+bash scripts/train_wrn.sh
 ```
 
-Second, train the final fully-connected layer. If you passed in `--path-graph` to the last command, make sure to pass in the same tree path to this one.
+As before, the below just explains the above `train_wrn.sh`. You do not need to run the following after running the previous bash script.
 
 ```
-python main.py --model=CIFAR100JointTree --dataset=CIFAR100 --lr=0.01
+# fine-tune the wrn pretrained checkpoint on CIFAR10 with hard tree supervision loss
+python main.py --lr=0.01 --dataset=CIFAR10 --model=CIFAR10TreeSup --backbone=wrn28_10_cifar10 --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --path-backbone=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --tree-supervision-weight=10
+
+# fine-tune the wrn pretrained checkpoint on CIFAR10 with soft tree supervision loss
+python main.py --lr=0.01 --dataset=CIFAR10 --model=CIFAR10TreeBayesianSup --backbone=wrn28_10_cifar10 --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --path-backbone=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --tree-supervision-weight=10
 ```
 
-This is the 'standard' pipeline. There are a few other pipelines to be aware of.
+To train from scratch, use `--lr=0.01` and do not pass the `--path-backbone` flag.
 
-### Cross Entropy v. Binary Cross Entropy
+# 3. Inference
 
-<!-- TODO (alvin): add notes about cross entropy v binary cross entropy versions -->
+![inference_modes](https://user-images.githubusercontent.com/2068077/76388544-9f418600-6326-11ea-9214-17356c71a066.jpg)
 
-### Frozen Backbone
+Like with the tree supervision loss variants, there are two inference variants: one is hard and one is soft. The best results in our paper, oddly enough, were obtained by running hard and soft inference *both* on the neural network supervised by a soft tree supervision loss.
 
-So far, our best models are fine-tuned, where the shared backbone is pretrained and frozen. The commands below train the frozen variants of the model.
-
-```
-python main.py --model=CIFAR100FreezeJointNodes --dataset=CIFAR100JointNodes --backbone=./checkpoint/ckpt-ResNet10-CIFAR100.pth
-python main.py --model=CIFAR100FreezeJointTree --dataset=CIFAR100 --lr=0.01
-```
-
-### Identity Initialization
-
-<!-- TODO(alvin) -->
-
-### Balancing
-
-<!-- TODO(alvin) class imbalance + loss imbalance -->
-
-### Individual Nodes
-
-One of our earliest experiments was to train each node individually, without sharing backbones. Consider all wnids in the tree, that are *not* leaves.
+Run the following bash script to obtain these numbers.
 
 ```
-for wnid in wnids; do python main.py --model=ResNet10 --dataset=CIFAR10Node --wnid=${wnid}; done
-python main.py --model=CIFAR10Tree --dataset=CIFAR10
+bash scripts/eval_wrn.sh
 ```
 
-### Inference Modes
-
-These inference modes do not require the second fully-connected layer training. Instead, inference is run directly on the outputted tree.
-
-Notes:
-```
-# baseline
-CUDA_VISIBLE_DEVICES=1 python main.py --dataset=CIFAR10 --model=ResNet10 --analysis=CIFAR10DecisionTreePrior --eval --resume --path-graph-analysis=./data/CIFAR10/graph-wordnet-single.json
-
-# ours
-CUDA_VISIBLE_DEVICES=1 python main.py --dataset=CIFAR10 --model=CIFAR10TreeSup --analysis=CIFAR10DecisionTreePrior --eval --resume --path-graph=./data/CIFAR10/graph-wordnet-single.json --path-graph-analysis=./data/CIFAR10/graph-wornet-single.json
-CUDA_VISIBLE_DEVICES=1 python main.py --dataset=CIFAR100 --model=CIFAR100TreeSup --analysis=CIFAR100DecisionTreePrior --eval --resume --path-graph=./data/CIFAR100/graph-wordnet-single.json --path-graph-analysis=./data/CIFAR100/graph-wordnet-single.json
-
-for weight in 0.5 1 25 50 100; do CUDA_VISIBLE_DEVICES=1 python main.py --dataset=TinyImagenet200 --model=TinyImagenet200TreeSup --analysis=TinyImagenet200DecisionTreePrior --tree-supervision-weight=${weight} --eval --resume --path-graph=./data/TinyImagenet200/graph-wordnet-single.json --path-graph-analysis=./data/TinyImagenet200/graph-wordnet-single.json; done
-
-# generating induced tree from tree-supervised model
-for weight in 0.5 1.0 2.0 4.0 10.0; do python generate_graph.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-CIFAR10TreeSup-induced-tsw${weight}.pth; done
-python generate_graph.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-CIFAR10TreeSup-induced-linkagecomplete-affinitycosine-tsw10.0.pth --induced-linkage=average --induced-affinity=cosine
-
-#
-for weight in 1 200; do for dataset in TinyImagenet200; do for graph in induced induced-linkagecomplete-affinitycosine induced-linkageaverage-affinitycosine; do CUDA_VISIBLE_DEVICES=2 python main.py --dataset=${dataset} --model=${dataset}TreeSup --path-graph=/home/eecs/alvinwan/neuralmodularnetwork/data/${dataset}/graph-${graph}.json --analysis=${dataset}DecisionTreePrior --path-graph-analysis=/home/eecs/alvinwan/neuralmodularnetwork/data/${dataset}/graph-${graph}.json --eval --resume --tree-supervision-weight=${weight} --weighted-average; done; done; done
-
-# eval with bayesianSup
-for dataset in CIFAR100; do for weight in 0.05 0.1 0.25 0.5 1; do python main.py --model=${dataset}TreeBayesianSup --dataset=${dataset} --tree-supervision-weight=${weight} --eval --resume --path-graph=/home/eecs/alvinwan/neuralmodularnetwork/data/${dataset}/graph-induced.json --analysis=${dataset}DecisionTreeBayesianPrior --path-graph-analysis=/home/eecs/alvinwan/neuralmodularnetwork/data/${dataset}/graph-induced.json;done;done
-```
-
-### Induced Graph
+As before, the below just explains the above `eval_wrn.sh`. You do not need to run the following after running the previous bash script.
 
 ```
-python generate_graph.py --method=induced --dataset=CIFAR10 --induced-checkpoint=./checkpoint/ckpt-CIFAR10-ResNet10.pth
+# running soft inference on soft-supervised model
+python main.py --dataset=CIFAR10 --model=CIFAR10TreeBayesianSup --analysis=CIFAR10DecisionTreeBayesianPrior --tree-supervision-weight=10 --eval --resume --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --path-graph-analysis=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json
+
+# running hard inference on soft-supervised model
+python main.py --dataset=CIFAR10 --model=CIFAR10TreeBayesianSup --analysis=CIFAR10DecisionTreePrior --tree-supervision-weight=10 --eval --resume --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --path-graph-analysis=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json
 ```
+
+# Configuration
+
+## Architecture
+
+As a sample, we've included copies of all the above bash scripts but for ResNet10 and ResNet18. 
 
 ## Checkpoints
 
@@ -180,44 +187,37 @@ python main.py --model=wrn28_10_cifar10 --pretrained --lr=0 --epochs=0
 
 Then, you can use the `--resume` flag instead of `--pretrained`.
 
-## Results
+<!--
 
-https://docs.google.com/spreadsheets/d/1DrvP4msf8Bn0dF1qnpdI5fjLgEp8K6xFbxXntSn1j2s/edit#gid=0
+To get started: First, train the nodes, with a shared backbone. Optionally pass in a `--path-graph=...` to customize your tree.
 
------------------
+```
+python main.py --model=CIFAR100JointNodes --dataset=CIFAR100JointNodes
+```
 
-Really just [Kuang Liu's pytorch-cifar](https://github.com/kuangliu/pytorch-cifar), but with a few extra commits:
-- Learning rate automatically adjusted
-- Model functions accept a num_classes argument
-- CLI supports a `--model` flag, to pick models by name
-- proper .gitignore
+Second, train the final fully-connected layer. If you passed in `--path-graph` to the last command, make sure to pass in the same tree path to this one.
 
-# Train CIFAR10 with PyTorch
+```
+python main.py --model=CIFAR100JointTree --dataset=CIFAR100 --lr=0.01
+```
 
-I'm playing with [PyTorch](http://pytorch.org/) on the CIFAR10 dataset.
+### Frozen Backbone
 
-## Prerequisites
-- Python 3.6+
-- PyTorch 1.0+
+So far, our best models are fine-tuned, where the shared backbone is pretrained and frozen. The commands below train the frozen variants of the model.
 
-## Accuracy
-| Model             | Acc.        |
-| ----------------- | ----------- |
-| [VGG16](https://arxiv.org/abs/1409.1556)              | 92.64%      |
-| [ResNet18](https://arxiv.org/abs/1512.03385)          | 93.02%      |
-| [ResNet50](https://arxiv.org/abs/1512.03385)          | 93.62%      |
-| [ResNet101](https://arxiv.org/abs/1512.03385)         | 93.75%      |
-| [MobileNetV2](https://arxiv.org/abs/1801.04381)       | 94.43%      |
-| [ResNeXt29(32x4d)](https://arxiv.org/abs/1611.05431)  | 94.73%      |
-| [ResNeXt29(2x64d)](https://arxiv.org/abs/1611.05431)  | 94.82%      |
-| [DenseNet121](https://arxiv.org/abs/1608.06993)       | 95.04%      |
-| [PreActResNet18](https://arxiv.org/abs/1603.05027)    | 95.11%      |
-| [DPN92](https://arxiv.org/abs/1707.01629)             | 95.16%      |
+```
+python main.py --model=CIFAR100FreezeJointNodes --dataset=CIFAR100JointNodes --backbone=./checkpoint/ckpt-ResNet10-CIFAR100.pth
+python main.py --model=CIFAR100FreezeJointTree --dataset=CIFAR100 --lr=0.01
+```
 
-## Learning rate adjustment
-I manually change the `lr` during training:
-- `0.1` for epoch `[0,150)`
-- `0.01` for epoch `[150,250)`
-- `0.001` for epoch `[250,350)`
+### Identity Initialization
 
-Resume the training with `python main.py --resume --lr=0.01`
+### Individual Nodes
+
+One of our earliest experiments was to train each node individually, without sharing backbones. Consider all wnids in the tree, that are *not* leaves.
+
+```
+for wnid in wnids; do python main.py --model=ResNet10 --dataset=CIFAR10Node --wnid=${wnid}; done
+python main.py --model=CIFAR10Tree --dataset=CIFAR10
+```
+-->
