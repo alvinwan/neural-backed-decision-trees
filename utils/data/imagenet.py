@@ -33,7 +33,7 @@ class TinyImagenet200(Dataset):
     @staticmethod
     def transform_train(input_size=64):
         return transforms.Compose([
-            transforms.RandomCrop(64, padding=8),
+            transforms.RandomCrop(input_size, padding=8),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize([0.4802, 0.4481, 0.3975], [0.2302, 0.2265, 0.2262]),
