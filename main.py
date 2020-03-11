@@ -121,8 +121,8 @@ transform_test = transforms.Compose([
 ])
 
 if 'TinyImagenet200' in args.dataset:
-    transform_train = data.TinyImagenet200.transform_train(args.input_size or 224)
-    transform_test = data.TinyImagenet200.transform_val(args.input_size or 224)
+    transform_train = data.TinyImagenet200.transform_train(args.input_size or 64)
+    transform_test = data.TinyImagenet200.transform_val(args.input_size or 64)
 
 if 'Imagenet1000' in args.dataset:
     transform_train = data.Imagenet1000.transform_train(args.input_size or 224)
