@@ -1,2 +1,3 @@
 pytorchcv
 pytorch
+nltk
