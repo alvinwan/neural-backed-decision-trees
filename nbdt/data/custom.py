@@ -35,9 +35,10 @@ def add_arguments(parser):
 
 
 def set_default_values(args):
-    if not args.path_graph and not args.path_wnids:
-        paths = DATASET_TO_PATHS[args.dataset]
+    paths = DATASET_TO_PATHS[args.dataset]
+    if not args.path_graph:
         args.path_graph = paths['path_graph']
+    if not args.path_wnids:
         args.path_wnids = paths['path_wnids']
 
 
