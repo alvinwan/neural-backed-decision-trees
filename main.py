@@ -36,12 +36,9 @@ parser.add_argument('--dataset', default='CIFAR10', choices=datasets)
 parser.add_argument('--model', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
-parser.add_argument('--path-backbone', '-b',
-                    help='Path to backbone network parameters to restore from')
 
 parser.add_argument('--pretrained', action='store_true',
                     help='Download pretrained model. Not all models support this.')
-parser.add_argument('--backbone', default='ResNet10', help='Name of backbone network')
 parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
 parser.add_argument('--path-wnids', help='Path to wnids.txt file.')
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
@@ -215,17 +212,6 @@ def get_net():
         return net.module
     return net
 
-if args.path_backbone:
-    print('==> Loading backbone..')
-    try:
-        checkpoint = torch.load(args.path_backbone)
-        net.load_state_dict(checkpoint['net'])
-    except:
-        if hasattr(get_net(), 'load_backbone'):
-            get_net().load_backbone(args.path_backbone)
-        else:
-            Colors.red('==> FAILED to load backbone. No `load_backbone` provided for model.')
-
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
@@ -251,7 +237,7 @@ elif hasattr(loss, args.loss):
     populate_kwargs(loss_kwargs, loss, name=f'Loss {args.loss}', keys=(
         'path_graph', 'path_wnids', 'max_leaves_supervised',
         'min_leaves_supervised', 'tree_supervision_weight', 'weighted_average',
-        'fine_tune', 'backbone'))
+        'fine_tune'))
     criterion = loss(**loss_kwargs)
 else:
     raise UserWarning(f'No such loss {args.loss} found in torch or nbdt.')

@@ -201,34 +201,20 @@ def set_np_printoptions():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
 
-def get_fname(args):
-    assert not (args.resume and args.backbone), (
-        'Can only specify loading from backbone architecture or a previous '
-        'checkpoint. Specifying both will result in overriding.'
-    )
-    if args.backbone:
-        return args.backbone
-    return generate_fname(args)
-
-
-def generate_fname(dataset, model, path_graph, wnid=None, name='',
+def get_fname(dataset, model, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
         include_classes=(), num_samples=0, max_leaves_supervised=-1,
         min_leaves_supervised=-1, tree_supervision_weight=0.5,
-        weighted_average=False, fine_tune=False, backbone='ResNet10',
+        weighted_average=False, fine_tune=False,
         lr_schedule_power=1, loss='CrossEntropyLoss', **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
     fname += '-' + model
-    if dataset == CIFAR10NODE:
-        fname += '-' + wnid
     if name:
         fname += '-' + name
     if path_graph:
         path = Path(path_graph)
         fname += '-' + path.stem.replace('graph-', '', 1)
-    elif 'Joint' in model or 'Node' in model:
-        fname += '-wordnet'  # WARNING: hard-coded
     if include_labels:
         labels = ",".join(map(str, include_labels))
         fname += f'-incl{labels}'
@@ -250,10 +236,6 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
             fname += f'-tsw{tree_supervision_weight}'
         if weighted_average:
             fname += '-weighted'
-    if backbone != 'ResNet10':
-        fname += f'-backbone{backbone}'
-    if fine_tune:
-        fname += '-finetune'
     if lr_schedule_power != 1 and lr_schedule_power is not None:
         fname += f'-lrspow{lr_schedule_power}'
     return fname

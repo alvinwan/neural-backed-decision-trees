@@ -110,7 +110,7 @@ class SoftTreeSupLoss(HardTreeSupLoss):
             max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
             fine_tune=False, criterion=nn.CrossEntropyLoss):
-        super().__init__(path_graph, path_wnids, dataset, backbone,
+        super().__init__(path_graph, path_wnids, dataset, 
             num_classes, max_leaves_supervised, min_leaves_supervised,
             tree_supervision_weight, weighted_average, fine_tune,
             criterion)

@@ -123,7 +123,6 @@ class Node:
         return old_to_new, new_to_old
 
     def build_classes(self):
-        # TODO(alvin): warning, .values() results in non-deterministic ordering
         return [
             ','.join([self.original_classes[old] for old in old_indices])
             for new_index, old_indices in sorted(
