@@ -4,13 +4,23 @@ import torch.nn.functional as F
 from collections import defaultdict
 from utils.data.custom import Node
 
+__all__ = names = ('HardTreeSupLoss', 'SoftTreeSupLoss')
+
 
 class HardTreeSupLoss(nn.Module):
+
+    accepts_path_graph = True
+    accepts_path_wnids = True
+    accepts_classes = True
+    accepts_max_leaves_supervised = True
+    accepts_min_leaves_supervised = True
+    accepts_tree_supervision_weight = True
+    accepts_weighted_average = True
 
     def __init__(self, path_graph, path_wnids, classes,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
             tree_supervision_weight=1., weighted_average=False,
-            fine_tune=False, criterion=nn.CrossEntropyLoss):
+            criterion=nn.CrossEntropyLoss()):
         super().__init__()
 
         self.nodes = Node.get_nodes(path_graph, path_wnids, classes)
@@ -18,8 +28,7 @@ class HardTreeSupLoss(nn.Module):
         self.min_leaves_supervised = min_leaves_supervised
         self.tree_supervision_weight = tree_supervision_weight
         self.weighted_average = weighted_average
-        self.fine_tune = fine_tune
-        self.criterion = criterion()
+        self.criterion = criterion
 
     def forward(self, outputs, targets):
         """
@@ -33,6 +42,7 @@ class HardTreeSupLoss(nn.Module):
         moved onto GPU at once. Same with those with 3, with 4 etc. On CIFAR10,
         the max is 2. On CIFAR100, the max is 8.
         """
+        loss = self.criterion(outputs, targets)
         num_losses = outputs.size(0) * len(self.nodes) / 2.
 
         outputs_subs = defaultdict(lambda: [])
@@ -47,7 +57,7 @@ class HardTreeSupLoss(nn.Module):
                     node.num_leaves < self.min_leaves_supervised:
                 continue
 
-            _, outputs_sub, targets_sub = NBDTHardLoss.inference(
+            _, outputs_sub, targets_sub = HardTreeSupLoss.inference(
                 node, outputs, targets_ints, self.weighted_average)
 
             key = node.num_classes
@@ -55,7 +65,6 @@ class HardTreeSupLoss(nn.Module):
             outputs_subs[key].append(outputs_sub)
             targets_subs[key].extend(targets_sub)
 
-        loss = 0.0
         for key in outputs_subs:
             outputs_sub = torch.cat(outputs_subs[key], dim=0)
             targets_sub = torch.Tensor(targets_subs[key]).long().to(outputs_sub.device)
@@ -107,8 +116,9 @@ class SoftTreeSupLoss(HardTreeSupLoss):
             criterion)
         self.num_classes = len(classes)
 
-    def custom_loss(self, criterion, outputs, targets):
-        bayesian_outputs = NBDTSoftLoss.inference(
+    def custom_loss(self, outputs, targets):
+        loss = self.criterion(outputs, targets)
+        bayesian_outputs = SoftTreeSupLoss.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)
         loss += self.criterion(bayesian_outputs, targets) * self.tree_supervision_weight
         return loss

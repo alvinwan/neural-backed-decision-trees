@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-from utils import data, analysis
+from utils import data, analysis, loss
 
 import torchvision
 import torchvision.transforms as transforms
@@ -17,7 +17,7 @@ import models
 from utils.utils import Colors
 from utils.utils import (
     progress_bar, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY,
-    set_np_printoptions
+    set_np_printoptions, DATASET_TO_PATHS
 )
 
 
@@ -43,6 +43,7 @@ parser.add_argument('--pretrained', action='store_true',
                     help='Download pretrained model. Not all models support this.')
 parser.add_argument('--backbone', default='ResNet10', help='Name of backbone network')
 parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
+parser.add_argument('--path-wnids', help='Path to wnids.txt file.')
 parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
                     default='fall11')
 parser.add_argument('--eval', help='eval only', action='store_true')
@@ -62,6 +63,8 @@ parser.add_argument('--lr-schedule-power', default=1., type=float,
                     'to this power. Values < 1 will extend period of training '
                     'time with higher LR.')
 
+parser.add_argument('--loss', choices=loss.names + ('CrossEntropyLoss',),
+                    default='CrossEntropyLoss')
 parser.add_argument('--tree-supervision-weight', type=float,
                     help='Weight assigned to tree supervision losses')
 parser.add_argument('--path-graph-analysis', help='Graph path, only for analysis')
@@ -84,6 +87,11 @@ parser.add_argument('--include-classes', nargs='*', type=int)
 
 args = parser.parse_args()
 
+# set default path_graph and path_wnids. hard-coded too much?
+if not args.path_graph and not args.path_wnids:
+    paths = DATASET_TO_PATHS[args.dataset]
+    args.path_graph = paths['path_graph']
+    args.path_wnids = paths['path_wnids']
 
 if args.test:
     trainset = data.CIFAR10JointNodes()
@@ -179,13 +187,7 @@ Colors.cyan(f'Training with dataset {args.dataset} and {len(trainset.classes)} c
 # Model
 print('==> Building model..')
 model = getattr(models, args.model)
-
-# TODO(alvin): should dataset trees be passed to models, isntead of re-passing
-# the tree path?
-model_kwargs = {'num_classes': len(trainset.classes)}
-populate_kwargs(model_kwargs, model, name=f'Model {args.model}', keys=(
-    'path_graph', 'max_leaves_supervised', 'min_leaves_supervised',
-    'tree_supervision_weight', 'weighted_average', 'fine_tune', 'backbone'))
+model_kwargs = {'num_classes': len(trainset.classes) }
 
 if args.pretrained:
     try:
@@ -239,7 +241,21 @@ if args.resume:
         print('==> No checkpoint found. Skipping...')
         print(e)
 
-criterion = getattr(trainset, 'criterion', nn.CrossEntropyLoss)()  # TODO(alvin): WARNING JointNodes custom_loss hard-coded to CrossEntropyLoss
+# TODO(alvin): should dataset trees be passed to losses, isntead of re-passing
+# the tree path?
+if hasattr(nn, args.loss):
+    criterion = getattr(nn, args.loss)()
+elif hasattr(loss, args.loss):
+    loss_kwargs = {'classes': trainset.classes}
+    loss = getattr(loss, args.loss)
+    populate_kwargs(loss_kwargs, loss, name=f'Loss {args.loss}', keys=(
+        'path_graph', 'path_wnids', 'max_leaves_supervised',
+        'min_leaves_supervised', 'tree_supervision_weight', 'weighted_average',
+        'fine_tune', 'backbone'))
+    criterion = loss(**loss_kwargs)
+else:
+    raise UserWarning(f'No such loss {args.loss} found in torch or nbdt.')
+
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
 def adjust_learning_rate(epoch, lr):
@@ -265,7 +281,7 @@ def train(epoch, analyzer):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
-        loss = get_loss(criterion, outputs, targets)
+        loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
 
@@ -294,11 +310,6 @@ def get_prediction(outputs):
     _, predicted = outputs.max(1)
     return predicted
 
-def get_loss(criterion, outputs, targets):
-    if hasattr(get_net(), 'custom_loss'):
-        return get_net().custom_loss(criterion, outputs, targets)
-    return criterion(outputs, targets)
-
 def test(epoch, analyzer, checkpoint=True):
     analyzer.start_test(epoch)
 
@@ -311,7 +322,7 @@ def test(epoch, analyzer, checkpoint=True):
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
-            loss = get_loss(criterion, outputs, targets)
+            loss = criterion(outputs, targets)
 
             test_loss += loss.item()
             predicted = get_prediction(outputs)

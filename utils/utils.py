@@ -37,6 +37,26 @@ DEFAULT_IMAGENET1000_TREE = './data/imagenet-1000/graph-wordnet-single.json'
 DEFAULT_IMAGENET1000_WNIDS = './data/imagenet-1000/wnids.txt'
 
 
+DATASET_TO_PATHS = {
+    'CIFAR10': {
+        'path_graph': DEFAULT_CIFAR10_TREE,
+        'path_wnids': DEFAULT_CIFAR10_WNIDS
+    },
+    'CIFAR100': {
+        'path_graph': DEFAULT_CIFAR100_TREE,
+        'path_wnids': DEFAULT_CIFAR100_WNIDS
+    },
+    'TinyImagenet200': {
+        'path_graph': DEFAULT_TINYIMAGENET200_TREE,
+        'path_wnids': DEFAULT_TINYIMAGENET200_WNIDS
+    },
+    'Imagenet1000': {
+        'path_graph': DEFAULT_IMAGENET1000_TREE,
+        'path_wnids': DEFAULT_IMAGENET1000_WNIDS
+    }
+}
+
+
 class Colors:
     RED = '\x1b[31m'
     GREEN = '\x1b[32m'
@@ -196,7 +216,7 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
         include_classes=(), num_samples=0, max_leaves_supervised=-1,
         min_leaves_supervised=-1, tree_supervision_weight=0.5,
         weighted_average=False, fine_tune=False, backbone='ResNet10',
-        lr_schedule_power=1, **kwargs):
+        lr_schedule_power=1, loss='CrossEntropyLoss', **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
     fname += '-' + model
@@ -220,7 +240,8 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
         fname += f'-incc{labels}'
     if num_samples != 0 and num_samples is not None:
         fname += f'-samples{num_samples}'
-    if 'Sup' in model:
+    if loss != 'CrossEntropyLoss':
+        fname += f'-{loss}'
         if max_leaves_supervised > 0:
             fname += f'-mxls{max_leaves_supervised}'
         if min_leaves_supervised > 0:

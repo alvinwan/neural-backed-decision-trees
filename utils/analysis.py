@@ -1,4 +1,3 @@
-from models.trees import TreeSup, TreeBayesianSup
 from utils.graph import get_root, get_wnids
 from utils.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
@@ -6,7 +5,7 @@ from utils.utils import (
     DEFAULT_TINYIMAGENET200_WNIDS, DEFAULT_IMAGENET1000_TREE,
     DEFAULT_IMAGENET1000_WNIDS,
 )
-from utils.loss import NBDTHardLoss, NBDTSoftLoss
+from utils.loss import HardTreeSupLoss, SoftTreeSupLoss
 from utils.data.custom import Node
 import torch
 import torch.nn as nn
