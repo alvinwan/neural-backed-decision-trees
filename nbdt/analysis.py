@@ -237,7 +237,6 @@ class HardEmbeddedDecisionRules(Noop):
         print(f'TreePrior Accuracy: {accuracy}%, {self.correct}/{self.total}')
 
 
-# TODO(alvin): add weighted average input if works
 class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
     """Evaluation is soft."""
 
