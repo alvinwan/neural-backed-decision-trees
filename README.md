@@ -8,7 +8,29 @@ Per the pipeline illustration above, we (1) [generate the hierarchy](https://git
 
 # Getting Started
 
-**To integrate neural-backed decision trees into your own neural network**, simply pip install this repository. (Coming soon: Use cli to generate induced-hierarchy from checkpoint. Use a simple wrapper to run classification network as nbdt. Use custom tsl with a simple function call. TODO)
+**To integrate neural-backed decision trees into your own neural network**, simply pip install this repository. (Coming soon: Download zip with prebuilt induced hierarchies for certain datasets. If no wnids, generate fake ones. Attempt to get path_graph, dataset.classes. Use a simple wrapper to run classification network as nbdt. Use custom tsl with a simple function call. For a new dataset, use cli to generate induced-hierarchy from checkpoint. TODO)
+
+```
+pip install nbdt
+wget ...  # CIFAR10 ResNet model
+nbdt --method=induced ...  # generate induced hierarchy
+```
+
+```
+from nbdt.loss import SoftTreeSupLoss
+
+criterion = ...   # your original loss function
+criterion = SoftTreeSupLoss(dataset='CIFAR10', criterion=criterion)
+```
+
+```
+# doesn't actually work this way atm
+from nbdt.model import SoftEmbeddedDecisionRules
+
+# during test time
+model = ...   # your original model
+model = SoftEmbeddedDecisionRules(dataset='CIFAR10', model=model)
+```
 
 **To reproduce experimental results**, start by cloning the repository and installing all requirements.
 
