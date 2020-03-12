@@ -5,7 +5,7 @@ from collections import defaultdict
 from utils.data.custom import Node
 
 
-class NBDTHardLoss(nn.Module):
+class HardTreeSupLoss(nn.Module):
 
     def __init__(self, path_graph, path_wnids, classes,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
@@ -95,7 +95,7 @@ class NBDTHardLoss(nn.Module):
         ]).T
 
 
-class NBDTSoftLoss(NBDTHardLoss):
+class SoftTreeSupLoss(HardTreeSupLoss):
 
     def __init__(self, path_graph, path_wnids, classes,
             max_leaves_supervised=-1, min_leaves_supervised=-1,

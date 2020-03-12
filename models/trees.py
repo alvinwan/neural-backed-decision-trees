@@ -83,7 +83,7 @@ class TreeSup(nn.Module):
             'Did you mean to use --path-backbone instead?'
         )
         self.net = getattr(models, backbone)(num_classes=num_classes)
-        self.loss = NBDTHardLoss(path_graph, path_wnids, dataset.classes,
+        self.loss = HardTreeSupLoss(path_graph, path_wnids, dataset.classes,
             max_leaves_supervised, min_leaves_supervised,
             tree_supervision_weight, weighted_average, fine_tune)
 
@@ -204,7 +204,7 @@ class TreeBayesianSup(TreeSup):
         super().__init__(path_graph, path_wnids, dataset, backbone,
             num_classes, max_leaves_supervised, min_leaves_supervised,
             tree_supervision_weight, weighted_average, fine_tune)
-        self.loss = NBDTSoftLoss(path_graph, path_wnids, dataset.classes,
+        self.loss = SoftTreeSupLoss(path_graph, path_wnids, dataset.classes,
             max_leaves_supervised, min_leaves_supervised,
             tree_supervision_weight, weighted_average, fine_tune)
         self.num_classes = len(self.dataset.classes)
