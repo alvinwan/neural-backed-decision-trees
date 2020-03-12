@@ -82,7 +82,7 @@ if args.dataset in ('TinyImagenet200', 'Imagenet1000'):
 
 dataset_kwargs = {}
 populate_kwargs(args, dataset_kwargs, dataset, name=f'Dataset {args.dataset}',
-    keys=data.custom.keys)
+    keys=data.custom.keys, globals=globals())
 
 trainset = dataset(**dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
 testset = dataset(**dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
@@ -234,8 +234,9 @@ def test(epoch, analyzer, checkpoint=True):
 
 analyzer_kwargs = {}
 class_analysis = getattr(analysis, args.analysis or 'Noop')
-populate_kwargs(args, analyzer_kwargs, class_analysis, name=f'Analyzer {args.analysis}', keys=analysis.keys)
-analyzer = class_analysis(trainset, testset, **analyzer_kwargs)
+populate_kwargs(args, analyzer_kwargs, class_analysis,
+    name=f'Analyzer {args.analysis}', keys=analysis.keys, globals=globals())
+analyzer = class_analysis(**analyzer_kwargs)
 
 
 if args.eval:

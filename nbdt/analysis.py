@@ -15,16 +15,12 @@ import csv
 
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
-    'IgnoredSamples', 'DecisionTreePrior', 'CIFAR10DecisionTreePrior',
-    'CIFAR100DecisionTreePrior', 'TinyImagenet200DecisionTreePrior',
-    'Imagenet1000DecisionTreePrior', 'DecisionTreeBayesianPrior',
-    'CIFAR10DecisionTreeBayesianPrior', 'CIFAR100DecisionTreeBayesianPrior',
-    'TinyImagenet200DecisionTreeBayesianPrior', 'Imagenet1000DecisionTreeBayesianPrior')
-keys = ('path_graph_analysis', 'weighted_average')
+    'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules')
+keys = ('path_graph', 'path_wnids', 'weighted_average', 'trainset', 'testset')
 
 
 def add_arguments(parser):
-    parser.add_argument('--path-graph-analysis', help='Graph path, only for analysis')
+    pass
 
 
 class Noop:
@@ -166,16 +162,19 @@ class IgnoredSamples(Noop):
         print("Ignored Samples: {}".format(self.ignored))
 
 
-class DecisionTreePrior(Noop):
-    """Evaluate model on decision tree prior. Evaluation is deterministic."""
+class HardEmbeddedDecisionRules(Noop):
+    """Evaluation is hard."""
 
-    accepts_path_graph_analysis = True
+    accepts_path_graph = True
+    accepts_path_wnids = True
     accepts_weighted_average = True
+    accepts_trainset = lambda trainset, **kwargs: trainset
+    accepts_testset = lambda testset, **kwargs: testset
 
-    def __init__(self, trainset, testset, path_graph_analysis, path_wnids,
+    def __init__(self, trainset, testset, path_graph, path_wnids,
             weighted_average=False):
         super().__init__(trainset, testset)
-        self.nodes = Node.get_nodes(path_graph_analysis, path_wnids, trainset.classes)
+        self.nodes = Node.get_nodes(path_graph, path_wnids, trainset.classes)
         self.G = self.nodes[0].G
         self.wnid_to_node = {node.wnid: node for node in self.nodes}
 
@@ -193,7 +192,7 @@ class DecisionTreePrior(Noop):
         targets_ints = [int(target) for target in targets.cpu().long()]
         wnid_to_pred_selector = {}
         for node in self.nodes:
-            selector, outputs_sub, targets_sub = NBDTHardLoss.inference(
+            selector, outputs_sub, targets_sub = HardTreeSupLoss.inference(
                 node, outputs, targets, self.weighted_average)
             if not any(selector):
                 continue
@@ -238,60 +237,17 @@ class DecisionTreePrior(Noop):
         print(f'TreePrior Accuracy: {accuracy}%, {self.correct}/{self.total}')
 
 
-class CIFAR10DecisionTreePrior(DecisionTreePrior):
-
-    def __init__(self, trainset, testset,
-        path_graph_analysis=DEFAULT_CIFAR10_TREE,
-        path_wnids=DEFAULT_CIFAR10_WNIDS,
-        weighted_average=False):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids,
-            weighted_average=weighted_average)
-
-
-class CIFAR100DecisionTreePrior(DecisionTreePrior):
-
-    def __init__(self, trainset, testset,
-        path_graph_analysis=DEFAULT_CIFAR100_TREE,
-        path_wnids=DEFAULT_CIFAR100_WNIDS,
-        weighted_average=False):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids,
-            weighted_average=weighted_average)
-
-
-class TinyImagenet200DecisionTreePrior(DecisionTreePrior):
-
-    def __init__(self, trainset, testset,
-        path_graph_analysis=DEFAULT_TINYIMAGENET200_TREE,
-        path_wnids=DEFAULT_TINYIMAGENET200_WNIDS,
-        weighted_average=False):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids,
-            weighted_average=weighted_average)
-
-
-class Imagenet1000DecisionTreePrior(DecisionTreePrior):
-
-    def __init__(self, trainset, testset,
-        path_graph_analysis=DEFAULT_IMAGENET1000_TREE,
-        path_wnids=DEFAULT_IMAGENET1000_WNIDS,
-        weighted_average=False):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids,
-            weighted_average=weighted_average)
-
-
 # TODO(alvin): add weighted average input if works
-class DecisionTreeBayesianPrior(DecisionTreePrior):
-    """Evaluate model on decision tree bayesian prior. Evaluation is stochastic."""
+class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
+    """Evaluation is soft."""
 
-    accepts_path_graph_analysis = True
-    accepts_weighted_average = True
-
-    def __init__(self, trainset, testset, path_graph_analysis, path_wnids,
+    def __init__(self, trainset, testset, path_graph, path_wnids,
             weighted_average=False):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids)
+        super().__init__(trainset, testset, path_graph, path_wnids)
         self.num_classes = len(trainset.classes)
 
     def update_batch(self, outputs, predicted, targets):
-        bayesian_outputs = NBDTSoftLoss.inference(
+        bayesian_outputs = SoftTreeSupLoss.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)
         n_samples = outputs.size(0)
         predicted = bayesian_outputs.max(1)[1].to(targets.device)
@@ -303,43 +259,3 @@ class DecisionTreeBayesianPrior(DecisionTreePrior):
     def end_test(self, epoch):
         accuracy = round(self.correct / self.total * 100., 2)
         print(f'TreeBayesianPrior Accuracy: {accuracy}%, {self.correct}/{self.total}')
-
-
-class CIFAR10DecisionTreeBayesianPrior(DecisionTreeBayesianPrior):
-
-    def __init__(self, trainset, testset,
-        path_graph_analysis=DEFAULT_CIFAR10_TREE,
-        path_wnids=DEFAULT_CIFAR10_WNIDS,
-        weighted_average=False):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids,
-            weighted_average=weighted_average)
-
-
-class CIFAR100DecisionTreeBayesianPrior(DecisionTreeBayesianPrior):
-
-    def __init__(self, trainset, testset,
-        path_graph_analysis=DEFAULT_CIFAR100_TREE,
-        path_wnids=DEFAULT_CIFAR100_WNIDS,
-        weighted_average=False):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids,
-            weighted_average=weighted_average)
-
-
-class TinyImagenet200DecisionTreeBayesianPrior(DecisionTreeBayesianPrior):
-
-    def __init__(self, trainset, testset,
-        path_graph_analysis=DEFAULT_TINYIMAGENET200_TREE,
-        path_wnids=DEFAULT_TINYIMAGENET200_WNIDS,
-        weighted_average=False):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids,
-            weighted_average=weighted_average)
-
-
-class Imagenet1000DecisionTreeBayesianPrior(DecisionTreeBayesianPrior):
-
-    def __init__(self, trainset, testset,
-        path_graph_analysis=DEFAULT_IMAGENET1000_TREE,
-        path_wnids=DEFAULT_IMAGENET1000_WNIDS,
-        weighted_average=False):
-        super().__init__(trainset, testset, path_graph_analysis, path_wnids,
-            weighted_average=weighted_average)

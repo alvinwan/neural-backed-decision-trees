@@ -59,6 +59,8 @@ DATASET_TO_PATHS = {
 def populate_kwargs(args, kwargs, object, name='Dataset', keys=(), globals={}):
     for key in keys:
         accepts_key = getattr(object, f'accepts_{key}', False)
+        if not accepts_key:
+            continue
         assert key in args or callable(accepts_key)
 
         value = getattr(args, key, None)
