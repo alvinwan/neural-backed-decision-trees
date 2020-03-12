@@ -47,11 +47,6 @@ parser.add_argument('--analysis', choices=analysis.names,
 parser.add_argument('--input-size', type=int,
                     help='Set transform train and val. Samples are resized to '
                     'input-size + 32.')
-parser.add_argument('--lr-schedule-power', default=1., type=float,
-                    help='Raise step epochs to this power. Current schedule is '
-                    ' to decay at 150/350 and 250/350. Raise both epoch counts '
-                    'to this power. Values < 1 will extend period of training '
-                    'time with higher LR.')
 
 parser.add_argument('--loss', choices=loss.names + ('CrossEntropyLoss',),
                     default='CrossEntropyLoss')
@@ -198,9 +193,9 @@ else:
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
 def adjust_learning_rate(epoch, lr):
-    if epoch <= (150 / 350.) ** args.lr_schedule_power * args.epochs:
+    if epoch <= (150 / 350.) * args.epochs:
       return lr
-    elif epoch <= (250 / 350.) ** args.lr_schedule_power * args.epochs:
+    elif epoch <= (250 / 350.) * args.epochs:
       return lr/10
     else:
       return lr/100
