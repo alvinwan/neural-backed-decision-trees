@@ -76,7 +76,7 @@ dataset = getattr(data, args.dataset)
 
 if args.dataset in ('TinyImagenet200', 'Imagenet1000'):
     default_input_size = 64 if args.dataset == 'TinyImagenet200' else 224
-    input_size = args.input_size
+    input_size = args.input_size or default_input_size
     transform_train = dataset.transform_train(input_size)
     transform_test = dataset.transform_val(input_size)
 
