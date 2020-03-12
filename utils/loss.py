@@ -3,19 +3,28 @@ import torch.nn as nn
 import torch.nn.functional as F
 from collections import defaultdict
 from utils.data.custom import Node
+from utils.utils import Colors
 
 __all__ = names = ('HardTreeSupLoss', 'SoftTreeSupLoss')
 
 
-class HardTreeSupLoss(nn.Module):
+def add_arguments(parser):
+    parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
+    parser.add_argument('--path-wnids', help='Path to wnids.txt file.')
+    parser.add_argument('--max-leaves-supervised', type=int, default=-1,
+                        help='Maximum number of leaves a node can have to '
+                        'contribute loss, in tree-supervised training.')
+    parser.add_argument('--min-leaves-supervised', type=int, default=-1,
+                        help='Minimum number of leaves a node must have to '
+                        'contribute loss, in tree-supervised training.')
+    parser.add_argument('--weighted-average', action='store_true',
+                        help='Use weighted average instead of average, for cluster '
+                        'centers.')
+    parser.add_argument('--tree-supervision-weight', type=float, default=1,
+                        help='Weight assigned to tree supervision losses')
 
-    accepts_path_graph = True
-    accepts_path_wnids = True
-    accepts_classes = True
-    accepts_max_leaves_supervised = True
-    accepts_min_leaves_supervised = True
-    accepts_tree_supervision_weight = True
-    accepts_weighted_average = True
+
+class TreeSupLoss(nn.Module):
 
     def __init__(self, path_graph, path_wnids, classes,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
@@ -23,12 +32,33 @@ class HardTreeSupLoss(nn.Module):
             criterion=nn.CrossEntropyLoss()):
         super().__init__()
 
+        self.num_classes = len(classes)
         self.nodes = Node.get_nodes(path_graph, path_wnids, classes)
         self.max_leaves_supervised = max_leaves_supervised
         self.min_leaves_supervised = min_leaves_supervised
         self.tree_supervision_weight = tree_supervision_weight
         self.weighted_average = weighted_average
         self.criterion = criterion
+
+    @classmethod
+    def from_args_classes(cls, args, classes):
+
+        for key in ('path_graph', 'path_wnids', 'max_leaves_supervised',
+                'min_leaves_supervised', 'tree_supervision_weight',
+                'weighted_average'):
+            Colors.cyan(f'{key}:\t{getattr(args, key, None)}')
+
+        return cls(
+            path_graph=args.path_graph,
+            path_wnids=args.path_wnids,
+            classes=classes,
+            max_leaves_supervised=args.max_leaves_supervised,
+            min_leaves_supervised=args.min_leaves_supervised,
+            tree_supervision_weight=args.tree_supervision_weight,
+            weighted_average=args.weighted_average)
+
+
+class HardTreeSupLoss(TreeSupLoss):
 
     def forward(self, outputs, targets):
         """
@@ -105,16 +135,6 @@ class HardTreeSupLoss(nn.Module):
 
 
 class SoftTreeSupLoss(HardTreeSupLoss):
-
-    def __init__(self, path_graph, path_wnids, classes,
-            max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1., weighted_average=False,
-            fine_tune=False, criterion=nn.CrossEntropyLoss):
-        super().__init__(path_graph, path_wnids, dataset, 
-            num_classes, max_leaves_supervised, min_leaves_supervised,
-            tree_supervision_weight, weighted_average, fine_tune,
-            criterion)
-        self.num_classes = len(classes)
 
     def custom_loss(self, outputs, targets):
         loss = self.criterion(outputs, targets)

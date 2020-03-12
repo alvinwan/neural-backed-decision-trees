@@ -17,8 +17,7 @@ import torch.nn as nn
 import random
 
 
-__all__ = names = ('CIFAR100PathSanity', 'TinyImagenet200PathSanity',
-                   'Imagenet1000PathSanity', 'CIFAR10IncludeLabels',
+__all__ = names = ('CIFAR10IncludeLabels',
                    'CIFAR100IncludeLabels', 'TinyImagenet200IncludeLabels',
                    'Imagenet1000IncludeLabels', 'CIFAR10ExcludeLabels',
                    'CIFAR100ExcludeLabels', 'TinyImagenet200ExcludeLabels',

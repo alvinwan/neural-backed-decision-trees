@@ -16,8 +16,7 @@ import numpy as np
 import models
 from utils.utils import Colors
 from utils.utils import (
-    progress_bar, generate_fname, CIFAR10PATHSANITY,
-    set_np_printoptions, DATASET_TO_PATHS
+    progress_bar, generate_fname, set_np_printoptions, DATASET_TO_PATHS
 )
 
 
@@ -39,8 +38,6 @@ parser.add_argument('--resume', '-r', action='store_true', help='resume from che
 
 parser.add_argument('--pretrained', action='store_true',
                     help='Download pretrained model. Not all models support this.')
-parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
-parser.add_argument('--path-wnids', help='Path to wnids.txt file.')
 parser.add_argument('--eval', help='eval only', action='store_true')
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
@@ -50,25 +47,13 @@ parser.add_argument('--input-size', type=int,
 
 parser.add_argument('--loss', choices=loss.names + ('CrossEntropyLoss',),
                     default='CrossEntropyLoss')
-parser.add_argument('--tree-supervision-weight', type=float,
-                    help='Weight assigned to tree supervision losses')
 parser.add_argument('--path-graph-analysis', help='Graph path, only for analysis')
-parser.add_argument('--max-leaves-supervised', type=int, default=-1,
-                    help='Maximum number of leaves a node can have to '
-                    'contribute loss, in tree-supervised training.')
-parser.add_argument('--min-leaves-supervised', type=int, default=-1,
-                    help='Minimum number of leaves a node must have to '
-                    'contribute loss, in tree-supervised training.')
-parser.add_argument('--weighted-average', action='store_true',
-                    help='Use weighted average instead of average, for cluster '
-                    'centers.')
-parser.add_argument('--fine-tune', action='store_true',
-                    help='Fine-tune only the fully-connected layer instead of '
-                    'training the model from scratch.')
 parser.add_argument('--probability-labels', nargs='*', type=float)
 parser.add_argument('--include-labels', nargs='*', type=int)
 parser.add_argument('--exclude-labels', nargs='*', type=int)
 parser.add_argument('--include-classes', nargs='*', type=int)
+
+loss.add_arguments(parser)
 
 args = parser.parse_args()
 
@@ -122,8 +107,7 @@ def populate_kwargs(kwargs, object, name='Dataset', keys=()):
 
 dataset_kwargs = {}
 populate_kwargs(dataset_kwargs, dataset, name=f'Dataset {args.dataset}', keys=(
-    'path_graph', 'include_labels', 'exclude_labels', 'include_classes',
-    'probability_labels'))
+    'include_labels', 'exclude_labels', 'include_classes', 'probability_labels'))
 
 trainset = dataset(**dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
 testset = dataset(**dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
@@ -175,18 +159,12 @@ if args.resume:
         print('==> No checkpoint found. Skipping...')
         print(e)
 
-# TODO(alvin): should dataset trees be passed to losses, isntead of re-passing
-# the tree path?
 if hasattr(nn, args.loss):
     criterion = getattr(nn, args.loss)()
 elif hasattr(loss, args.loss):
     loss_kwargs = {'classes': trainset.classes}
     loss = getattr(loss, args.loss)
-    populate_kwargs(loss_kwargs, loss, name=f'Loss {args.loss}', keys=(
-        'path_graph', 'path_wnids', 'max_leaves_supervised',
-        'min_leaves_supervised', 'tree_supervision_weight', 'weighted_average',
-        'fine_tune'))
-    criterion = loss(**loss_kwargs)
+    criterion = loss.from_args_classes(args, trainset.classes)
 else:
     raise UserWarning(f'No such loss {args.loss} found in torch or nbdt.')
 
