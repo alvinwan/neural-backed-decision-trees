@@ -135,7 +135,7 @@ class HardTreeSupLoss(TreeSupLoss):
 
 class SoftTreeSupLoss(HardTreeSupLoss):
 
-    def custom_loss(self, outputs, targets):
+    def forward(self, outputs, targets):
         loss = self.criterion(outputs, targets)
         bayesian_outputs = SoftTreeSupLoss.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)
@@ -144,7 +144,6 @@ class SoftTreeSupLoss(HardTreeSupLoss):
 
     @classmethod
     def inference(cls, nodes, outputs, num_classes, weighted_average=False):
-        # Compute bayesian class probability outputs
         class_probs = torch.ones((outputs.size(0), num_classes)).to(outputs.device)
         for node in nodes:
             output = cls.get_output_sub(outputs, node, weighted_average)
@@ -152,5 +151,5 @@ class SoftTreeSupLoss(HardTreeSupLoss):
             for index_child in range(len(node.children)):
                 old_indexes = node.new_to_old_classes[index_child]
                 for index_old in old_indexes:
-                    class_probs[:,index_old] = class_probs[:,index_old].clone() * output[:,index_child]
+                    class_probs[:,index_old] *= output[:,index_child]
         return class_probs

@@ -25,6 +25,9 @@ def add_arguments(parser):
 
 class Noop:
 
+    accepts_trainset = lambda trainset, **kwargs: trainset
+    accepts_testset = lambda testset, **kwargs: testset
+
     def __init__(self, trainset, testset):
         set_np_printoptions()
 
@@ -168,8 +171,6 @@ class HardEmbeddedDecisionRules(Noop):
     accepts_path_graph = True
     accepts_path_wnids = True
     accepts_weighted_average = True
-    accepts_trainset = lambda trainset, **kwargs: trainset
-    accepts_testset = lambda testset, **kwargs: testset
 
     def __init__(self, trainset, testset, path_graph, path_wnids,
             weighted_average=False):
