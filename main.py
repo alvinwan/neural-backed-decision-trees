@@ -31,6 +31,8 @@ parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 
 # extra general options for main script
+parser.add_argument('--path-resume', default='',
+                    help='Overrides checkpoint path generation')
 parser.add_argument('--name', default='',
                     help='Name of experiment. Used for checkpoint filename')
 parser.add_argument('--pretrained', action='store_true',
@@ -112,21 +114,26 @@ if device == 'cuda':
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
 
-fname = generate_fname(**vars(args))
+checkpoint_fname = generate_fname(**vars(args))
+resume_path = args.path_resume or './checkpoint/{}.pth'.format(checkpoint_fname)
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    path = './checkpoint/{}.pth'.format(fname)
-    if not os.path.exists(path):
+    if not os.path.exists(resume_path):
         print('==> No checkpoint found. Skipping...')
     else:
-        checkpoint = torch.load(path)
-        net.load_state_dict(checkpoint['net'])
-        best_acc = checkpoint['acc']
-        start_epoch = checkpoint['epoch']
-        Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
-              f'{best_acc} at {fname}')
+        checkpoint = torch.load(resume_path)
+
+        if 'net' in checkpoint:
+            net.load_state_dict(checkpoint['net'])
+            best_acc = checkpoint['acc']
+            start_epoch = checkpoint['epoch']
+            Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
+                  f'{best_acc} at {resume_path}')
+        else:
+            net.load_state_dict(checkpoint)
+            Colors.cyan(f'==> Checkpoint found at {resume_path}')
 
 
 loss_kwargs = {}
@@ -218,9 +225,8 @@ def test(epoch, analyzer, checkpoint=True):
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
 
-        fname = generate_fname(**vars(args))
-        print(f'Saving to {fname} ({acc})..')
-        torch.save(state, './checkpoint/{}.pth'.format(fname))
+        print(f'Saving to {checkpoint_fname} ({acc})..')
+        torch.save(state, f'./checkpoint/{checkpoint_fname}.pth')
         best_acc = acc
 
     analyzer.end_test(epoch)
