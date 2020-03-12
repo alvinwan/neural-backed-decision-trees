@@ -42,11 +42,6 @@ parser.add_argument('--pretrained', action='store_true',
 parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
 parser.add_argument('--path-wnids', help='Path to wnids.txt file.')
 parser.add_argument('--eval', help='eval only', action='store_true')
-parser.add_argument('--test', action='store_true', help='run dataset tests')
-parser.add_argument('--test-path-sanity', action='store_true',
-                    help='test path classifier with oracle fc')
-parser.add_argument('--test-path', action='store_true',
-                    help='test path classifier with random init')
 parser.add_argument('--analysis', choices=analysis.names,
                     help='Run analysis after each epoch')
 parser.add_argument('--input-size', type=int,
@@ -114,17 +109,6 @@ if 'Imagenet1000' in args.dataset:
     transform_train = data.Imagenet1000.transform_train(args.input_size or 224)
     transform_test = data.Imagenet1000.transform_val(args.input_size or 224)
 
-if args.test_path_sanity or args.test_path:
-    assert 'PathSanity' in args.dataset
-
-is_model_joint = 'JointNodes' in args.model
-is_dataset_joint = 'JointNodes' in args.dataset
-is_both_joint = is_model_joint and is_dataset_joint
-is_neither_joint = not is_model_joint and not is_dataset_joint
-both_joint_nodes = is_both_joint or is_neither_joint, (
-        f'Either both model {args.model} and dataset {args.dataset} are '
-        'JointNodes or neither are.'
-    )
 
 dataset = getattr(data, args.dataset)
 
@@ -141,19 +125,13 @@ def populate_kwargs(kwargs, object, name='Dataset', keys=()):
                 f'{key}: {value}')
 
 
-dataset_args = ()
-if getattr(dataset, 'needs_wnid', False):
-    dataset_args = (args.wnid,)
-
 dataset_kwargs = {}
 populate_kwargs(dataset_kwargs, dataset, name=f'Dataset {args.dataset}', keys=(
     'path_graph', 'include_labels', 'exclude_labels', 'include_classes',
     'probability_labels'))
 
-# TODO: if root changes, it needs to be passed to the sanity dataset in IdInitJointTree models
-# and jointNodes
-trainset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
-testset = dataset(*dataset_args, **dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
+trainset = dataset(**dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
+testset = dataset(**dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
 
 assert trainset.classes == testset.classes, (trainset.classes, testset.classes)
 
@@ -180,12 +158,6 @@ net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
-
-if args.test_path_sanity or args.test_path:
-    net = models.linear(trainset.get_input_dim(), len(trainset.classes))
-
-if args.test_path_sanity:
-    net.set_weight(trainset.get_weights())
 
 fname = generate_fname(**vars(args))
 def get_net():

@@ -200,7 +200,7 @@ def set_np_printoptions():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
 
-def get_fname(dataset, model, path_graph, wnid=None, name='',
+def generate_fname(dataset, model, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
         include_classes=(), num_samples=0, max_leaves_supervised=-1,
         min_leaves_supervised=-1, tree_supervision_weight=0.5,
