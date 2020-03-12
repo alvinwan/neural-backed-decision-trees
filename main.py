@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-from utils import data, analysis, loss
+from nbdt import data, analysis, loss
 
 import torchvision
 import torchvision.transforms as transforms
@@ -14,8 +14,8 @@ import argparse
 import numpy as np
 
 import models
-from utils.utils import Colors
-from utils.utils import (
+from nbdt.utils import Colors
+from nbdt.utils import (
     progress_bar, generate_fname, set_np_printoptions, DATASET_TO_PATHS
 )
 
@@ -39,8 +39,6 @@ parser.add_argument('--resume', '-r', action='store_true', help='resume from che
 parser.add_argument('--pretrained', action='store_true',
                     help='Download pretrained model. Not all models support this.')
 parser.add_argument('--eval', help='eval only', action='store_true')
-parser.add_argument('--analysis', choices=analysis.names,
-                    help='Run analysis after each epoch')
 parser.add_argument('--input-size', type=int,
                     help='Set transform train and val. Samples are resized to '
                     'input-size + 32.')

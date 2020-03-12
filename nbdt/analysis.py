@@ -1,12 +1,12 @@
-from utils.graph import get_root, get_wnids
-from utils.utils import (
+from nbdt.graph import get_root, get_wnids
+from nbdt.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
     DEFAULT_CIFAR100_WNIDS, DEFAULT_TINYIMAGENET200_TREE,
     DEFAULT_TINYIMAGENET200_WNIDS, DEFAULT_IMAGENET1000_TREE,
     DEFAULT_IMAGENET1000_WNIDS,
 )
-from utils.loss import HardTreeSupLoss, SoftTreeSupLoss
-from utils.data.custom import Node
+from nbdt.loss import HardTreeSupLoss, SoftTreeSupLoss
+from nbdt.data.custom import Node
 import torch
 import torch.nn as nn
 import numpy as np
@@ -22,7 +22,15 @@ __all__ = names = (
     'TinyImagenet200DecisionTreeBayesianPrior', 'Imagenet1000DecisionTreeBayesianPrior')
 
 
+def get_analysis(args):
+    if args.analysis in names:
+        return globals()[args.analysis]
+    return Noop
+
+
 def add_arguments(parser):
+    parser.add_argument('--analysis', choices=names,
+                        help='Run analysis after each epoch')
     parser.add_argument('--path-graph-analysis', help='Graph path, only for analysis')
 
 

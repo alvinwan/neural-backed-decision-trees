@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import defaultdict
-from utils.data.custom import Node
-from utils.utils import Colors
+from nbdt.data.custom import Node
+from nbdt.utils import Colors
 
 __all__ = names = ('HardTreeSupLoss', 'SoftTreeSupLoss')
 

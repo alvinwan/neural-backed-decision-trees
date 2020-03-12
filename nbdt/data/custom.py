@@ -3,14 +3,14 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset
 from collections import defaultdict
-from utils.utils import (
+from nbdt.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
     DEFAULT_CIFAR100_WNIDS, DEFAULT_TINYIMAGENET200_TREE,
     DEFAULT_TINYIMAGENET200_WNIDS, DEFAULT_IMAGENET1000_TREE,
     DEFAULT_IMAGENET1000_WNIDS,
 )
 from collections import defaultdict
-from utils.graph import get_wnids, read_graph, get_leaves, get_non_leaves, \
+from nbdt.graph import get_wnids, read_graph, get_leaves, get_non_leaves, \
     get_leaf_weights
 from . import imagenet
 import torch.nn as nn

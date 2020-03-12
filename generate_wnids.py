@@ -3,9 +3,9 @@
 import argparse
 import torchvision
 from nltk.corpus import wordnet as wn
-from utils.graph import synset_to_wnid
+from nbdt.graph import synset_to_wnid
 from pathlib import Path
-from utils.utils import Colors
+from nbdt.utils import Colors
 import os
 
 

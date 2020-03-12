@@ -4,11 +4,11 @@ import torchvision
 import os
 
 from pathlib import Path
-from utils.utils import Colors, METHODS, DATASET_TO_FOLDER_NAME
-from utils.graph import generate_fname, get_parser, read_graph, get_roots, \
+from nbdt.utils import Colors, METHODS, DATASET_TO_FOLDER_NAME
+from nbdt.graph import generate_fname, get_parser, read_graph, get_roots, \
     get_wnids_from_dataset, get_directory, get_graph_path_from_args
 from networkx.readwrite.json_graph import adjacency_data
-from utils import data
+from nbdt import data
 
 
 def build_tree(G, root, parent='null'):

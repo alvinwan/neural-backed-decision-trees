@@ -1,11 +1,11 @@
 """Generates various graphs for independent node training"""
 
-from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
-from utils.graph import build_minimal_wordnet_graph, build_random_graph, \
+from nbdt.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
+from nbdt.graph import build_minimal_wordnet_graph, build_random_graph, \
     prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
     get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args, \
     augment_graph, get_depth, build_induced_graph
-from utils.utils import Colors
+from nbdt.utils import Colors
 import xml.etree.ElementTree as ET
 import argparse
 import os

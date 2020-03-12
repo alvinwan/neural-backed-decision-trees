@@ -2,7 +2,7 @@ import networkx as nx
 import json
 import random
 from nltk.corpus import wordnet as wn
-from utils.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
+from nbdt.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
 from networkx.readwrite.json_graph import node_link_data, node_link_graph
 from sklearn.cluster import AgglomerativeClustering
 from pathlib import Path
