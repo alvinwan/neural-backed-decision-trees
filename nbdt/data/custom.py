@@ -7,7 +7,7 @@ from nbdt.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
     DEFAULT_CIFAR100_WNIDS, DEFAULT_TINYIMAGENET200_TREE,
     DEFAULT_TINYIMAGENET200_WNIDS, DEFAULT_IMAGENET1000_TREE,
-    DEFAULT_IMAGENET1000_WNIDS,
+    DEFAULT_IMAGENET1000_WNIDS, DATASET_TO_PATHS
 )
 from collections import defaultdict
 from nbdt.graph import get_wnids, read_graph, get_leaves, get_non_leaves, \
@@ -26,11 +26,19 @@ __all__ = names = ('CIFAR10IncludeLabels',
                    'Imagenet1000ResampleLabels')
 keys = ('include_labels', 'exclude_labels', 'include_classes', 'probability_labels')
 
+
 def add_arguments(parser):
     parser.add_argument('--probability-labels', nargs='*', type=float)
     parser.add_argument('--include-labels', nargs='*', type=int)
     parser.add_argument('--exclude-labels', nargs='*', type=int)
     parser.add_argument('--include-classes', nargs='*', type=int)
+
+
+def set_default_values(args):
+    if not args.path_graph and not args.path_wnids:
+        paths = DATASET_TO_PATHS[args.dataset]
+        args.path_graph = paths['path_graph']
+        args.path_wnids = paths['path_wnids']
 
 
 class Node:

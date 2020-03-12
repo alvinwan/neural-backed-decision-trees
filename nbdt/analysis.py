@@ -3,7 +3,7 @@ from nbdt.utils import (
     DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
     DEFAULT_CIFAR100_WNIDS, DEFAULT_TINYIMAGENET200_TREE,
     DEFAULT_TINYIMAGENET200_WNIDS, DEFAULT_IMAGENET1000_TREE,
-    DEFAULT_IMAGENET1000_WNIDS,
+    DEFAULT_IMAGENET1000_WNIDS, set_np_printoptions
 )
 from nbdt.loss import HardTreeSupLoss, SoftTreeSupLoss
 from nbdt.data.custom import Node
@@ -30,6 +30,8 @@ def add_arguments(parser):
 class Noop:
 
     def __init__(self, trainset, testset):
+        set_np_printoptions()
+
         self.trainset = trainset
         self.testset = testset
 

@@ -11,23 +11,16 @@ import torchvision.transforms as transforms
 
 import os
 import argparse
-import numpy as np
 
 import models
-from nbdt.utils import Colors
 from nbdt.utils import (
-    progress_bar, generate_fname, set_np_printoptions, DATASET_TO_PATHS,
-    populate_kwargs
+    progress_bar, generate_fname, DATASET_TO_PATHS, populate_kwargs, Colors
 )
 
-
-set_np_printoptions()
 datasets = ('CIFAR10', 'CIFAR100') + data.imagenet.names + data.custom.names
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
-parser.add_argument('--name', default='',
-                    help='Name of experiment. Used for checkpoint filename')
 parser.add_argument('--batch-size', default=512, type=int,
                     help='Batch size used for training')
 parser.add_argument('--epochs', '-e', default=200, type=int,
@@ -37,15 +30,19 @@ parser.add_argument('--model', default='ResNet18', choices=list(models.get_model
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 
+# extra general options for main script
+parser.add_argument('--name', default='',
+                    help='Name of experiment. Used for checkpoint filename')
 parser.add_argument('--pretrained', action='store_true',
                     help='Download pretrained model. Not all models support this.')
 parser.add_argument('--eval', help='eval only', action='store_true')
+
+# options specific to this project and its dataloaders
+parser.add_argument('--loss', choices=loss.names, default='CrossEntropyLoss')
+parser.add_argument('--analysis', choices=analysis.names, help='Run analysis after each epoch')
 parser.add_argument('--input-size', type=int,
                     help='Set transform train and val. Samples are resized to '
                     'input-size + 32.')
-
-parser.add_argument('--loss', choices=loss.names, default='CrossEntropyLoss')
-parser.add_argument('--analysis', choices=analysis.names, help='Run analysis after each epoch')
 
 data.custom.add_arguments(parser)
 loss.add_arguments(parser)
@@ -53,11 +50,7 @@ analysis.add_arguments(parser)
 
 args = parser.parse_args()
 
-# set default path_graph and path_wnids. hard-coded too much?
-if not args.path_graph and not args.path_wnids:
-    paths = DATASET_TO_PATHS[args.dataset]
-    args.path_graph = paths['path_graph']
-    args.path_wnids = paths['path_wnids']
+data.custom.set_default_values(args)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0  # best test accuracy
@@ -77,17 +70,15 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
-if 'TinyImagenet200' in args.dataset:
-    transform_train = data.TinyImagenet200.transform_train(args.input_size or 64)
-    transform_test = data.TinyImagenet200.transform_val(args.input_size or 64)
+dataset = getattr(data, args.dataset)
 
-if 'Imagenet1000' in args.dataset:
-    transform_train = data.Imagenet1000.transform_train(args.input_size or 224)
-    transform_test = data.Imagenet1000.transform_val(args.input_size or 224)
-
+if args.dataset in ('TinyImagenet200', 'Imagenet1000'):
+    default_input_size = 64 if args.dataset == 'TinyImagenet200' else 224
+    input_size = args.input_size
+    transform_train = dataset.transform_train(input_size)
+    transform_test = dataset.transform_val(input_size)
 
 dataset_kwargs = {}
-dataset = getattr(data, args.dataset)
 populate_kwargs(args, dataset_kwargs, dataset, name=f'Dataset {args.dataset}',
     keys=data.custom.keys)
 
@@ -115,33 +106,27 @@ if args.pretrained:
         exit()
 else:
     net = model(**model_kwargs)
+
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
-
-
-def get_net():
-    if device == 'cuda':
-        return net.module
-    return net
-
 
 fname = generate_fname(**vars(args))
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    try:
-        checkpoint = torch.load('./checkpoint/{}.pth'.format(fname))
+    path = './checkpoint/{}.pth'.format(fname)
+    if not os.path.exists(path):
+        print('==> No checkpoint found. Skipping...')
+    else:
+        checkpoint = torch.load(path)
         net.load_state_dict(checkpoint['net'])
         best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
         Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
               f'{best_acc} at {fname}')
-    except FileNotFoundError as e:
-        print('==> No checkpoint found. Skipping...')
-        print(e)
 
 
 loss_kwargs = {}
@@ -153,9 +138,9 @@ criterion = class_criterion(**loss_kwargs)
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
 def adjust_learning_rate(epoch, lr):
-    if epoch <= (150 / 350.) * args.epochs:
+    if epoch <= 150 / 350. * args.epochs:  # 32k iterations
       return lr
-    elif epoch <= (250 / 350.) * args.epochs:
+    elif epoch <= 250 / 350. * args.epochs:  # 48k iterations
       return lr/10
     else:
       return lr/100
@@ -181,9 +166,8 @@ def train(epoch, analyzer):
 
         train_loss += loss.item()
         _, predicted = outputs.max(1)
-        _correct, _total = predicted.eq(targets).sum().item(), np.prod(targets.size())
-        correct += _correct
-        total += _total
+        total += targets.size(0)
+        correct += predicted.eq(targets).sum().item()
 
         stat = analyzer.update_batch(outputs, predicted, targets)
         extra = f'| {stat}' if stat else ''
@@ -209,9 +193,8 @@ def test(epoch, analyzer, checkpoint=True):
 
             test_loss += loss.item()
             _, predicted = outputs.max(1)
-            _correct, _total = predicted.eq(targets).sum().item(), np.prod(targets.size())
-            correct += _correct
-            total += _total
+            total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
 
             if device == 'cuda':
                 predicted = predicted.cpu()
@@ -239,12 +222,6 @@ def test(epoch, analyzer, checkpoint=True):
         print(f'Saving to {fname} ({acc})..')
         torch.save(state, './checkpoint/{}.pth'.format(fname))
         best_acc = acc
-
-    if hasattr(get_net(), 'save_metrics'):
-        gt_classes = []
-        for _, targets in testloader:
-            gt_classes.extend(targets.tolist())
-        get_net().save_metrics(gt_classes)
 
     analyzer.end_test(epoch)
 
