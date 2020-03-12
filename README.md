@@ -163,7 +163,13 @@ python main.py --dataset=CIFAR10 --model=wrn28_10_cifar10 --path-graph=./data/CI
 
 ## Architecture
 
-As a sample, we've included copies of all the above bash scripts but for ResNet10 and ResNet18.
+As a sample, we've included copies of all the above bash scripts but for ResNet10 and ResNet18. Simply add new model names or new dataset names to these bash scripts to test our method with more models or datasets.
+
+```
+bash scripts/generate_hierarchies_induced_resnet.sh  # this will train the network on the provided datasets if no checkpoints are found
+bash scripts/train_resnet.sh
+bash scripts/eval_resnet.sh
+```
 
 ## Importing Other Models (`torchvision`, `pytorchcv`)
 
@@ -180,7 +186,7 @@ above, including the custom tree supervision losses and extracted decision trees
 ```
 python main.py --model=wrn28_10_cifar10 --eval
 python main.py --model=wrn28_10_cifar10 --eval --pretrained  # loads pretrained model
-python main.py --model=wrn28_10_cifar10 --eval --pretrained --analysis=CIFAR10DecisionTreePrior  # run the extracted hard decision tree
+python main.py --model=wrn28_10_cifar10 --eval --pretrained --analysis=HardEmbeddedDecisionRules  # run the extracted hard decision tree
 python main.py --model=wrn28_10_cifar10 --loss=HardTreeSupLoss --batch-size=256  # train with tree supervision loss
 ```
 
