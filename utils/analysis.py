@@ -6,6 +6,7 @@ from utils.utils import (
     DEFAULT_TINYIMAGENET200_WNIDS, DEFAULT_IMAGENET1000_TREE,
     DEFAULT_IMAGENET1000_WNIDS,
 )
+from utils.loss import NBDTHardLoss, NBDTSoftLoss
 from utils.data.custom import Node
 import torch
 import torch.nn as nn
@@ -186,7 +187,7 @@ class DecisionTreePrior(Noop):
         targets_ints = [int(target) for target in targets.cpu().long()]
         wnid_to_pred_selector = {}
         for node in self.nodes:
-            selector, outputs_sub, targets_sub = TreeSup.inference(
+            selector, outputs_sub, targets_sub = NBDTHardLoss.inference(
                 node, outputs, targets, self.weighted_average)
             if not any(selector):
                 continue
@@ -284,7 +285,7 @@ class DecisionTreeBayesianPrior(DecisionTreePrior):
         self.num_classes = len(trainset.classes)
 
     def update_batch(self, outputs, predicted, targets):
-        bayesian_outputs = TreeBayesianSup.inference(
+        bayesian_outputs = NBDTSoftLoss.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)
         n_samples = outputs.size(0)
         predicted = bayesian_outputs.max(1)[1].to(targets.device)
