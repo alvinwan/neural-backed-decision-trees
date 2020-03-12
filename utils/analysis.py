@@ -22,6 +22,10 @@ __all__ = names = (
     'TinyImagenet200DecisionTreeBayesianPrior', 'Imagenet1000DecisionTreeBayesianPrior')
 
 
+def add_arguments(parser):
+    parser.add_argument('--path-graph-analysis', help='Graph path, only for analysis')
+
+
 class Noop:
 
     def __init__(self, trainset, testset):

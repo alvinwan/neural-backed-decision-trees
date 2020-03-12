@@ -26,6 +26,13 @@ __all__ = names = ('CIFAR10IncludeLabels',
                    'Imagenet1000ResampleLabels')
 
 
+def add_arguments(parser):
+    parser.add_argument('--probability-labels', nargs='*', type=float)
+    parser.add_argument('--include-labels', nargs='*', type=int)
+    parser.add_argument('--exclude-labels', nargs='*', type=int)
+    parser.add_argument('--include-classes', nargs='*', type=int)
+
+
 class Node:
 
     def __init__(self, wnid, classes,

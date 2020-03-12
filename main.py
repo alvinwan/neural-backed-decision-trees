@@ -47,13 +47,10 @@ parser.add_argument('--input-size', type=int,
 
 parser.add_argument('--loss', choices=loss.names + ('CrossEntropyLoss',),
                     default='CrossEntropyLoss')
-parser.add_argument('--path-graph-analysis', help='Graph path, only for analysis')
-parser.add_argument('--probability-labels', nargs='*', type=float)
-parser.add_argument('--include-labels', nargs='*', type=int)
-parser.add_argument('--exclude-labels', nargs='*', type=int)
-parser.add_argument('--include-classes', nargs='*', type=int)
 
+data.custom.add_arguments(parser)
 loss.add_arguments(parser)
+analysis.add_arguments(parser)
 
 args = parser.parse_args()
 
@@ -164,7 +161,7 @@ if hasattr(nn, args.loss):
 elif hasattr(loss, args.loss):
     loss_kwargs = {'classes': trainset.classes}
     loss = getattr(loss, args.loss)
-    criterion = loss.from_args_classes(args, trainset.classes)
+    criterion = loss.from_args_dataset(args, trainset)
 else:
     raise UserWarning(f'No such loss {args.loss} found in torch or nbdt.')
 

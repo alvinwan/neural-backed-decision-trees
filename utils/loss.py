@@ -41,7 +41,7 @@ class TreeSupLoss(nn.Module):
         self.criterion = criterion
 
     @classmethod
-    def from_args_classes(cls, args, classes):
+    def from_args_dataset(cls, args, dataset):
 
         for key in ('path_graph', 'path_wnids', 'max_leaves_supervised',
                 'min_leaves_supervised', 'tree_supervision_weight',
@@ -51,7 +51,7 @@ class TreeSupLoss(nn.Module):
         return cls(
             path_graph=args.path_graph,
             path_wnids=args.path_wnids,
-            classes=classes,
+            classes=dataset.classes,
             max_leaves_supervised=args.max_leaves_supervised,
             min_leaves_supervised=args.min_leaves_supervised,
             tree_supervision_weight=args.tree_supervision_weight,
