@@ -24,7 +24,6 @@ DATASET_TO_FOLDER_NAME = {
 }
 
 # main script constants
-CIFAR10NODE = 'CIFAR10Node'
 CIFAR10PATHSANITY = 'CIFAR10PathSanity'
 
 DEFAULT_CIFAR10_TREE = './data/CIFAR10/graph-wordnet-single.json'

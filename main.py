@@ -16,7 +16,7 @@ import numpy as np
 import models
 from utils.utils import Colors
 from utils.utils import (
-    progress_bar, generate_fname, CIFAR10NODE, CIFAR10PATHSANITY,
+    progress_bar, generate_fname, CIFAR10PATHSANITY,
     set_np_printoptions, DATASET_TO_PATHS
 )
 
@@ -41,8 +41,6 @@ parser.add_argument('--pretrained', action='store_true',
                     help='Download pretrained model. Not all models support this.')
 parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
 parser.add_argument('--path-wnids', help='Path to wnids.txt file.')
-parser.add_argument('--wnid', help='wordnet id for cifar10node dataset',
-                    default='fall11')
 parser.add_argument('--eval', help='eval only', action='store_true')
 parser.add_argument('--test', action='store_true', help='run dataset tests')
 parser.add_argument('--test-path-sanity', action='store_true',
@@ -89,23 +87,6 @@ if not args.path_graph and not args.path_wnids:
     paths = DATASET_TO_PATHS[args.dataset]
     args.path_graph = paths['path_graph']
     args.path_wnids = paths['path_wnids']
-
-if args.test:
-    trainset = data.CIFAR10JointNodes()
-    print(trainset[0][1])
-
-    for wnid, text in (
-            # ('fall11', 'root'),
-            ('n03575240', 'instrument'),
-            ('n03791235', 'motor vehicle'),
-            ('n01471682', 'vertebrate')):
-        dataset = data.CIFAR10Node(wnid)
-
-        print(f'==> {text}')
-        print(dict(dataset.node.old_to_new_classes))
-        print(dataset.classes)
-    exit()
-
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0  # best test accuracy
@@ -272,8 +253,8 @@ def train(epoch, analyzer):
         optimizer.step()
 
         train_loss += loss.item()
-        predicted = get_prediction(outputs)
-        _correct, _total = get_evaluation(predicted, targets)
+        _, predicted = outputs.max(1)
+        _correct, _total = predicted.eq(targets).sum().item(), np.prod(targets.size())
         correct += _correct
         total += _total
 
@@ -284,17 +265,6 @@ def train(epoch, analyzer):
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total, extra))
 
     analyzer.end_train(epoch)
-
-def get_evaluation(predicted, targets):
-    if hasattr(get_net(), 'custom_evaluation'):
-        return get_net().custom_evaluation(predicted, targets)
-    return predicted.eq(targets).sum().item(), np.prod(targets.size())
-
-def get_prediction(outputs):
-    if hasattr(get_net(), 'custom_prediction'):
-        return get_net().custom_prediction(outputs)
-    _, predicted = outputs.max(1)
-    return predicted
 
 def test(epoch, analyzer, checkpoint=True):
     analyzer.start_test(epoch)
@@ -311,8 +281,8 @@ def test(epoch, analyzer, checkpoint=True):
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()
-            predicted = get_prediction(outputs)
-            _correct, _total = get_evaluation(predicted, targets)
+            _, predicted = outputs.max(1)
+            _correct, _total = predicted.eq(targets).sum().item(), np.prod(targets.size())
             correct += _correct
             total += _total
 

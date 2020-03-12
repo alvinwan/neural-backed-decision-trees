@@ -8,7 +8,7 @@ Per the pipeline illustration above, we (1) [generate the hierarchy](https://git
 
 # Getting Started
 
-**To integrate neural-backed decision trees into your own neural network**, simply pip install this repository. (Coming soon: Use cli to generate induced-hierarchy from checkpoint. Use a simple wrapper to run classification network as nbdt. Use custom tsl with a simple function call. TODO) 
+**To integrate neural-backed decision trees into your own neural network**, simply pip install this repository. (Coming soon: Use cli to generate induced-hierarchy from checkpoint. Use a simple wrapper to run classification network as nbdt. Use custom tsl with a simple function call. TODO)
 
 **To reproduce experimental results**, start by cloning the repository and installing all requirements.
 
@@ -42,7 +42,7 @@ bash scripts/generate_hierarchies_induced_wrn.sh
 The below just explains the above `generate_hierarches_induced.sh`, using CIFAR10. You do not need to run the following after running the above bash script. Note that the following commands can be rerun with different checkpoints from different architectures, to produce different hierarchies.
 
 ```
-# Step A. Download and evaluate pre-trained weights for WideResNet on CIFAR10. 
+# Step A. Download and evaluate pre-trained weights for WideResNet on CIFAR10.
 python main.py --eval --pretrained --model=wrn28_10_cifar10 --dataset=CIFAR10
 
 # Step B through D. Generate induced hierarchies, using the pretrained checkpoints
@@ -161,7 +161,7 @@ python main.py --dataset=CIFAR10 --model=CIFAR10TreeBayesianSup --analysis=CIFAR
 
 ## Architecture
 
-As a sample, we've included copies of all the above bash scripts but for ResNet10 and ResNet18. 
+As a sample, we've included copies of all the above bash scripts but for ResNet10 and ResNet18.
 
 ## Checkpoints
 
@@ -186,38 +186,3 @@ python main.py --model=wrn28_10_cifar10 --pretrained --lr=0 --epochs=0
 ```
 
 Then, you can use the `--resume` flag instead of `--pretrained`.
-
-<!--
-
-To get started: First, train the nodes, with a shared backbone. Optionally pass in a `--path-graph=...` to customize your tree.
-
-```
-python main.py --model=CIFAR100JointNodes --dataset=CIFAR100JointNodes
-```
-
-Second, train the final fully-connected layer. If you passed in `--path-graph` to the last command, make sure to pass in the same tree path to this one.
-
-```
-python main.py --model=CIFAR100JointTree --dataset=CIFAR100 --lr=0.01
-```
-
-### Frozen Backbone
-
-So far, our best models are fine-tuned, where the shared backbone is pretrained and frozen. The commands below train the frozen variants of the model.
-
-```
-python main.py --model=CIFAR100FreezeJointNodes --dataset=CIFAR100JointNodes --backbone=./checkpoint/ckpt-ResNet10-CIFAR100.pth
-python main.py --model=CIFAR100FreezeJointTree --dataset=CIFAR100 --lr=0.01
-```
-
-### Identity Initialization
-
-### Individual Nodes
-
-One of our earliest experiments was to train each node individually, without sharing backbones. Consider all wnids in the tree, that are *not* leaves.
-
-```
-for wnid in wnids; do python main.py --model=ResNet10 --dataset=CIFAR10Node --wnid=${wnid}; done
-python main.py --model=CIFAR10Tree --dataset=CIFAR10
-```
--->
