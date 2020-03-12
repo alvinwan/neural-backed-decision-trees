@@ -56,6 +56,24 @@ DATASET_TO_PATHS = {
 }
 
 
+def populate_kwargs(args, kwargs, object, name='Dataset', keys=(), globals={}):
+    for key in keys:
+        accepts_key = getattr(object, f'accepts_{key}', False)
+        assert key in args or callable(accepts_key)
+
+        value = getattr(args, key, None)
+        if callable(accepts_key):
+            kwargs[key] = accepts_key(**globals)
+            Colors.cyan(f'{key}:\t(callable)')
+        elif accepts_key and value:
+            kwargs[key] = value
+            Colors.cyan(f'{key}:\t{value}')
+        elif value:
+            Colors.red(
+                f'Warning: {name} does not support custom '
+                f'{key}: {value}')
+
+
 class Colors:
     RED = '\x1b[31m'
     GREEN = '\x1b[32m'

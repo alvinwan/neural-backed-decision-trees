@@ -24,7 +24,7 @@ __all__ = names = ('CIFAR10IncludeLabels',
                    'Imagenet1000ExcludeLabels', 'CIFAR10ResampleLabels',
                    'CIFAR100ResampleLabels', 'TinyImagenet200ResampleLabels',
                    'Imagenet1000ResampleLabels')
-
+keys = ('include_labels', 'exclude_labels', 'include_classes', 'probability_labels')
 
 def add_arguments(parser):
     parser.add_argument('--probability-labels', nargs='*', type=float)

@@ -5,8 +5,12 @@ from collections import defaultdict
 from nbdt.data.custom import Node
 from nbdt.utils import Colors
 
-__all__ = names = ('HardTreeSupLoss', 'SoftTreeSupLoss')
-
+__all__ = names = ('HardTreeSupLoss', 'SoftTreeSupLoss', 'CrossEntropyLoss')
+keys = (
+    'path_graph', 'path_wnids', 'max_leaves_supervised',
+    'min_leaves_supervised', 'weighted_average', 'tree_supervision_weight',
+    'classes'
+)
 
 def add_arguments(parser):
     parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
@@ -24,7 +28,19 @@ def add_arguments(parser):
                         help='Weight assigned to tree supervision losses')
 
 
+CrossEntropyLoss = nn.CrossEntropyLoss
+
+
 class TreeSupLoss(nn.Module):
+
+    accepts_path_graph = True
+    accepts_path_wnids = True
+    accepts_classes = True
+    accepts_max_leaves_supervised = True
+    accepts_min_leaves_supervised = True
+    accepts_tree_supervision_weight = True
+    accepts_weighted_average = True
+    accepts_classes = lambda trainset, **kwargs: trainset.classes
 
     def __init__(self, path_graph, path_wnids, classes,
             max_leaves_supervised=-1, min_leaves_supervised=-1,
@@ -39,23 +55,6 @@ class TreeSupLoss(nn.Module):
         self.tree_supervision_weight = tree_supervision_weight
         self.weighted_average = weighted_average
         self.criterion = criterion
-
-    @classmethod
-    def from_args_dataset(cls, args, dataset):
-
-        for key in ('path_graph', 'path_wnids', 'max_leaves_supervised',
-                'min_leaves_supervised', 'tree_supervision_weight',
-                'weighted_average'):
-            Colors.cyan(f'{key}:\t{getattr(args, key, None)}')
-
-        return cls(
-            path_graph=args.path_graph,
-            path_wnids=args.path_wnids,
-            classes=dataset.classes,
-            max_leaves_supervised=args.max_leaves_supervised,
-            min_leaves_supervised=args.min_leaves_supervised,
-            tree_supervision_weight=args.tree_supervision_weight,
-            weighted_average=args.weighted_average)
 
 
 class HardTreeSupLoss(TreeSupLoss):

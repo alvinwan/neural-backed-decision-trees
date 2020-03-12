@@ -20,17 +20,10 @@ __all__ = names = (
     'Imagenet1000DecisionTreePrior', 'DecisionTreeBayesianPrior',
     'CIFAR10DecisionTreeBayesianPrior', 'CIFAR100DecisionTreeBayesianPrior',
     'TinyImagenet200DecisionTreeBayesianPrior', 'Imagenet1000DecisionTreeBayesianPrior')
-
-
-def get_analysis(args):
-    if args.analysis in names:
-        return globals()[args.analysis]
-    return Noop
+keys = ('path_graph_analysis', 'weighted_average')
 
 
 def add_arguments(parser):
-    parser.add_argument('--analysis', choices=names,
-                        help='Run analysis after each epoch')
     parser.add_argument('--path-graph-analysis', help='Graph path, only for analysis')
 
 

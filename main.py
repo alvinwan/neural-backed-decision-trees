@@ -16,7 +16,8 @@ import numpy as np
 import models
 from nbdt.utils import Colors
 from nbdt.utils import (
-    progress_bar, generate_fname, set_np_printoptions, DATASET_TO_PATHS
+    progress_bar, generate_fname, set_np_printoptions, DATASET_TO_PATHS,
+    populate_kwargs
 )
 
 
@@ -43,8 +44,8 @@ parser.add_argument('--input-size', type=int,
                     help='Set transform train and val. Samples are resized to '
                     'input-size + 32.')
 
-parser.add_argument('--loss', choices=loss.names + ('CrossEntropyLoss',),
-                    default='CrossEntropyLoss')
+parser.add_argument('--loss', choices=loss.names, default='CrossEntropyLoss')
+parser.add_argument('--analysis', choices=analysis.names, help='Run analysis after each epoch')
 
 data.custom.add_arguments(parser)
 loss.add_arguments(parser)
@@ -85,24 +86,10 @@ if 'Imagenet1000' in args.dataset:
     transform_test = data.Imagenet1000.transform_val(args.input_size or 224)
 
 
-dataset = getattr(data, args.dataset)
-
-
-def populate_kwargs(kwargs, object, name='Dataset', keys=()):
-    for key in keys:
-        value = getattr(args, key)
-        if getattr(object, f'accepts_{key}', False) and value:
-            kwargs[key] = value
-            Colors.cyan(f'{key}:\t{value}')
-        elif value:
-            Colors.red(
-                f'Warning: {name} does not support custom '
-                f'{key}: {value}')
-
-
 dataset_kwargs = {}
-populate_kwargs(dataset_kwargs, dataset, name=f'Dataset {args.dataset}', keys=(
-    'include_labels', 'exclude_labels', 'include_classes', 'probability_labels'))
+dataset = getattr(data, args.dataset)
+populate_kwargs(args, dataset_kwargs, dataset, name=f'Dataset {args.dataset}',
+    keys=data.custom.keys)
 
 trainset = dataset(**dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
 testset = dataset(**dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
@@ -133,12 +120,14 @@ if device == 'cuda':
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
 
-fname = generate_fname(**vars(args))
+
 def get_net():
     if device == 'cuda':
         return net.module
     return net
 
+
+fname = generate_fname(**vars(args))
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
@@ -154,14 +143,12 @@ if args.resume:
         print('==> No checkpoint found. Skipping...')
         print(e)
 
-if hasattr(nn, args.loss):
-    criterion = getattr(nn, args.loss)()
-elif hasattr(loss, args.loss):
-    loss_kwargs = {'classes': trainset.classes}
-    loss = getattr(loss, args.loss)
-    criterion = loss.from_args_dataset(args, trainset)
-else:
-    raise UserWarning(f'No such loss {args.loss} found in torch or nbdt.')
+
+loss_kwargs = {}
+class_criterion = getattr(loss, args.loss)
+populate_kwargs(args, loss_kwargs, class_criterion, name=f'Loss {args.loss}',
+    keys=loss.keys, globals=globals())
+criterion = class_criterion(**loss_kwargs)
 
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
@@ -262,12 +249,11 @@ def test(epoch, analyzer, checkpoint=True):
     analyzer.end_test(epoch)
 
 
-generate = getattr(analysis, args.analysis) if args.analysis else analysis.Noop
-
 analyzer_kwargs = {}
-populate_kwargs(analyzer_kwargs, generate, name=f'Analyzer {args.analysis}', keys=(
-    'path_graph_analysis', 'weighted_average'))
-analyzer = generate(trainset, testset, **analyzer_kwargs)
+class_analysis = getattr(analysis, args.analysis or 'Noop')
+populate_kwargs(args, analyzer_kwargs, class_analysis, name=f'Analyzer {args.analysis}', keys=analysis.keys)
+analyzer = class_analysis(trainset, testset, **analyzer_kwargs)
+
 
 if args.eval:
     if not args.resume and not args.pretrained:
