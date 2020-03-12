@@ -18,13 +18,15 @@ cd neural-backed-decision-trees
 pip install -r requirements.txt
 ```
 
-To reproduce the core experimental results in our paper -- ignoring ablation studies -- simply run the following bash script:
+To reproduce the core experimental results in our paper -- ignoring ablation studies -- simply run the following bash scripts:
 
 ```
-bash (TODO)
+bash scripts/generate_hierarchies_induced_wrn.sh
+bash scripts/train_wrn.sh
+bash scripts/eval_wrn.sh
 ```
 
-The bash script above is equivalent to following steps in [Induced Hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#Induced-Hierarchy), [Soft Tree Supervision Loss](https://github.com/alvinwan/neural-backed-decision-trees#Tree-Supervision-Loss), and [Soft Inference](https://github.com/alvinwan/neural-backed-decision-trees#Soft-Inference).
+The bash scripts above are explained in more detail in [Induced Hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#Induced-Hierarchy), [Soft Tree Supervision Loss](https://github.com/alvinwan/neural-backed-decision-trees#Tree-Supervision-Loss), and [Soft Inference](https://github.com/alvinwan/neural-backed-decision-trees#Soft-Inference).
 
 # 1. Hierarchies
 
@@ -115,7 +117,7 @@ visualization.
 
 # 2. Tree Supervision Loss
 
-In the below training commands, we uniformly use `--path-backbone=<path/to/checkpoint> --lr=0.01` to fine-tune instead of training from scratch. Our results using a recently state-of-the-art pretrained checkpoint (WideResNet) were fine-tuned.
+In the below training commands, we uniformly use `--path-resume=<path/to/checkpoint> --lr=0.01` to fine-tune instead of training from scratch. Our results using a recently state-of-the-art pretrained checkpoint (WideResNet) were fine-tuned.
 
 Run the following bash script to fine-tune WideResNet with both hard and soft tree supervision loss on CIFAR10, CIFAR100.
 
@@ -127,13 +129,13 @@ As before, the below just explains the above `train_wrn.sh`. You do not need to 
 
 ```
 # fine-tune the wrn pretrained checkpoint on CIFAR10 with hard tree supervision loss
-python main.py --lr=0.01 --dataset=CIFAR10 --model=CIFAR10TreeSup --backbone=wrn28_10_cifar10 --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --path-backbone=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --tree-supervision-weight=10
+python main.py --lr=0.01 --dataset=CIFAR10 --model=wrn28_10_cifar10 --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --path-resume=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --tree-supervision-weight=10 --loss=HardTreeSupLoss
 
 # fine-tune the wrn pretrained checkpoint on CIFAR10 with soft tree supervision loss
-python main.py --lr=0.01 --dataset=CIFAR10 --model=CIFAR10TreeBayesianSup --backbone=wrn28_10_cifar10 --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --path-backbone=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --tree-supervision-weight=10
+python main.py --lr=0.01 --dataset=CIFAR10 --model=wrn28_10_cifar10 --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --path-resume=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --tree-supervision-weight=10 --loss=SoftTreeSupLoss
 ```
 
-To train from scratch, use `--lr=0.01` and do not pass the `--path-backbone` flag.
+To train from scratch, use `--lr=0.1` and do not pass the `--path-resume` flag.
 
 # 3. Inference
 
@@ -147,14 +149,14 @@ Run the following bash script to obtain these numbers.
 bash scripts/eval_wrn.sh
 ```
 
-As before, the below just explains the above `eval_wrn.sh`. You do not need to run the following after running the previous bash script.
+As before, the below just explains the above `eval_wrn.sh`. You do not need to run the following after running the previous bash script. Note the following commands are nearly identical to the corresponding train commands -- we drop the `lr`, `path-resume` flags and add `resume`, `eval`, and the `analysis` type (hard or soft inference).
 
 ```
 # running soft inference on soft-supervised model
-python main.py --dataset=CIFAR10 --model=CIFAR10TreeBayesianSup --analysis=CIFAR10DecisionTreeBayesianPrior --tree-supervision-weight=10 --eval --resume --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --path-graph-analysis=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json
+python main.py --dataset=CIFAR10 --model=wrn28_10_cifar10 --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --tree-supervision-weight=10 --loss=SoftTreeSupLoss --eval --resume --analysis=SoftEmbeddedDecisionRules
 
 # running hard inference on soft-supervised model
-python main.py --dataset=CIFAR10 --model=CIFAR10TreeBayesianSup --analysis=CIFAR10DecisionTreePrior --tree-supervision-weight=10 --eval --resume --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --path-graph-analysis=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json
+python main.py --dataset=CIFAR10 --model=wrn28_10_cifar10 --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --tree-supervision-weight=10 --loss=SoftTreeSupLoss --eval --resume --analysis=HardEmbeddedDecisionRules
 ```
 
 # Configuration
@@ -163,26 +165,35 @@ python main.py --dataset=CIFAR10 --model=CIFAR10TreeBayesianSup --analysis=CIFAR
 
 As a sample, we've included copies of all the above bash scripts but for ResNet10 and ResNet18.
 
-## Checkpoints
+## Importing Other Models (`torchvision`, `pytorchcv`)
 
 To add new models present in [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch),
 just add a new line to `models/__init__.py` importing the models you want. For
 example, we added `from pytorchcv.models.wrn_cifar import *` for CIFAR wideresnet
-models. You can immediately start using this model with any of our utilities
+models.
+
+To add new models present in [`torchvision`](https://pytorch.org/docs/stable/torchvision/models.html), likewise just add a new line to `models/__init__.py`. For example, to import all, use `from torchvision.models import *`.
+
+You can immediately start using these models with any of our utilities
 above, including the custom tree supervision losses and extracted decision trees.
 
 ```
 python main.py --model=wrn28_10_cifar10 --eval
 python main.py --model=wrn28_10_cifar10 --eval --pretrained  # loads pretrained model
 python main.py --model=wrn28_10_cifar10 --eval --pretrained --analysis=CIFAR10DecisionTreePrior  # run the extracted hard decision tree
-python main.py --model=CIFAR10TreeSup --backbone=wrn28_10_cifar10 --batch-size=256  # train with tree supervision loss
+python main.py --model=wrn28_10_cifar10 --loss=HardTreeSupLoss --batch-size=256  # train with tree supervision loss
 ```
 
-To "convert" a pretrained checkpoint from a `pytorchcv` checkpoint to ours, use
-the following. This will also output train accuracy.
+To download a pretrained checkpoint for a `pytorchcv` model, simply add the
+`--pretrained` flag.
 
 ```
-python main.py --model=wrn28_10_cifar10 --pretrained --lr=0 --epochs=0
+python main.py --model=wrn28_10_cifar10 --pretrained
 ```
 
-Then, you can use the `--resume` flag instead of `--pretrained`.
+If a pretrained checkpoint is already downloaded to disk, pass the path
+using `--path-checkpoint`
+
+```
+python main.py --model=wrn28_10_cifar10 --path-checkpoint=...
+```
