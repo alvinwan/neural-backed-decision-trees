@@ -337,14 +337,16 @@ def build_induced_graph(wnids, checkpoint, linkage='ward', affinity='euclidean',
 
 def get_centers(checkpoint):
     data = torch.load(checkpoint, map_location=torch.device('cpu'))
-    try:
-        net = data['net']
-    except:
-        net = data
+
+    for key in ('net', 'state_dict'):
+        try:
+            net = data[key]
+        except:
+            net = data
 
     keys = ('fc.weight', 'linear.weight', 'module.linear.weight',
             'module.net.linear.weight', 'output.weight', 'module.output.weight',
-            'output.fc.weight', 'module.output.fc.weight')
+            'output.fc.weight', 'module.output.fc.weight', 'classifier.weight')
     fc = None
     for key in keys:
         if key in net:
