@@ -207,7 +207,7 @@ class HardEmbeddedDecisionRules(Noop):
         self.total += n_samples
         self.correct += (predicted == targets).sum().item()
         accuracy = round(self.correct / float(self.total), 4) * 100
-        return f'TreePrior: {accuracy}%'
+        return f'NBDT-Hard: {accuracy}%'
 
     def traverse_tree(self, _, wnid_to_pred_selector, n_samples):
         wnid_root = get_root(self.G)
@@ -235,7 +235,7 @@ class HardEmbeddedDecisionRules(Noop):
     def end_test(self, epoch):
         super().end_test(epoch)
         accuracy = round(self.correct / self.total * 100., 2)
-        print(f'TreePrior Accuracy: {accuracy}%, {self.correct}/{self.total}')
+        print(f'NBDT-Hard Accuracy: {accuracy}%, {self.correct}/{self.total}')
 
 
 class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
@@ -254,8 +254,8 @@ class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
         self.total += n_samples
         self.correct += (predicted == targets).sum().item()
         accuracy = round(self.correct / float(self.total), 4) * 100
-        return f'TreeBayesianPrior: {accuracy}%'
+        return f'NBDT-Soft: {accuracy}%'
 
     def end_test(self, epoch):
         accuracy = round(self.correct / self.total * 100., 2)
-        print(f'TreeBayesianPrior Accuracy: {accuracy}%, {self.correct}/{self.total}')
+        print(f'NBDT-Soft Accuracy: {accuracy}%, {self.correct}/{self.total}')
