@@ -79,6 +79,21 @@ if args.dataset in ('TinyImagenet200', 'Imagenet1000'):
     input_size = args.input_size or default_input_size
     transform_train = dataset.transform_train(input_size)
     transform_test = dataset.transform_val(input_size)
+elif args.input_size is not None and args.input_size > 32:
+    transform_train = transforms.Compose([
+        transforms.Resize(args.input_size + 32),
+        transforms.RandomCrop(args.input_size),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+
+    transform_test = transforms.Compose([
+        transforms.Resize(args.input_size + 32),
+        transforms.CenterCrop(args.input_size),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
 
 dataset_kwargs = {}
 populate_kwargs(args, dataset_kwargs, dataset, name=f'Dataset {args.dataset}',
@@ -258,4 +273,4 @@ if args.epochs == 0:
     analyzer.start_epoch(0)
     test(0, analyzer)
     analyzer.end_epoch(0)
-print(f'Best accuracy: {best_acc} // Checkpoint name: {fname}')
+print(f'Best accuracy: {best_acc} // Checkpoint name: {checkpoint_fname}')
