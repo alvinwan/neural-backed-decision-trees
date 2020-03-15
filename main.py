@@ -45,6 +45,7 @@ parser.add_argument('--analysis', choices=analysis.names, help='Run analysis aft
 parser.add_argument('--input-size', type=int,
                     help='Set transform train and val. Samples are resized to '
                     'input-size + 32.')
+parser.add_argument('--lr-decay-every', type=int, default=0)
 
 data.custom.add_arguments(parser)
 loss.add_arguments(parser)
@@ -160,12 +161,15 @@ criterion = class_criterion(**loss_kwargs)
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
 def adjust_learning_rate(epoch, lr):
+    if args.lr_decay_every:
+        steps = epoch // args.lr_decay_every
+        return lr / (10 ** steps)
     if epoch <= 150 / 350. * args.epochs:  # 32k iterations
-      return lr
+        return lr
     elif epoch <= 250 / 350. * args.epochs:  # 48k iterations
-      return lr/10
+        return lr/10
     else:
-      return lr/100
+        return lr/100
 
 # Training
 def train(epoch, analyzer):
