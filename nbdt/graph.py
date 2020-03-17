@@ -341,6 +341,7 @@ def get_centers(checkpoint):
     for key in ('net', 'state_dict'):
         try:
             net = data[key]
+            break
         except:
             net = data
 
