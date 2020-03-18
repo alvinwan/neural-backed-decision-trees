@@ -150,6 +150,5 @@ class SoftTreeSupLoss(HardTreeSupLoss):
             output = F.softmax(output)
             for index_child in range(len(node.children)):
                 old_indexes = node.new_to_old_classes[index_child]
-                for index_old in old_indexes:
-                    class_probs[:,index_old] *= output[:,index_child]
+                class_probs[:,old_indexes] *= output[:,index_child][:,None]
         return class_probs
