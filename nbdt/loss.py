@@ -144,11 +144,31 @@ class SoftTreeSupLoss(HardTreeSupLoss):
 
     @classmethod
     def inference(cls, nodes, outputs, num_classes, weighted_average=False):
+        """
+        In theory, the loop over children below could be replaced with just a
+        few lines:
+
+            for index_child in range(len(node.children)):
+                old_indexes = node.new_to_old_classes[index_child]
+                class_probs[:,old_indexes] *= output[:,index_child][:,None]
+
+        However, we collect all indices first, so that only one tensor operation
+        is run.
+        """
         class_probs = torch.ones((outputs.size(0), num_classes)).to(outputs.device)
         for node in nodes:
             output = cls.get_output_sub(outputs, node, weighted_average)
             output = F.softmax(output)
+
+            old_indices, new_indices = [], []
             for index_child in range(len(node.children)):
-                old_indexes = node.new_to_old_classes[index_child]
-                class_probs[:,old_indexes] *= output[:,index_child][:,None]
+                old = node.new_to_old_classes[index_child]
+                old_indices.extend(old)
+                new_indices.extend([index_child] * len(old))
+
+            assert len(set(old_indices)) == len(old_indices), (
+                'All old indices must be unique in order for this operation '
+                'to be correct.'
+            )
+            class_probs[:,old_indices] *= output[:,new_indices]
         return class_probs
