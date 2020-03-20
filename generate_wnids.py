@@ -3,7 +3,7 @@
 import argparse
 import torchvision
 from nltk.corpus import wordnet as wn
-from nbdt.graph import synset_to_wnid
+from nbdt.graph import synset_to_wnid, write_wnids
 from pathlib import Path
 from nbdt.utils import Colors
 import os
@@ -58,8 +58,7 @@ for cls in dataset.classes:
     print(f'{wnid}: ({cls}) {synset.definition()}')
     wnids.append(wnid)
 
-with open(str(path), 'w') as f:
-    f.write('\n'.join(wnids))
+write_wnids(wnids, path)
 
 if failures:
     Colors.red(f'==> Warning: failed to find wordnet IDs for {failures}')

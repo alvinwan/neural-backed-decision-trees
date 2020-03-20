@@ -90,7 +90,7 @@ def get_directory(dataset, root='./nbdt/hierarchies'):
 
 def get_wnids_from_dataset(dataset, root='./nbdt/wnids'):
     directory = get_directory(dataset, root)
-    return get_wnids(f'{directory}.txt'))
+    return get_wnids(f'{directory}.txt')
 
 
 def get_wnids(path_wnids):
@@ -282,10 +282,20 @@ def prune_single_successor_nodes(G):
     return G
 
 
-def write_graph(G, path):
+def makeparentdirs(path):
     dir = Path(path).parent
-    os.makedirs(dir, exists_ok=True)
-    with open(path, 'w') as f:
+    os.makedirs(dir, exist_ok=True)
+
+
+def write_wnids(wnids, path):
+    makeparentdirs(path)
+    with open(str(path), 'w') as f:
+        f.write('\n'.join(wnids))
+
+
+def write_graph(G, path):
+    makeparentdirs(path)
+    with open(str(path), 'w') as f:
         json.dump(node_link_data(G), f)
 
 
