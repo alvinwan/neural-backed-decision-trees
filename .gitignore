@@ -1,9 +1,7 @@
 *.xml
-data/*
-!data/cifar10/wnids.txt
-!data/cifar100/wnids.txt
+data
 checkpoint
-out/*
+out
 
 # Created by https://www.gitignore.io/api/macos,python
 # Edit at https://www.gitignore.io/?templates=macos,python
