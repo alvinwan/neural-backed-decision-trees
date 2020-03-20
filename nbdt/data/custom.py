@@ -30,9 +30,9 @@ def add_arguments(parser):
 
 
 def set_default_values(args):
-    fill_in = args.loss != 'CrossEntropyLoss' or args.analysis is not None
     if not args.path_graph:
         args.path_graph = dataset_to_default_path_graph(args.dataset)
+        args.path_graph_set_default = True
     if not args.path_wnids:
         args.path_wnids = dataset_to_default_path_wnids(args.dataset)
 

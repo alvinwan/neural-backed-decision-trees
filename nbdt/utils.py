@@ -19,7 +19,7 @@ DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200', 'Imagenet1000')
 
 
 def dataset_to_default_path_graph(dataset):
-    return f'./nbdt/hierarchies/{dataset}/graph-induced.json'
+    return f'./nbdt/hierarchies/{dataset}/graph-wordnet-single.json'
 
 
 def dataset_to_default_path_wnids(dataset):
@@ -195,13 +195,13 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
         include_classes=(), num_samples=0, max_leaves_supervised=-1,
         min_leaves_supervised=-1, tree_supervision_weight=0.5,
         weighted_average=False, fine_tune=False,
-        loss='CrossEntropyLoss', **kwargs):
+        loss='CrossEntropyLoss', path_graph_set_default=False, **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
     fname += '-' + model
     if name:
         fname += '-' + name
-    if path_graph:
+    if path_graph and not path_graph_set_default:
         path = Path(path_graph)
         fname += '-' + path.stem.replace('graph-', '', 1)
     if include_labels:

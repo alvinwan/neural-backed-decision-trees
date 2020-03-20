@@ -38,7 +38,7 @@ class Noop:
     def start_train(self, epoch):
         assert epoch == self.epoch
 
-    def update_batch(self, outputs, predicted, targets):
+    def update_batch(self, outputs, targets):
         pass
 
     def end_train(self, epoch):
@@ -69,8 +69,9 @@ class ConfusionMatrix(Noop):
         super().start_test(epoch)
         self.m = np.zeros((self.k, self.k))
 
-    def update_batch(self, outputs, predicted, targets):
-        super().update_batch(outputs, predicted, targets)
+    def update_batch(self, outputs, targets):
+        super().update_batch(outputs, targets)
+        _, predicted = outputs.max(1)
         if len(predicted.shape) == 1:
             predicted = predicted.numpy().ravel()
             targets = targets.numpy().ravel()
@@ -115,8 +116,8 @@ class IgnoredSamples(Noop):
         super().start_test(epoch)
         self.ignored = 0
 
-    def update_batch(self, outputs, predicted, targets):
-        super().update_batch(outputs, predicted, targets)
+    def update_batch(self, outputs, targets):
+        super().update_batch(outputs, targets)
         self.ignored += outputs[:,0].eq(-1).sum().item()
 
     def end_test(self, epoch):
@@ -170,8 +171,8 @@ class HardEmbeddedDecisionRules(Noop):
             predicted, wnid_to_pred_selector, n_samples).to(targets.device)
         return predicted
 
-    def update_batch(self, outputs, _, targets):
-        super().update_batch(outputs, _, targets)
+    def update_batch(self, outputs, targets):
+        super().update_batch(outputs, targets)
         predicted = self.forward(outputs, targets)
 
         n_samples = outputs.size(0)
