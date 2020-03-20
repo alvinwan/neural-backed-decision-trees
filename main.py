@@ -131,7 +131,10 @@ if device == 'cuda':
     cudnn.benchmark = True
 
 checkpoint_fname = generate_fname(**vars(args))
-resume_path = args.path_resume or './checkpoint/{}.pth'.format(checkpoint_fname)
+checkpoint_path = './checkpoint/{}.pth'.format(checkpoint_fname)
+print(f'==> Generated checkpoint path: {checkpoint_path}')
+
+resume_path = args.path_resume or checkpoint_path
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
@@ -150,7 +153,6 @@ if args.resume:
         else:
             net.load_state_dict(checkpoint)
             Colors.cyan(f'==> Checkpoint found at {resume_path}')
-
 
 loss_kwargs = {}
 class_criterion = getattr(loss, args.loss)
