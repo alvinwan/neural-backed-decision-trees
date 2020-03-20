@@ -16,24 +16,18 @@ from pathlib import Path
 # tree-generation consntants
 METHODS = ('prune', 'wordnet', 'random', 'image', 'induced')
 DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200', 'Imagenet1000')
-DATASET_TO_FOLDER_NAME = {
-    'CIFAR10': 'CIFAR10',
-    'CIFAR100': 'CIFAR100',
-    'TinyImagenet200': 'tiny-imagenet-200',
-    'Imagenet1000' : 'imagenet-1000',
-}
 
 # main script constants
 CIFAR10PATHSANITY = 'CIFAR10PathSanity'
 
-DEFAULT_CIFAR10_TREE = './data/CIFAR10/graph-wordnet-single.json'
-DEFAULT_CIFAR10_WNIDS = './data/CIFAR10/wnids.txt'
-DEFAULT_CIFAR100_TREE = './data/CIFAR100/graph-wordnet-single.json'
-DEFAULT_CIFAR100_WNIDS = './data/CIFAR100/wnids.txt'
-DEFAULT_TINYIMAGENET200_TREE = './data/tiny-imagenet-200/graph-wordnet-single.json'
-DEFAULT_TINYIMAGENET200_WNIDS = './data/tiny-imagenet-200/wnids.txt'
-DEFAULT_IMAGENET1000_TREE = './data/imagenet-1000/graph-wordnet-single.json'
-DEFAULT_IMAGENET1000_WNIDS = './data/imagenet-1000/wnids.txt'
+DEFAULT_CIFAR10_TREE = './nbdt/hierarchies/CIFAR10/graph-wordnet-single.json'
+DEFAULT_CIFAR10_WNIDS = './nbdt/wnids/CIFAR10/wnids.txt'
+DEFAULT_CIFAR100_TREE = './nbdt/hierarchies/CIFAR100/graph-wordnet-single.json'
+DEFAULT_CIFAR100_WNIDS = './nbdt/wnids/CIFAR100/wnids.txt'
+DEFAULT_TINYIMAGENET200_TREE = './nbdt/hierarchies/TinyImagenet200/graph-wordnet-single.json'
+DEFAULT_TINYIMAGENET200_WNIDS = './nbdt/wnids/TinyImagenet200/wnids.txt'
+DEFAULT_IMAGENET1000_TREE = './nbdt/hierarchies/Imagenet1000/graph-wordnet-single.json'
+DEFAULT_IMAGENET1000_WNIDS = './nbdt/wnids/Imagenet1000/wnids.txt'
 
 
 DATASET_TO_PATHS = {

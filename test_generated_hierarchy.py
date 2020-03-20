@@ -1,4 +1,4 @@
-from nbdt.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME, Colors
+from nbdt.utils import DATASETS, METHODS, Colors
 from nbdt.graph import get_parser, get_wnids_from_dataset, read_graph, \
     get_leaves, generate_fname, get_directory, get_graph_path_from_args, \
     get_roots

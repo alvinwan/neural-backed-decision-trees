@@ -13,12 +13,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dataset',
     choices=('CIFAR100', 'CIFAR10'),
     default='CIFAR10')
-parser.add_argument('--root', default='./data')
+parser.add_argument('--root', default='./nbdt/wnids')
 args = parser.parse_args()
 
 dataset = getattr(torchvision.datasets, args.dataset)(root='./data', download=True)
 
-path = Path(os.path.join(args.root, args.dataset, 'wnids.txt'))
+path = Path(os.path.join(args.root, f'{args.dataset}.txt'))
 os.makedirs(path.parent, exist_ok=True)
 failures = []
 

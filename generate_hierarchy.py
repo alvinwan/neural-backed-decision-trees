@@ -1,6 +1,6 @@
 """Generates various graphs for independent node training"""
 
-from nbdt.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
+from nbdt.utils import DATASETS, METHODS
 from nbdt.graph import build_minimal_wordnet_graph, build_random_graph, \
     prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
     get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args, \

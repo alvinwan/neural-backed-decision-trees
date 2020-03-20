@@ -2,7 +2,7 @@ import networkx as nx
 import json
 import random
 from nltk.corpus import wordnet as wn
-from nbdt.utils import DATASETS, METHODS, DATASET_TO_FOLDER_NAME
+from nbdt.utils import DATASETS, METHODS
 from networkx.readwrite.json_graph import node_link_data, node_link_graph
 from sklearn.cluster import AgglomerativeClustering
 from pathlib import Path
@@ -17,7 +17,7 @@ def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--dataset',
-        help='Must be a folder data/{dataset} containing a wnids.txt',
+        help='Must be a folder nbdt/wnids/{dataset}.txt containing wnids',
         choices=DATASETS,
         default='CIFAR10')
     parser.add_argument(
@@ -84,14 +84,13 @@ def generate_fname(method, seed=0, branching_factor=2, extra=0,
     return fname
 
 
-def get_directory(dataset, root='./hierarchies'):
-    folder = DATASET_TO_FOLDER_NAME[dataset]
-    return os.path.join(root, folder)
+def get_directory(dataset, root='./nbdt/hierarchies'):
+    return os.path.join(root, dataset)
 
 
-def get_wnids_from_dataset(dataset, root='./hierarchies'):
+def get_wnids_from_dataset(dataset, root='./nbdt/wnids'):
     directory = get_directory(dataset, root)
-    return get_wnids(os.path.join(directory, 'wnids.txt'))
+    return get_wnids(f'{directory}.txt'))
 
 
 def get_wnids(path_wnids):
