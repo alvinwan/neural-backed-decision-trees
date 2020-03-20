@@ -14,40 +14,16 @@ import torch.nn.init as init
 from pathlib import Path
 
 # tree-generation consntants
-METHODS = ('prune', 'wordnet', 'random', 'image', 'induced')
+METHODS = ('wordnet', 'random', 'induced')
 DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200', 'Imagenet1000')
 
-# main script constants
-CIFAR10PATHSANITY = 'CIFAR10PathSanity'
 
-DEFAULT_CIFAR10_TREE = './nbdt/hierarchies/CIFAR10/graph-wordnet-single.json'
-DEFAULT_CIFAR10_WNIDS = './nbdt/wnids/CIFAR10/wnids.txt'
-DEFAULT_CIFAR100_TREE = './nbdt/hierarchies/CIFAR100/graph-wordnet-single.json'
-DEFAULT_CIFAR100_WNIDS = './nbdt/wnids/CIFAR100/wnids.txt'
-DEFAULT_TINYIMAGENET200_TREE = './nbdt/hierarchies/TinyImagenet200/graph-wordnet-single.json'
-DEFAULT_TINYIMAGENET200_WNIDS = './nbdt/wnids/TinyImagenet200/wnids.txt'
-DEFAULT_IMAGENET1000_TREE = './nbdt/hierarchies/Imagenet1000/graph-wordnet-single.json'
-DEFAULT_IMAGENET1000_WNIDS = './nbdt/wnids/Imagenet1000/wnids.txt'
+def dataset_to_default_path_graph(dataset):
+    return f'./nbdt/hierarchies/{dataset}/graph-induced.json'
 
 
-DATASET_TO_PATHS = {
-    'CIFAR10': {
-        'path_graph': DEFAULT_CIFAR10_TREE,
-        'path_wnids': DEFAULT_CIFAR10_WNIDS
-    },
-    'CIFAR100': {
-        'path_graph': DEFAULT_CIFAR100_TREE,
-        'path_wnids': DEFAULT_CIFAR100_WNIDS
-    },
-    'TinyImagenet200': {
-        'path_graph': DEFAULT_TINYIMAGENET200_TREE,
-        'path_wnids': DEFAULT_TINYIMAGENET200_WNIDS
-    },
-    'Imagenet1000': {
-        'path_graph': DEFAULT_IMAGENET1000_TREE,
-        'path_wnids': DEFAULT_IMAGENET1000_WNIDS
-    }
-}
+def dataset_to_default_path_wnids(dataset):
+    return f'./nbdt/wnids/{dataset}.txt'
 
 
 def populate_kwargs(args, kwargs, object, name='Dataset', keys=(), globals={}):

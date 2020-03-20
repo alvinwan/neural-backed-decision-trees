@@ -3,12 +3,7 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset
 from collections import defaultdict
-from nbdt.utils import (
-    DEFAULT_CIFAR10_TREE, DEFAULT_CIFAR10_WNIDS, DEFAULT_CIFAR100_TREE,
-    DEFAULT_CIFAR100_WNIDS, DEFAULT_TINYIMAGENET200_TREE,
-    DEFAULT_TINYIMAGENET200_WNIDS, DEFAULT_IMAGENET1000_TREE,
-    DEFAULT_IMAGENET1000_WNIDS, DATASET_TO_PATHS
-)
+from nbdt.utils import dataset_to_default_path_graph, dataset_to_default_path_wnids
 from collections import defaultdict
 from nbdt.graph import get_wnids, read_graph, get_leaves, get_non_leaves, \
     get_leaf_weights
@@ -37,17 +32,14 @@ def add_arguments(parser):
 def set_default_values(args):
     paths = DATASET_TO_PATHS[args.dataset]
     if not args.path_graph and args.loss != 'CrossEntropyLoss':
-        args.path_graph = paths['path_graph']
+        args.path_graph = dataset_to_default_path_graph(args.dataset)
     if not args.path_wnids and args.loss != 'CrossEntropyLoss':
-        args.path_wnids = paths['path_wnids']
+        args.path_wnids = dataset_to_default_path_wnids(args.dataset)
 
 
 class Node:
 
-    def __init__(self, wnid, classes,
-            path_graph=DEFAULT_CIFAR10_TREE,
-            path_wnids=DEFAULT_CIFAR10_WNIDS,
-            other_class=False):
+    def __init__(self, wnid, classes, path_graph, path_wnids, other_class=False):
         self.path_graph = path_graph
         self.path_wnids = path_wnids
 
