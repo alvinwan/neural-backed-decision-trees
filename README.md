@@ -19,17 +19,15 @@ nbdt --method=induced ...  # generate induced hierarchy
 ```
 from nbdt.loss import SoftTreeSupLoss
 
-criterion = ...   # your original loss function
-criterion = SoftTreeSupLoss(dataset='CIFAR10', criterion=criterion)
+criterion = # original loss function
+criterion = SoftTreeSupLoss.with_defaults('CIFAR10', criterion=criterion)
 ```
 
 ```
-# doesn't actually work this way atm
-from nbdt.model import SoftEmbeddedDecisionRules
+from nbdt.model import SoftNBDT
 
-# during test time
-model = ...   # your original model
-model = SoftEmbeddedDecisionRules(dataset='CIFAR10', model=model)
+model = # original model
+model = SoftNBDT.with_defaults('CIFAR10', model=model)
 ```
 
 **To reproduce experimental results**, start by cloning the repository and installing all requirements.

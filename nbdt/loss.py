@@ -3,7 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from collections import defaultdict
 from nbdt.data.custom import Node
-from nbdt.utils import Colors
+from nbdt.utils import (
+    Colors, dataset_to_default_path_graph, dataset_to_default_path_wnids
+)
 
 __all__ = names = ('HardTreeSupLoss', 'SoftTreeSupLoss', 'CrossEntropyLoss')
 keys = (
@@ -55,6 +57,14 @@ class TreeSupLoss(nn.Module):
         self.tree_supervision_weight = tree_supervision_weight
         self.weighted_average = weighted_average
         self.criterion = criterion
+
+    @classmethodd
+    def with_defaults(cls, dataset, **kwargs):
+        assert 'path_graph' not in kwargs and 'path_wnids' not in kwargs, \
+            '`from_dataset` sets both the path_graph and path_wnids'
+        path_graph = dataset_to_default_path_graph(dataset)
+        path_wnids = dataset_to_default_path_wnids(dataset)
+        return cls(path_graph, path_wnids, **kwargs)
 
 
 class HardTreeSupLoss(TreeSupLoss):

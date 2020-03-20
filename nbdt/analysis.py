@@ -1,5 +1,8 @@
 from nbdt.graph import get_root, get_wnids
-from nbdt.utils import set_np_printoptions
+from nbdt.utils import (
+    set_np_printoptions, dataset_to_default_path_graph,
+    dataset_to_default_path_wnids
+)
 from nbdt.loss import HardTreeSupLoss, SoftTreeSupLoss
 from nbdt.data.custom import Node
 import torch
@@ -103,43 +106,6 @@ class ConfusionMatrix(Noop):
         return ConfusionMatrix.normalize(self.m, 0)
 
 
-class ConfusionMatrixJointNodes(ConfusionMatrix):
-    """Calculates confusion matrix for tree of joint nodes"""
-
-    def __init__(self, trainset, testset):
-        assert hasattr(trainset, 'nodes'), (
-            'Dataset must be for joint nodes, in order to run joint-node '
-            'specific confusion matrix analysis. You can run the regular '
-            'confusion matrix analysis instead.'
-        )
-        self.nodes = trainset.nodes
-
-    def start_test(self, epoch):
-        self.ms = [
-            np.zeros((node.num_classes, node.num_classes))
-            for node in self.nodes
-        ]
-
-    def update_batch(self, outputs, predicted, targets):
-        for m, pred, targ in zip(self.ms, predicted.T, targets.T):
-            pred = pred.numpy().ravel()
-            targ = targ.numpy().ravel()
-            ConfusionMatrix.update(m, pred, targ)
-
-    def end_test(self, epoch):
-        mean_accs = []
-
-        for m, node in zip(self.ms, self.nodes):
-            class_accs = ConfusionMatrix.normalize(m, 0).diagonal()
-            mean_acc = np.mean(class_accs)
-            print(node.wnid, node.classes, mean_acc, class_accs)
-            mean_accs.append(mean_acc)
-
-        min_acc = min(mean_accs)
-        min_node = self.nodes[mean_accs.index(min_acc)]
-        print(f'Node ({min_node.wnid}) with lowest accuracy ({min(mean_accs)}%)'
-              f' (sorted accuracies): {sorted(mean_accs)}')
-
 class IgnoredSamples(Noop):
     """ Counter for number of ignored samples in decision tree """
 
@@ -181,6 +147,14 @@ class HardEmbeddedDecisionRules(Noop):
         self.weighted_average = weighted_average
         self.correct = 0
         self.total = 0
+
+    @classmethod
+    def from_dataset(cls, trainset, testset, dataset, **kwargs):
+        assert 'path_graph' not in kwargs and 'path_wnids' not in kwargs, \
+            '`from_dataset` sets both the path_graph and path_wnids'
+        path_graph = dataset_to_default_path_graph(dataset)
+        path_wnids = dataset_to_default_path_wnids(dataset)
+        return cls(trainset, testset, path_graph, path_wnids, **kwargs)
 
     def update_batch(self, outputs, predicted, targets):
         super().update_batch(outputs, predicted, targets)
