@@ -69,8 +69,8 @@ def main():
         print(f'Found just {num_roots} root.')
 
     fname = generate_fname(**vars(args)).replace('graph-', '', 1)
-    generate_vis('vis/tree-template.html', tree, 'tree', fname)
-    generate_vis('vis/graph-template.html', graph, 'graph', fname)
+    generate_vis('nbdt/templates/tree-template.html', tree, 'tree', fname)
+    generate_vis('nbdt/templates/graph-template.html', graph, 'graph', fname)
 
 
 if __name__ == '__main__':
