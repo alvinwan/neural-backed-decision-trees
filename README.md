@@ -73,7 +73,7 @@ python main.py --eval --pretrained --model=wrn28_10_cifar10 --dataset=CIFAR10
 python generate_hierarchy.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --dataset=CIFAR10
 
 # Test hierarchy
-  python test_generated_graph.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --dataset=CIFAR100
+python test_generated_hierarchy.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --dataset=CIFAR10
 ```
 
 ## Wordnet Hierarchy
@@ -88,13 +88,13 @@ The below just explains the above `generate_hierarchies_wordnet.sh`, using CIFAR
 
 ```
 # Generate mapping from classes to WNID. This is required for CIFAR10 and CIFAR100.
-python generate_wnids.py --single-path --dataset=CIFAR10
+python generate_wnids.py --dataset=CIFAR10
 
 # Generate hierarchy, using the WNIDs. This is required for all datasets: CIFAR10, CIFAR100, TinyImagenet200
 python generate_hierarchy.py --single-path --dataset=CIFAR10
 
 # Test hierarchy. This is optional but supported for all datasets. Make sure that your output ends with `==> All checks pass!`.
-python test_generated_graph.py --single-path --dataset=CIFAR10
+python test_generated_hierarchy.py --single-path --dataset=CIFAR10
 ```
 
 ## Random Hierarchy
@@ -123,18 +123,18 @@ python generate_vis.py --single-path
 The above script will output the following.
 
 ```
-==> Reading from ./data/CIFAR10/graph-wordnet.json
+==> Reading from ./data/CIFAR10/graph-wordnet-single.json
 ==> Found just 1 root.
-==> Wrote HTML to out/wordnet-tree.html
-==> Wrote HTML to out/wordnet-graph.html
+==> Wrote HTML to out/wordnet-single-tree.html
+==> Wrote HTML to out/wordnet-single-graph.html
 ```
 
-There are two visualizations. Open up `out/wordnet-tree.html` in your browser
+There are two visualizations. Open up `out/wordnet-single-tree.html` in your browser
 to view the d3 tree visualization.
 
 <img width="1436" alt="Screen Shot 2020-02-22 at 1 52 51 AM" src="https://user-images.githubusercontent.com/2068077/75101893-ca8f4b80-5598-11ea-9b47-7adcc3fc3027.png">
 
-Open up `out/wordnet-graph.html` in your browser to view the d3 graph
+Open up `out/wordnet-single-graph.html` in your browser to view the d3 graph
 visualization.
 
 # 2. Tree Supervision Loss
@@ -157,7 +157,7 @@ python main.py --lr=0.01 --dataset=CIFAR10 --model=wrn28_10_cifar10 --path-graph
 python main.py --lr=0.01 --dataset=CIFAR10 --model=wrn28_10_cifar10 --path-graph=./data/CIFAR10/graph-induced-wrn28_10_cifar10.json --path-resume=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --tree-supervision-weight=10 --loss=SoftTreeSupLoss
 ```
 
-To train from scratch, use `--lr=0.1` and do not pass the `--path-resume` flag.
+To train from scratch, use `--lr=0.1` and do not pass the `--path-resume` flag. We fine-tune WideResnet on CIFAR10, CIFAR100, but where the baseline neural network accuracy is reproducible, we train from scratch.
 
 # 3. Inference
 

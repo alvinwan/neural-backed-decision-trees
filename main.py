@@ -132,7 +132,7 @@ if device == 'cuda':
 
 checkpoint_fname = generate_fname(**vars(args))
 checkpoint_path = './checkpoint/{}.pth'.format(checkpoint_fname)
-print(f'==> Generated checkpoint path: {checkpoint_path}')
+print(f'==> Checkpoints will be saved to: {checkpoint_path}')
 
 resume_path = args.path_resume or checkpoint_path
 if args.resume:
