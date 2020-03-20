@@ -14,7 +14,7 @@ import argparse
 
 import models
 from nbdt.utils import (
-    progress_bar, generate_fname, DATASET_TO_PATHS, populate_kwargs, Colors
+    progress_bar, generate_fname, populate_kwargs, Colors
 )
 
 datasets = ('CIFAR10', 'CIFAR100') + data.imagenet.names + data.custom.names

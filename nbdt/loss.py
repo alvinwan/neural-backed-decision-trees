@@ -58,7 +58,7 @@ class TreeSupLoss(nn.Module):
         self.weighted_average = weighted_average
         self.criterion = criterion
 
-    @classmethodd
+    @classmethod
     def with_defaults(cls, dataset, **kwargs):
         assert 'path_graph' not in kwargs and 'path_wnids' not in kwargs, \
             '`from_dataset` sets both the path_graph and path_wnids'
@@ -119,7 +119,7 @@ class HardTreeSupLoss(TreeSupLoss):
     def inference(cls, node, outputs, targets, weighted_average=False):
         classes = [node.old_to_new_classes[int(t)] for t in targets]
         selector = [bool(cls) for cls in classes]
-        targets_sub = [cls[0] for cls in classes if cls]
+        targets_sub = [cls[0] for cls in classes if cls] if targets else None
 
         _outputs = outputs[selector]
         if _outputs.size(0) == 0:
