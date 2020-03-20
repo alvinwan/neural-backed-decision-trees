@@ -84,12 +84,12 @@ def generate_fname(method, seed=0, branching_factor=2, extra=0,
     return fname
 
 
-def get_directory(dataset, root='./data'):
+def get_directory(dataset, root='./hierarchies'):
     folder = DATASET_TO_FOLDER_NAME[dataset]
     return os.path.join(root, folder)
 
 
-def get_wnids_from_dataset(dataset, root='./data'):
+def get_wnids_from_dataset(dataset, root='./hierarchies'):
     directory = get_directory(dataset, root)
     return get_wnids(os.path.join(directory, 'wnids.txt'))
 
@@ -284,6 +284,8 @@ def prune_single_successor_nodes(G):
 
 
 def write_graph(G, path):
+    dir = Path(path).parent
+    os.makedirs(dir, exists_ok=True)
     with open(path, 'w') as f:
         json.dump(node_link_data(G), f)
 
