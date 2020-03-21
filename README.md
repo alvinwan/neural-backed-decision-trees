@@ -2,29 +2,34 @@
 
 Run decision trees that achieve accuracies within 1% of a recently state-of-the-art neural network's (WideResNet) on CIFAR10, CIFAR100, and TinyImagenet200.
 
+**Table of Contents**
+
+- [Quickstart: Running NBDTs](#quickstart-running-nbdts)
+- [Convert your own neural network into a decision tree](#convert-neural-networks-to-decision-trees)
+- [Training and Evaluation](#training-and-evaluation)
+- [Developing](#developing)
+
 ![pipeline](https://user-images.githubusercontent.com/2068077/76384774-1ffb8480-631d-11ea-973f-7cac2a60bb10.jpg)
 
 Per the pipeline illustration above, we (1) [generate the hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#1-Hierarchies) and (2) train the neural network [with a tree supervision loss](https://github.com/alvinwan/neural-backed-decision-trees#2-Tree-Supervision-Loss). Then, we (3) [run inference](https://github.com/alvinwan/neural-backed-decision-trees#3-Inference) by featurizing images using the network backbone and running embedded decision rules.
 
-**Table of Contents**
+<!-- TODO: link to paper-->
+
+# Quickstart: Running NBDTs
 
 TODO
 
-## Quickstart: Running an NBDT
+# Convert Neural Networks to Decision Trees
 
-TODO
+**To convert your neural network** into a neural-backed decision tree, perform the following 3 steps:
 
-## Convert your own neural network into an NBDT
-
-To convert your neural network into a neural-backed decision tree, perform the following 3 steps:
-
-1. pip install the `nbdt` utility:
+1. **First**, pip install the `nbdt` utility:
 
   ```bash
   pip install nbdt
   ```
 
-2. Wrap your loss function with a custom NBDT loss. Below, we demonstrate usage of the soft tree supervision loss, on the CIFAR10 dataset. By default, we support the CIFAR10, CIFAR100, TinyImagenet200, and Imagenet1000 image classification datasets.
+2. **Second**, wrap your loss function with a custom NBDT loss. Below, we demonstrate usage of the soft tree supervision loss, on the CIFAR10 dataset. By default, we support the CIFAR10, CIFAR100, TinyImagenet200, and Imagenet1000 image classification datasets.
 
   <!-- TODO: If no wnids, generate fake ones. Attempt to dataset.classes. For a new dataset, use cli to generate induced-hierarchy from checkpoint. -->
 
@@ -33,7 +38,7 @@ To convert your neural network into a neural-backed decision tree, perform the f
   criterion = SoftTreeSupLoss.with_defaults('CIFAR10', criterion=criterion)  # pass original loss
   ```
 
-3. Wrap your model with a custom NBDT wrapper as shown below. This is only to run prediction as an NBDT during validation or inference time. Do not wrap your model like below, during training.
+3. **Third**, wrap your model with a custom NBDT wrapper as shown below. This is only to run prediction as an NBDT during validation or inference time. Do not wrap your model like below, during training.
 
   > **Do not wrap your model during training**. When training, the tree supervision loss expects the neural network logits as input, not the NBDT outputs.
 
@@ -46,6 +51,9 @@ To convert your neural network into a neural-backed decision tree, perform the f
 
 <!-- TODO: include simpler example -->
 
+<details><summary>Want to build or use your own induced hierarchy? <i>[click to expand]</i></summary>
+<div>
+
 (Optional) You may also build and use your own induced hierarchies, instead of the default induced hierarchy provided. Use the `nbdt` utility to generate a new induced hierarchy from a pretrained model, then specify the hierarchy to use.
 
 ```bash
@@ -56,8 +64,10 @@ nbdt hierarchy --model=ResNet34 --dataset=CIFAR10  # TODO
 criterion = SoftTreeSupLoss.with_defaults('CIFAR10', criterion=criterion, name_graph='induced-ResNet34')
 model = SoftNBDT.with_defaults('CIFAR10', model=model, name_graph='induced-ResNet34')
 ```
+</div>
+</details>
 
-## Training and Evaluation
+# Training and Evaluation
 
 **To reproduce experimental results**, start by cloning the repository and installing all requirements.
 
@@ -77,9 +87,9 @@ bash scripts/eval_wrn.sh
 
 The bash scripts above are explained in more detail in [Induced Hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#Induced-Hierarchy), [Soft Tree Supervision Loss](https://github.com/alvinwan/neural-backed-decision-trees#Tree-Supervision-Loss), and [Soft Inference](https://github.com/alvinwan/neural-backed-decision-trees#Soft-Inference). To reproduce our Imagenet results, see [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models).
 
-# 1. Hierarchies
+## 1. Hierarchies
 
-## Induced Hierarchy
+### Induced Hierarchy
 
 Run the following to generate and test induced hierarchies for CIFAR10, CIFAR100, based off of the WideResNet model. The script also downloads pretrained WideResNet models.
 
@@ -87,8 +97,10 @@ Run the following to generate and test induced hierarchies for CIFAR10, CIFAR100
 bash scripts/generate_hierarchies_induced_wrn.sh
 ```
 
-![induced_structure](https://user-images.githubusercontent.com/2068077/76388304-0e6aaa80-6326-11ea-8c9b-6d08cb89fafe.jpg)
+<details><summary>Line-by-line Explanation. <i>[click to expand]</i></summary>
+<div>
 
+![induced_structure](https://user-images.githubusercontent.com/2068077/76388304-0e6aaa80-6326-11ea-8c9b-6d08cb89fafe.jpg)
 
 The below just explains the above `generate_hierarches_induced.sh`, using CIFAR10. You do not need to run the following after running the above bash script. Note that the following commands can be rerun with different checkpoints from different architectures, to produce different hierarchies.
 
@@ -102,8 +114,10 @@ python generate_hierarchy.py --method=induced --induced-checkpoint=checkpoint/ck
 # Test hierarchy
 python test_generated_hierarchy.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --dataset=CIFAR10
 ```
+</div>
+</details>
 
-## Wordnet Hierarchy
+### Wordnet Hierarchy
 
 Run the following to generate and test Wordnet hierarchies for CIFAR10, CIFAR100, and TinyImagenet200. The script also downloads the NLTK Wordnet corpus.
 
@@ -111,6 +125,8 @@ Run the following to generate and test Wordnet hierarchies for CIFAR10, CIFAR100
 bash scripts/generate_hierarchies_wordnet.sh
 ```
 
+<details><summary>Line-by-line Explanation. <i>[click to expand]</i></summary>
+<div>
 The below just explains the above `generate_hierarchies_wordnet.sh`, using CIFAR10. You do not need to run the following after running the above bash script.
 
 ```bash
@@ -123,8 +139,9 @@ python generate_hierarchy.py --single-path --dataset=CIFAR10
 # Test hierarchy. This is optional but supported for all datasets. Make sure that your output ends with `==> All checks pass!`.
 python test_generated_hierarchy.py --single-path --dataset=CIFAR10
 ```
+</details>
 
-## Random Hierarchy
+### Random Hierarchy
 
 Use `--method=random` to randomly generate a binary-ish hierarchy. Additionally,
 random trees feature two more flags:
@@ -138,7 +155,7 @@ For example, to generate a sanity check hierarchy for CIFAR10, use
 python generate_hierarchy.py --seed=-1 --branching-factor=10 --single-path --dataset=CIFAR10
 ```
 
-## Visualize Hierarchy
+### Visualize Hierarchy
 
 Run the visualization generation script to obtain both the JSON representing
 the hierarchy and the HTML file containing a d3 visualization.
@@ -164,7 +181,7 @@ to view the d3 tree visualization.
 Open up `out/wordnet-single-graph.html` in your browser to view the d3 graph
 visualization.
 
-# 2. Tree Supervision Loss
+## 2. Tree Supervision Loss
 
 In the below training commands, we uniformly use `--path-resume=<path/to/checkpoint> --lr=0.01` to fine-tune instead of training from scratch. Our results using a recently state-of-the-art pretrained checkpoint (WideResNet) were fine-tuned.
 
@@ -173,6 +190,10 @@ Run the following bash script to fine-tune WideResNet with both hard and soft tr
 ```bash
 bash scripts/train_wrn.sh
 ```
+
+<details><summary>Line-by-line Explanation. <i>[click to expand]</i></summary>
+<div>
+![tree_supervision_loss](https://user-images.githubusercontent.com/2068077/77226784-3208ce80-6b38-11ea-84bb-5128e3836665.jpg)
 
 As before, the below just explains the above `train_wrn.sh`. You do not need to run the following after running the previous bash script.
 
@@ -185,10 +206,10 @@ python main.py --lr=0.01 --dataset=CIFAR10 --model=wrn28_10_cifar10 --path-graph
 ```
 
 To train from scratch, use `--lr=0.1` and do not pass the `--path-resume` flag. We fine-tune WideResnet on CIFAR10, CIFAR100, but where the baseline neural network accuracy is reproducible, we train from scratch.
+</div>
+</details>
 
-# 3. Inference
-
-![inference_modes](https://user-images.githubusercontent.com/2068077/76388544-9f418600-6326-11ea-9214-17356c71a066.jpg)
+## 3. Inference
 
 Like with the tree supervision loss variants, there are two inference variants: one is hard and one is soft. The best results in our paper, oddly enough, were obtained by running hard and soft inference *both* on the neural network supervised by a soft tree supervision loss.
 
@@ -198,6 +219,10 @@ Run the following bash script to obtain these numbers.
 bash scripts/eval_wrn.sh
 ```
 
+<details><summary>Line-by-line Explanation. <i>[click to expand]</i></summary>
+<div>
+![inference_modes](https://user-images.githubusercontent.com/2068077/76388544-9f418600-6326-11ea-9214-17356c71a066.jpg)
+  
 As before, the below just explains the above `eval_wrn.sh`. You do not need to run the following after running the previous bash script. Note the following commands are nearly identical to the corresponding train commands -- we drop the `lr`, `path-resume` flags and add `resume`, `eval`, and the `analysis` type (hard or soft inference).
 
 ```bash
@@ -207,8 +232,10 @@ python main.py --dataset=CIFAR10 --model=wrn28_10_cifar10 --path-graph=./nbdt/hi
 # running hard inference on soft-supervised model
 python main.py --dataset=CIFAR10 --model=wrn28_10_cifar10 --path-graph=./nbdt/hierarchies/CIFAR10/graph-induced-wrn28_10_cifar10.json --tree-supervision-weight=10 --loss=SoftTreeSupLoss --eval --resume --analysis=HardEmbeddedDecisionRules
 ```
+</div>
+</details>
 
-# Develop
+# Developing
 
 TODO: python setup.py develop + instructions for adding new datasets, new models, etc.
 
