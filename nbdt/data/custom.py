@@ -3,10 +3,11 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset
 from collections import defaultdict
-from nbdt.utils import dataset_to_default_path_graph, dataset_to_default_path_wnids
+from nbdt.utils import dataset_to_default_path_graph, \
+    dataset_to_default_path_wnids, DATASET_TO_NUM_CLASSES, DATASETS
 from collections import defaultdict
 from nbdt.graph import get_wnids, read_graph, get_leaves, get_non_leaves, \
-    get_leaf_weights
+    get_leaf_weights, FakeSynset
 from . import imagenet
 import torch.nn as nn
 import random
@@ -35,6 +36,12 @@ def set_default_values(args):
         args.path_graph_set_default = True
     if not args.path_wnids:
         args.path_wnids = dataset_to_default_path_wnids(args.dataset)
+
+
+def dataset_to_dummy_classes(dataset):
+    assert dataset in DATASETS
+    num_classes = DATASET_TO_NUM_CLASSES[dataset]
+    return [FakeSynset.create_from_offset(i).wnid for i in range(num_classes)]
 
 
 class Node:

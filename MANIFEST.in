@@ -1,0 +1,3 @@
+include nbdt/templates/*.html
+include nbdt/wnids/*.txt
+include nbdt/hierarchies/*/*.json

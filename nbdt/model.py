@@ -6,13 +6,16 @@ underlying neural network other than it (1) is a classification model and
 """
 
 import torch.nn as nn
-from analysis import SoftEmbeddedDecisionRules, HardEmbeddedDecisionRules
+from nbdt.utils import dataset_to_default_path_graph, dataset_to_default_path_wnids
+from nbdt.data.custom import dataset_to_dummy_classes
+from nbdt.analysis import SoftEmbeddedDecisionRules, HardEmbeddedDecisionRules
 
 
 class NBDT(nn.Module):
 
-    def __init__(self, path_graph, path_wnids, model,
-            classes=(), Rules=HardEmbeddedDecisionRules):
+    def __init__(self, path_graph, path_wnids, classes,
+            model, Rules=HardEmbeddedDecisionRules):
+        super().__init__()
         self.rules = Rules(path_graph, path_wnids, classes)
         self.model = model
 
@@ -22,7 +25,8 @@ class NBDT(nn.Module):
             '`from_dataset` sets both the path_graph and path_wnids'
         path_graph = dataset_to_default_path_graph(dataset)
         path_wnids = dataset_to_default_path_wnids(dataset)
-        return cls(path_graph, path_wnids, model, **kwargs)
+        classes = dataset_to_dummy_classes(dataset)
+        return cls(path_graph, path_wnids, classes, model, **kwargs)
 
     def forward(self, x):
         x = self.model(x)
@@ -30,19 +34,19 @@ class NBDT(nn.Module):
         return x
 
 
-class HardNBDT(nn.Module):
+class HardNBDT(NBDT):
 
     def __init__(self, *args, **kwargs):
         kwargs.update({
             'Rules': HardEmbeddedDecisionRules
         })
-        return NBDT(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
-class SoftNBDT(nn.Module):
+class SoftNBDT(NBDT):
 
     def __init__(self, *args, **kwargs):
         kwargs.update({
             'Rules': SoftEmbeddedDecisionRules
         })
-        return NBDT(*args, **kwargs)
+        super().__init__(*args, **kwargs)

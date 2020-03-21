@@ -16,14 +16,25 @@ from pathlib import Path
 # tree-generation consntants
 METHODS = ('wordnet', 'random', 'induced')
 DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200', 'Imagenet1000')
+DATASET_TO_NUM_CLASSES = {
+    'CIFAR10': 10,
+    'CIFAR100': 100,
+    'TinyImagenet200': 200,
+    'Imagenet1000': 1000
+}
+
+
+def fwd():
+    """Get file's working directory"""
+    return Path(__file__).parent.absolute()
 
 
 def dataset_to_default_path_graph(dataset):
-    return f'./nbdt/hierarchies/{dataset}/graph-wordnet-single.json'
+    return os.path.join(fwd(), f'hierarchies/{dataset}/graph-wordnet-single.json')
 
 
 def dataset_to_default_path_wnids(dataset):
-    return f'./nbdt/wnids/{dataset}.txt'
+    return os.path.join(fwd(), f'wnids/{dataset}.txt')
 
 
 def populate_kwargs(args, kwargs, object, name='Dataset', keys=(), globals={}):

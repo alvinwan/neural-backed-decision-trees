@@ -12,22 +12,23 @@ Per the pipeline illustration above, we (1) [generate the hierarchy](https://git
 
 ```
 pip install nbdt
-wget ...  # CIFAR10 ResNet model
-nbdt --method=induced ...  # generate induced hierarchy
 ```
 
 ```
 from nbdt.loss import SoftTreeSupLoss
-
-criterion = # original loss function
-criterion = SoftTreeSupLoss.with_defaults('CIFAR10', criterion=criterion)
+criterion = SoftTreeSupLoss.with_defaults('CIFAR10', criterion=criterion)  # pass original loss
 ```
 
 ```
 from nbdt.model import SoftNBDT
+model = SoftNBDT.with_defaults('CIFAR10', model=model)  # pass original model
+```
 
-model = # original model
-model = SoftNBDT.with_defaults('CIFAR10', model=model)
+```
+nbdt hierarchy --model=ResNet34 --dataset=CIFAR10
+
+criterion = SoftTreeSupLoss.with_defaults('CIFAR10', criterion, name_graph='induced-ResNet34')
+model = SoftNBDT.with_defaults('CIFAR10', model, name_graph='induced-ResNet34')
 ```
 
 **To reproduce experimental results**, start by cloning the repository and installing all requirements.
@@ -35,7 +36,7 @@ model = SoftNBDT.with_defaults('CIFAR10', model=model)
 ```
 git clone git@github.com:alvinwan/neural-backed-decision-trees.git
 cd neural-backed-decision-trees
-pip install -r requirements.txt
+python setup.py develop
 ```
 
 To reproduce the core experimental results in our paper -- ignoring ablation studies -- simply run the following bash scripts:

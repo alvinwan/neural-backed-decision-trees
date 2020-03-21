@@ -1,5 +1,5 @@
 pytorchcv
-pytorch
+torch
 torchvision
 nltk
 scikit-learn
