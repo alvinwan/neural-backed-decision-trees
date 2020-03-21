@@ -1,35 +1,57 @@
 # Neural-Backed Decision Trees
 
-Run a decision tree that achieves accuracy within 1% of a recently state-of-the-art (WideResNet) neural network's accuracy on CIFAR10 and CIFAR100 and within 1.5% on TinyImagenet200.
+Run decision trees that achieve accuracies within 1% of a recently state-of-the-art neural network's (WideResNet) on CIFAR10, CIFAR100, and TinyImagenet200.
 
 ![pipeline](https://user-images.githubusercontent.com/2068077/76384774-1ffb8480-631d-11ea-973f-7cac2a60bb10.jpg)
 
 Per the pipeline illustration above, we (1) [generate the hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#1-Hierarchies) and (2) train the neural network [with a tree supervision loss](https://github.com/alvinwan/neural-backed-decision-trees#2-Tree-Supervision-Loss). Then, we (3) [run inference](https://github.com/alvinwan/neural-backed-decision-trees#3-Inference) by featurizing images using the network backbone and running embedded decision rules.
 
-# Getting Started
+**Table of Contents**
 
-**To integrate neural-backed decision trees into your own neural network**, simply pip install this repository. (Coming soon: Download zip with prebuilt induced hierarchies for certain datasets. If no wnids, generate fake ones. Attempt to get path_graph, dataset.classes. Use a simple wrapper to run classification network as nbdt. Use custom tsl with a simple function call. For a new dataset, use cli to generate induced-hierarchy from checkpoint. TODO)
+<!-- TODO -->
+
+## Quickstart: Running an NBDT
+
+<!-- TODO -->
+
+## Convert your own neural network into an NBDT
+
+**To convert your neural network into a neural-backed decision tree**, perform the following 3 steps: First, pip install the `nbdt` utility:
 
 ```
 pip install nbdt
 ```
+
+Second, wrap your loss function with a custom NBDT loss. Below, we demonstrate usage of the soft tree supervision loss, on the CIFAR10 dataset. By default, we support the CIFAR10, CIFAR100, TinyImagenet200, and Imagenet1000 image classification datasets.
+
+<!-- TODO: If no wnids, generate fake ones. Attempt to dataset.classes. For a new dataset, use cli to generate induced-hierarchy from checkpoint.-->
 
 ```
 from nbdt.loss import SoftTreeSupLoss
 criterion = SoftTreeSupLoss.with_defaults('CIFAR10', criterion=criterion)  # pass original loss
 ```
 
+Third, wrap your model with a custom NBDT wrapper as shown below. This is only to run prediction as an NBDT during validation or inference time. Do not wrap your model like below, during training.
+
+> **Do not wrap your model during training**. When training, the tree supervision loss expects the neural network logits as input, not the NBDT outputs.
+
 ```
 from nbdt.model import SoftNBDT
 model = SoftNBDT.with_defaults('CIFAR10', model=model)  # pass original model
 ```
 
-```
-nbdt hierarchy --model=ResNet34 --dataset=CIFAR10
+For an example integration, see [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models), which applies this 3-step integration to a popular image classification repository `pytorch-image-models`.
 
-criterion = SoftTreeSupLoss.with_defaults('CIFAR10', criterion, name_graph='induced-ResNet34')
-model = SoftNBDT.with_defaults('CIFAR10', model, name_graph='induced-ResNet34')
+(Optional) You may also build and use your own induced hierarchies, instead of the default induced hierarchy provided. Use the `nbdt` utility to generate a new induced hierarchy from a pretrained model, then specify the hierarchy to use.
+
 ```
+nbdt hierarchy --model=ResNet34 --dataset=CIFAR10  # TODO
+
+criterion = SoftTreeSupLoss.with_defaults('CIFAR10', criterion=criterion, name_graph='induced-ResNet34')
+model = SoftNBDT.with_defaults('CIFAR10', model=model, name_graph='induced-ResNet34')
+```
+
+## Training and Evaluation
 
 **To reproduce experimental results**, start by cloning the repository and installing all requirements.
 
@@ -47,7 +69,7 @@ bash scripts/train_wrn.sh
 bash scripts/eval_wrn.sh
 ```
 
-The bash scripts above are explained in more detail in [Induced Hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#Induced-Hierarchy), [Soft Tree Supervision Loss](https://github.com/alvinwan/neural-backed-decision-trees#Tree-Supervision-Loss), and [Soft Inference](https://github.com/alvinwan/neural-backed-decision-trees#Soft-Inference).
+The bash scripts above are explained in more detail in [Induced Hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#Induced-Hierarchy), [Soft Tree Supervision Loss](https://github.com/alvinwan/neural-backed-decision-trees#Tree-Supervision-Loss), and [Soft Inference](https://github.com/alvinwan/neural-backed-decision-trees#Soft-Inference). To reproduce our Imagenet results, see [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models).
 
 # 1. Hierarchies
 
