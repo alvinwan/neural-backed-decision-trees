@@ -30,7 +30,11 @@ def fwd():
 
 
 def dataset_to_default_path_graph(dataset):
-    return os.path.join(fwd(), f'hierarchies/{dataset}/graph-wordnet-single.json')
+    return hierarchy_to_path_graph(dataset, 'wordnet-single')
+
+
+def hierarchy_to_path_graph(dataset, hierarchy):
+    return os.path.join(fwd(), f'hierarchies/{dataset}/graph-{hierarchy}.json')
 
 
 def dataset_to_default_path_wnids(dataset):
