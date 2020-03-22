@@ -1,22 +1,17 @@
 """Generates various graphs for independent node training"""
 
-from nbdt.utils import DATASETS, METHODS
+from nbdt.utils import DATASETS, METHODS, Colors
 from nbdt.graph import build_minimal_wordnet_graph, build_random_graph, \
     prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
     get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args, \
-    augment_graph, get_depth, build_induced_graph
-from nbdt.utils import Colors
-import xml.etree.ElementTree as ET
-import argparse
-import os
-
-from nbdt.utils import DATASETS, METHODS, Colors
-from nbdt.graph import get_parser, get_wnids_from_dataset, read_graph, \
-    get_leaves, generate_fname, get_directory, get_graph_path_from_args, \
+    augment_graph, get_depth, build_induced_graph, read_graph, get_leaves, \
     get_roots
+from nbdt import data
+from networkx.readwrite.json_graph import adjacency_data
 from pathlib import Path
-import argparse
 import os
+import json
+import torchvision
 
 
 ############
@@ -139,6 +134,69 @@ def test_hierarchy(args):
         Colors.red('==> Test failed')
 
 
+#######
+# VIS #
+#######
+
+
+def build_tree(G, root, parent='null'):
+    return {
+        'name': root,
+        'label': G.nodes[root].get('label', ''),
+        'parent': parent,
+        'children': [build_tree(G, child, root) for child in G.succ[root]]
+    }
+
+
+def build_graph(G):
+    return {
+        'nodes': [{
+            'name': wnid,
+            'label': G.nodes[wnid].get('label', ''),
+            'id': wnid
+        } for wnid in G.nodes],
+        'links': [{
+            'source': u,
+            'target': v
+        } for u, v in G.edges]
+    }
+
+
+def generate_vis(path_template, data, name, fname):
+    with open(path_template) as f:
+        html = f.read().replace(
+            "'TREE_DATA_CONSTANT_TO_BE_REPLACED'",
+            json.dumps(data))
+
+    os.makedirs('out', exist_ok=True)
+    path_html = f'out/{fname}-{name}.html'
+    with open(path_html, 'w') as f:
+        f.write(html)
+
+    Colors.green('==> Wrote HTML to {}'.format(path_html))
+
+
+def generate_hierarchy_vis(args):
+    path = get_graph_path_from_args(args)
+    print('==> Reading from {}'.format(path))
+
+    G = read_graph(path)
+
+    roots = list(get_roots(G))
+    num_roots = len(roots)
+    root = next(get_roots(G))
+    tree = build_tree(G, root)
+    graph = build_graph(G)
+
+    if num_roots > 1:
+        Colors.red(f'Found {num_roots} roots! Should be only 1: {roots}')
+    else:
+        print(f'Found just {num_roots} root.')
+
+    fname = generate_fname(**vars(args)).replace('graph-', '', 1)
+    generate_vis('nbdt/templates/tree-template.html', tree, 'tree', fname)
+    generate_vis('nbdt/templates/graph-template.html', graph, 'graph', fname)
+
 
 def main():
     parser = get_parser()
@@ -146,6 +204,7 @@ def main():
 
     generate_hierarchy(args)
     test_hierarchy(args)
+    generate_hierarchy_vis(args)
 
 
 if __name__ == '__main__':

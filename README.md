@@ -168,11 +168,8 @@ The below just explains the above `generate_hierarches_induced.sh`, using CIFAR1
 # Step A. Download and evaluate pre-trained weights for WideResNet on CIFAR10.
 python main.py --eval --pretrained --model=wrn28_10_cifar10 --dataset=CIFAR10
 
-# Step B through D. Generate induced hierarchies, using the pretrained checkpoints
+# Step B through D. Generate induced hierarchies, using the pretrained checkpoints. Also tests hierarchy and outputs visualization
 python generate_hierarchy.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --dataset=CIFAR10
-
-# Test hierarchy
-python test_generated_hierarchy.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --dataset=CIFAR10
 ```
 </div>
 </details>
