@@ -45,12 +45,43 @@ class TreeSupLoss(nn.Module):
     accepts_weighted_average = True
     accepts_classes = lambda trainset, **kwargs: trainset.classes
 
-    def __init__(self, path_graph, path_wnids, classes,
-            max_leaves_supervised=-1, min_leaves_supervised=-1,
-            tree_supervision_weight=1., weighted_average=False,
-            criterion=nn.CrossEntropyLoss()):
+    def __init__(self,
+            dataset,
+            criterion,
+            path_graph=None,
+            path_wnids=None,
+            classes=None,
+            hierarchy=None,
+            **kwargs):
         super().__init__()
 
+        if dataset and hierarchy and not path_graph:
+            path_graph = hierarchy_to_path_graph(dataset, hierarchy)
+        if dataset and not path_graph:
+            path_graph = dataset_to_default_path_graph(dataset)
+        if dataset and not path_wnids:
+            path_wnids = dataset_to_default_path_wnids(dataset)
+        if dataset and not classes:
+            classes = dataset_to_dummy_classes(dataset)
+
+        self.init(dataset, criterion, path_graph, path_wnids, classes, **kwargs)
+
+    def init(self,
+            dataset,
+            criterion,
+            path_graph,
+            path_wnids,
+            classes,
+            max_leaves_supervised=-1,
+            min_leaves_supervised=-1,
+            tree_supervision_weight=1.,
+            weighted_average=False):
+        """
+        Extra init method makes clear which arguments are finally necessary for
+        this class to function. The constructor for this class may generate
+        some of these required arguments if initially missing.
+        """
+        self.dataset = dataset
         self.num_classes = len(classes)
         self.nodes = Node.get_nodes(path_graph, path_wnids, classes)
         self.max_leaves_supervised = max_leaves_supervised
@@ -58,18 +89,6 @@ class TreeSupLoss(nn.Module):
         self.tree_supervision_weight = tree_supervision_weight
         self.weighted_average = weighted_average
         self.criterion = criterion
-
-    @classmethod
-    def with_defaults(cls, dataset, hierarchy=None, **kwargs):
-        assert 'path_graph' not in kwargs and 'path_wnids' not in kwargs, \
-            '`from_dataset` sets both the path_graph and path_wnids'
-        path_graph = dataset_to_default_path_graph(dataset)
-        path_wnids = dataset_to_default_path_wnids(dataset)
-        classes = dataset_to_dummy_classes(dataset)
-
-        if hierarchy:
-            path_graph = hierarchy_to_path_graph(dataset, hierarchy)
-        return cls(path_graph, path_wnids, classes=classes, **kwargs)
 
 
 class HardTreeSupLoss(TreeSupLoss):

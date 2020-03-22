@@ -1,6 +1,6 @@
 """
-For external use as part of nbdt package. This is a model wrapper that
-runs inferecne as an NBDT. Note these wrappers make no assumption about the
+For external use as part of nbdt package. This is a model  that
+runs inferecne as an NBDT. Note these s make no assumption about the
 underlying neural network other than it (1) is a classification model and
 (2) returns logits.
 """
@@ -16,23 +16,45 @@ from nbdt.analysis import SoftEmbeddedDecisionRules, HardEmbeddedDecisionRules
 
 class NBDT(nn.Module):
 
-    def __init__(self, path_graph, path_wnids, classes,
-            model, Rules=HardEmbeddedDecisionRules):
+    def __init__(self,
+            dataset,
+            model,
+            path_graph=None,
+            path_wnids=None,
+            classes=None,
+            pretrained=False,
+            hierarchy=None,
+            **kwargs):
         super().__init__()
+
+        if dataset and hierarchy and not path_graph:
+            path_graph = hierarchy_to_path_graph(dataset, hierarchy)
+        if dataset and not path_graph:
+            path_graph = dataset_to_default_path_graph(dataset)
+        if dataset and not path_wnids:
+            path_wnids = dataset_to_default_path_wnids(dataset)
+        if dataset and not classes:
+            classes = dataset_to_dummy_classes(dataset)
+        if isinstance(model, str):
+            raise NotImplementedError('Model must be nn.Module')
+
+        self.init(dataset, model, path_graph, path_wnids, classes, **kwargs)
+
+    def init(self,
+            dataset,
+            model,
+            path_graph,
+            path_wnids,
+            classes,
+            pretrained=False,
+            Rules=HardEmbeddedDecisionRules):
+        """
+        Extra init method makes clear which arguments are finally necessary for
+        this class to function. The constructor for this class may generate
+        some of these required arguments if initially missing.
+        """
         self.rules = Rules(path_graph, path_wnids, classes)
         self.model = model
-
-    @classmethod
-    def with_defaults(cls, dataset, model, hierarchy=None, **kwargs):
-        assert 'path_graph' not in kwargs and 'path_wnids' not in kwargs, \
-            '`from_dataset` sets both the path_graph and path_wnids'
-        path_graph = dataset_to_default_path_graph(dataset)
-        path_wnids = dataset_to_default_path_wnids(dataset)
-        classes = dataset_to_dummy_classes(dataset)
-
-        if hierarchy:
-            path_graph = hierarchy_to_path_graph(dataset, hierarchy)
-        return cls(path_graph, path_wnids, classes, model, **kwargs)
 
     def forward(self, x):
         x = self.model(x)
