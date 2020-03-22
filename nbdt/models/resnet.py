@@ -113,8 +113,8 @@ class ResNet(nn.Module):
 
 def _ResNet(arch, *args, pretrained=False, progress=True, dataset='CIFAR10', **kwargs):
     model = ResNet(*args, **kwargs)
-    model = get_pretrained_model(arch, model, model_urls,
-        pretrained=pretrained, progress=progress, dataset=dataset)
+    model = get_pretrained_model(arch, dataset, model, model_urls,
+        pretrained=pretrained, progress=progress)
     return model
 
 def ResNet10(pretrained=False, progress=True, **kwargs):
