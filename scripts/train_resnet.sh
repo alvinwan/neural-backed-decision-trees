@@ -1,5 +1,5 @@
-for loss in SoftTreeSupLoss; do
-  for dataset in CIFAR10 CIFAR100 TinyImagenet200; do
-    python main.py --lr=0.1 --dataset=${dataset} --model=${model} --path-graph=./nbdt/hierarchies/${dataset}/graph-induced-${model}.json --tree-supervision-weight=10 --loss=${loss}
-  done;
+for model in ResNet18; do
+  python main.py --lr=0.1 --dataset=CIFAR10 --model=${model} --path-graph=./nbdt/hierarchies/CIFAR10/graph-induced-${model}.json --loss=SoftTreeSupLoss
+  python main.py --lr=0.1 --dataset=CIFAR100 --model=${model} --path-graph=./nbdt/hierarchies/CIFAR100/graph-induced-${model}.json --loss=SoftTreeSupLoss
+  python main.py --lr=0.1 --dataset=TinyImagenet200 --model=${model} --path-graph=./nbdt/hierarchies/TinyImagenet200/graph-induced-${model}.json --loss=SoftTreeSupLoss --tree-supervision-weight=10
 done;
