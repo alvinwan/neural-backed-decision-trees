@@ -1,4 +1,4 @@
-for model in resnet18; do  # add as many as you want!
+for model in ResNet18; do  # add as many as you want!
 
   for dataset in CIFAR10 CIFAR100 TinyImagenet200; do
     if [ ! -f "checkpoint/ckpt-${dataset}-${model}.pth" ]; then

@@ -1,4 +1,4 @@
-for model in resnet18; do
+for model in ResNet18; do
   for dataset in CIFAR10 CIFAR100 TinyImagenet200; do
     for analysis in SoftEmbeddedDecisionRules HardEmbeddedDecisionRules; do
       python main.py --dataset=${dataset} --model=${model} --path-graph=./nbdt/hierarchies/${dataset}/graph-induced-${model}.json --tree-supervision-weight=10 --loss=SoftTreeSupLoss --eval --resume --analysis=${analysis}
