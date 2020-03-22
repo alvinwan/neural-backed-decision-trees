@@ -116,8 +116,13 @@ model = getattr(models, args.model)
 model_kwargs = {'num_classes': len(trainset.classes) }
 
 if args.pretrained:
+    print('==> Loading pretrained model..')
     try:
-        print('==> Loading pretrained model..')
+        net = model(pretrained=True, dataset=args.dataset, **model_kwargs)
+    except TypeError as e:  # likely because `dataset` not allowed arg
+        print(e)
+
+    try:
         net = model(pretrained=True, **model_kwargs)
     except Exception as e:
         Colors.red(f'Fatal error: {e}')

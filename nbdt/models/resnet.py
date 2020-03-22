@@ -9,9 +9,17 @@ Reference:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from nbdt.models.utils import get_pretrained_model
 
 
 __all__ = ('ResNet10', 'ResNet18', 'ResNet34', 'ResNet50', 'ResNet101', 'ResNet152')
+
+
+model_urls = {
+    ('ResNet18', 'CIFAR10'): '',
+    ('ResNet18', 'CIFAR100'): '',
+    ('ResNet18', 'TinyImagenet200'): ''
+}
 
 
 class BasicBlock(nn.Module):
@@ -103,23 +111,35 @@ class ResNet(nn.Module):
         out = self.linear(out)
         return out
 
-def ResNet10(num_classes=10):
-    return ResNet(BasicBlock, [1,1,1,1], num_classes=num_classes)
+def _ResNet(arch, *args, pretrained=False, progress=True, dataset='CIFAR10', **kwargs):
+    model = ResNet(*args, **kwargs)
+    model = get_pretrained_model(arch, model, model_urls,
+        pretrained=pretrained, progress=progress, dataset=dataset)
+    return model
 
-def ResNet18(num_classes=10):
-    return ResNet(BasicBlock, [2,2,2,2], num_classes=num_classes)
+def ResNet10(pretrained=False, progress=True, **kwargs):
+    return _ResNet('ResNet10', BasicBlock, [1,1,1,1],
+        pretrained=pretrained, progress=progress, **kwargs)
 
-def ResNet34(num_classes=10):
-    return ResNet(BasicBlock, [3,4,6,3], num_classes=num_classes)
+def ResNet18(pretrained=False, progress=True, **kwargs):
+    return _ResNet('ResNet18', BasicBlock, [2,2,2,2],
+        pretrained=pretrained, progress=progress, **kwargs)
 
-def ResNet50(num_classes=10):
-    return ResNet(Bottleneck, [3,4,6,3], num_classes=num_classes)
+def ResNet34(pretrained=False, progress=True, **kwargs):
+    return _ResNet('ResNet34', BasicBlock, [3,4,6,3],
+        pretrained=pretrained, progress=progress, **kwargs)
 
-def ResNet101(num_classes=10):
-    return ResNet(Bottleneck, [3,4,23,3], num_classes=num_classes)
+def ResNet50(pretrained=False, progress=True, **kwargs):
+    return _ResNet('ResNet50', Bottleneck, [3,4,6,3],
+        pretrained=pretrained, progress=progress, **kwargs)
 
-def ResNet152(num_classes=10):
-    return ResNet(Bottleneck, [3,8,36,3], num_classes=num_classes)
+def ResNet101(pretrained=False, progress=True, **kwargs):
+    return _ResNet('ResNet101', Bottleneck, [3,4,23,3],
+        pretrained=pretrained, progress=progress, **kwargs)
+
+def ResNet152(pretrained=False, progress=True, **kwargs):
+    return _ResNet('ResNet152', Bottleneck, [3,8,36,3],
+        pretrained=pretrained, progress=progress, **kwargs)
 
 
 def test():

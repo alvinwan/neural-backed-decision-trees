@@ -2,6 +2,7 @@ import os
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
+from pathlib import Path
 import zipfile
 import urllib.request
 import shutil
@@ -56,7 +57,8 @@ class TinyImagenet200(Dataset):
 
         print('==> Downloading TinyImagenet200...')
         file_name = os.path.join(root, 'tiny-imagenet-200.zip')
-
+        os.makedirs(Path(file_name).parent, exist_ok=True)
+        
         with urllib.request.urlopen(self.url) as response, open(file_name, 'wb') as out_file:
             shutil.copyfileobj(response, out_file)
             print('==> Extracting TinyImagenet200...')
