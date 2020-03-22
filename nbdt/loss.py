@@ -90,6 +90,36 @@ class TreeSupLoss(nn.Module):
         self.weighted_average = weighted_average
         self.criterion = criterion
 
+    @staticmethod
+    def assert_output_not_nbdt(outputs):
+        """
+        >>> x = torch.randn(1, 3, 224, 224)
+        >>> TreeSupLoss.assert_output_not_nbdt(x)  # all good!
+        >>> x._nbdt_output_flag = True
+        >>> TreeSupLoss.assert_output_not_nbdt(x)  #doctest: +ELLIPSIS
+        Traceback (most recent call last):
+            ...
+        AssertionError: ...
+        >>> from nbdt.model import NBDT
+        >>> import torchvision.models as models
+        >>> model = models.resnet18()
+        >>> y = model(x)
+        >>> TreeSupLoss.assert_output_not_nbdt(y)  # all good!
+        >>> model = NBDT('CIFAR10', model)
+        >>> y = model(x)
+        >>> TreeSupLoss.assert_output_not_nbdt(y)  #doctest: +ELLIPSIS
+        Traceback (most recent call last):
+            ...
+        AssertionError: ...
+        """
+        assert getattr(outputs, '_nbdt_output_flag', False) is False, (
+            "Uh oh! Looks like you passed an NBDT model's output to an NBDT "
+            "loss. NBDT losses are designed to take in the *original* model's "
+            "outputs, as input. NBDT models are designed to only be used "
+            "during validation and inference, not during training. Confused? "
+            " Check out github.com/alvinwan/nbdt#convert-neural-networks-to-decision-trees"
+            " for examples and instructions.")
+
 
 class HardTreeSupLoss(TreeSupLoss):
 
@@ -105,6 +135,8 @@ class HardTreeSupLoss(TreeSupLoss):
         moved onto GPU at once. Same with those with 3, with 4 etc. On CIFAR10,
         the max is 2. On CIFAR100, the max is 8.
         """
+        self.assert_output_not_nbdt(outputs)
+
         loss = self.criterion(outputs, targets)
         num_losses = outputs.size(0) * len(self.nodes) / 2.
 
@@ -170,6 +202,8 @@ class HardTreeSupLoss(TreeSupLoss):
 class SoftTreeSupLoss(HardTreeSupLoss):
 
     def forward(self, outputs, targets):
+        self.assert_output_not_nbdt(outputs)
+
         loss = self.criterion(outputs, targets)
         bayesian_outputs = SoftTreeSupLoss.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)

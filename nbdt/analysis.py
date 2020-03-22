@@ -155,25 +155,28 @@ class HardEmbeddedDecisionRules(Noop):
         path_wnids = dataset_to_default_path_wnids(dataset)
         return cls(path_graph, path_wnids, **kwargs)
 
-    def forward(self, outputs, targets=None):
-        targets_ints = [int(target) for target in targets.cpu().long()]
+    def forward(self, outputs):
         wnid_to_pred_selector = {}
         for node in self.nodes:
-            selector, outputs_sub, targets_sub = HardTreeSupLoss.inference(
-                node, outputs, targets_ints, self.weighted_average)
+            selector, outputs_sub, _ = HardTreeSupLoss.inference(
+                node, outputs, (), self.weighted_average)
             if not any(selector):
                 continue
             _, preds_sub = torch.max(outputs_sub, dim=1)
             preds_sub = list(map(int, preds_sub.cpu()))
             wnid_to_pred_selector[node.wnid] = (preds_sub, selector)
 
+        _, predicted = outputs.max(1)
+        n_samples = outputs.size(0)
         predicted = self.traverse_tree(
-            predicted, wnid_to_pred_selector, n_samples).to(targets.device)
+            predicted, wnid_to_pred_selector, n_samples).to(outputs.device)
+
+        predicted._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return predicted
 
     def update_batch(self, outputs, targets):
         super().update_batch(outputs, targets)
-        predicted = self.forward(outputs, targets)
+        predicted = self.forward(outputs)
 
         n_samples = outputs.size(0)
         self.total += n_samples
@@ -213,9 +216,10 @@ class HardEmbeddedDecisionRules(Noop):
 class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
     """Evaluation is soft."""
 
-    def forward(self, outputs, _):
+    def forward(self, outputs):
         bayesian_outputs = SoftTreeSupLoss.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)
         n_samples = outputs.size(0)
         predicted = bayesian_outputs.max(1)[1].to(outputs.device)
+        predicted._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return predicted

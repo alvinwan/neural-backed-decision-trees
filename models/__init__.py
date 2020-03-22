@@ -5,7 +5,6 @@ from .pnasnet import *
 from .preact_resnet import *
 from .efficientnet import *
 from torchvision.models import *
-from .linear import *
 from .wideresnet import *
 from pytorchcv.models.wrn_cifar import *
 from pytorchcv.models.efficientnet import *
