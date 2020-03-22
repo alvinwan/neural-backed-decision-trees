@@ -57,17 +57,15 @@ If you haven't already, pip install the `nbdt` utility.
 pip install nbdt
 ```
 
-Then, pick an NBDT inference mode (hard or soft), dataset, and backbone. By default, we support ResNet18 and WideResNet28_10 for CIFAR10, CIFAR100, and TinyImagenet200.
+Then, pick an NBDT inference mode (hard or soft), dataset, and backbone. By default, we support ResNet18 and WideResNet28_10 for CIFAR10, CIFAR100, and TinyImagenet200. We also support EfficientNet-EdgeTPUSmall for Imagenet.
 
 ```python
 from nbdt.model import SoftNBDT
+import torchvision.models as models
 import torch
 
-model = SoftNBDT(dataset='CIFAR10', model='ResNet18', hierarchy='induced-ResNet18', pretrained=True)
-
-x = torch.randn(1, 3, 32, 32)
-logits = model(x)
-logits, decisions = model.forward_with_decisions(x)
+model = models.resnet18()
+model = SoftNBDT(dataset='CIFAR10', model=model, hierarchy='induced-resnet18', pretrained=True)
 ```
 
 # Convert Neural Networks to Decision Trees
@@ -95,7 +93,7 @@ logits, decisions = model.forward_with_decisions(x)
   from nbdt.model import SoftNBDT
   model = SoftNBDT(dataset='CIFAR10', model=model)  # `model` is your original model
   ```
-  
+
   > **Do not wrap your model during training**. When training, the tree supervision loss expects the neural network logits as input, not the NBDT outputs.
 
 :arrow_right: **Example**: See [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models), which applies this 3-step integration to a popular image classification repository `pytorch-image-models`.
@@ -277,9 +275,9 @@ bash scripts/eval_wrn.sh
 
 <details><summary>Line-by-line Explanation. <i>[click to expand]</i></summary>
 <div>
-  
+
 ![inference_modes](https://user-images.githubusercontent.com/2068077/76388544-9f418600-6326-11ea-9214-17356c71a066.jpg)
-  
+
 As before, the below just explains the above `eval_wrn.sh`. You do not need to run the following after running the previous bash script. Note the following commands are nearly identical to the corresponding train commands -- we drop the `lr`, `path-resume` flags and add `resume`, `eval`, and the `analysis` type (hard or soft inference).
 
 ```bash
@@ -302,43 +300,10 @@ TODO: python setup.py develop + instructions for adding new datasets, new models
 
 ## Architecture
 
-As a sample, we've included copies of all the above bash scripts but for ResNet10 and ResNet18. Simply add new model names or new dataset names to these bash scripts to test our method with more models or datasets.
+As a sample, we've included copies of all the above bash scripts but for resnet18. Simply add new model names or new dataset names to these bash scripts to test our method with more models or datasets.
 
 ```bash
 bash scripts/generate_hierarchies_induced_resnet.sh  # this will train the network on the provided datasets if no checkpoints are found
 bash scripts/train_resnet.sh
 bash scripts/eval_resnet.sh
-```
-
-## Importing Other Models (`torchvision`, `pytorchcv`)
-
-To add new models present in [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch),
-just add a new line to `models/__init__.py` importing the models you want. For
-example, we added `from pytorchcv.models.wrn_cifar import *` for CIFAR wideresnet
-models.
-
-To add new models present in [`torchvision`](https://pytorch.org/docs/stable/torchvision/models.html), likewise just add a new line to `models/__init__.py`. For example, to import all, use `from torchvision.models import *`.
-
-You can immediately start using these models with any of our utilities
-above, including the custom tree supervision losses and extracted decision trees.
-
-```bash
-python main.py --model=wrn28_10_cifar10 --eval
-python main.py --model=wrn28_10_cifar10 --eval --pretrained  # loads pretrained model
-python main.py --model=wrn28_10_cifar10 --eval --pretrained --analysis=HardEmbeddedDecisionRules  # run the extracted hard decision tree
-python main.py --model=wrn28_10_cifar10 --loss=HardTreeSupLoss --batch-size=256  # train with tree supervision loss
-```
-
-To download a pretrained checkpoint for a `pytorchcv` model, simply add the
-`--pretrained` flag.
-
-```bash
-python main.py --model=wrn28_10_cifar10 --pretrained
-```
-
-If a pretrained checkpoint is already downloaded to disk, pass the path
-using `--path-checkpoint`
-
-```bash
-python main.py --model=wrn28_10_cifar10 --path-checkpoint=...
 ```
