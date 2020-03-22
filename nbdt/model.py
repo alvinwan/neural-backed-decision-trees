@@ -73,6 +73,8 @@ class NBDT(nn.Module):
             assert arch is not None
             state_dict = load_state_dict_from_arch_dataset(
                 arch, dataset, model_urls, pretrained=True)
+            if 'net' in state_dict:
+                state_dict = state_dict['net']
             self.load_state_dict(state_dict)
 
     def load_state_dict(self, state_dict, **kwargs):
