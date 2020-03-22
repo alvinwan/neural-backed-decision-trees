@@ -25,12 +25,13 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=install_requires,
     download_url='https://github.com/alvinwan/neural-backed-decision-trees/archive/%s.zip' % VERSION,
+    scripts=['bin/nbdt-hierarchy', 'bin/nbdt-wnids'],
     classifiers=[
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.5',
     include_package_data=True
 )

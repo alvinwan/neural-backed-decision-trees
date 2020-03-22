@@ -2,7 +2,7 @@ import networkx as nx
 import json
 import random
 from nltk.corpus import wordnet as wn
-from nbdt.utils import DATASETS, METHODS
+from nbdt.utils import DATASETS, METHODS, fwd
 from networkx.readwrite.json_graph import node_link_data, node_link_graph
 from sklearn.cluster import AgglomerativeClustering
 from pathlib import Path
@@ -94,6 +94,10 @@ def get_wnids_from_dataset(dataset, root='./nbdt/wnids'):
 
 
 def get_wnids(path_wnids):
+    if not os.path.exists(path_wnids):
+        parent = Path(fwd()).parent
+        print(f'No such file or directory: {path_wnids}. Looking in {str(parent)}')
+        path_wnids = parent / path_wnids
     with open(path_wnids) as f:
         wnids = [wnid.strip() for wnid in f.readlines()]
     return wnids
@@ -300,6 +304,10 @@ def write_graph(G, path):
 
 
 def read_graph(path):
+    if not os.path.exists(path):
+        parent = Path(fwd()).parent
+        print(f'No such file or directory: {path}. Looking in {str(parent)}')
+        path = parent / path
     with open(path) as f:
         return node_link_graph(json.load(f))
 

@@ -26,7 +26,7 @@ Pip install the `nbdt` utility and run it on an image of your choosing. This can
 
 ```bash
 pip install nbdt
-nbdt eval https://images.pexels.com/photos/1170986/pexels-photo-1170986.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
+nbdt-eval https://images.pexels.com/photos/1170986/pexels-photo-1170986.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
 ```
 
 This outputs both the class prediction and all the intermediate decisions, like below:
@@ -36,7 +36,7 @@ TODO
 By default, this evaluation utility uses WideResNet pretrained on CIFAR10. You can also pass classes not seen in CIFAR10. Below, we pass a picture of a bear. This bear is also pictured below.
 
 ```bash
-nbdt eval https://images.pexels.com/photos/1466592/pexels-photo-1466592.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
+nbdt-eval https://images.pexels.com/photos/1466592/pexels-photo-1466592.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
 ```
 
 Like before, this outputs the class prediction and intermediate decisions. Although this class was not seen at train time, the model still correctly disambiguates animal from vehicle, when classifying the bear.
@@ -112,7 +112,7 @@ model = SoftNBDT(dataset='CIFAR10', model=model, hierarchy='induced-wrn28_10_cif
 (Optional) You may also build and use your own induced hierarchies, instead of the default induced hierarchy provided. Use the `nbdt` utility to generate a new induced hierarchy from a pretrained model, then specify the hierarchy to use.
 
 ```bash
-nbdt hierarchy --model=ResNet34 --dataset=CIFAR10  # TODO
+nbdt-hierarchy --model=ResNet34 --dataset=CIFAR10
 ```
 
 ```python
@@ -169,7 +169,7 @@ The below just explains the above `generate_hierarches_induced.sh`, using CIFAR1
 python main.py --eval --pretrained --model=wrn28_10_cifar10 --dataset=CIFAR10
 
 # Step B through D. Generate induced hierarchies, using the pretrained checkpoints. Also tests hierarchy and outputs visualization
-python generate_hierarchy.py --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --dataset=CIFAR10
+nbdt-hierarchy --method=induced --induced-checkpoint=checkpoint/ckpt-CIFAR10-wrn28_10_cifar10.pth --dataset=CIFAR10
 ```
 </div>
 </details>
@@ -188,13 +188,10 @@ The below just explains the above `generate_hierarchies_wordnet.sh`, using CIFAR
 
 ```bash
 # Generate mapping from classes to WNID. This is required for CIFAR10 and CIFAR100.
-python generate_wnids.py --dataset=CIFAR10
+nbdt-wnids --dataset=CIFAR10
 
 # Generate hierarchy, using the WNIDs. This is required for all datasets: CIFAR10, CIFAR100, TinyImagenet200
-python generate_hierarchy.py --single-path --dataset=CIFAR10
-
-# Test hierarchy. This is optional but supported for all datasets. Make sure that your output ends with `==> All checks pass!`.
-python test_generated_hierarchy.py --single-path --dataset=CIFAR10
+nbdt-hierarchy --single-path --dataset=CIFAR10
 ```
 </details>
 
@@ -203,17 +200,14 @@ python test_generated_hierarchy.py --single-path --dataset=CIFAR10
 Use `--method=random` to randomly generate a binary-ish hierarchy. Optionally, use the `--seed` (`--seed=-1` to *not* shuffle leaves) and `--branching-factor` flags. When debugging, we set branching factor to the number of classes. For example, the sanity check hierarchy for CIFAR10 is
 
 ```bash
-python generate_hierarchy.py --seed=-1 --branching-factor=10 --single-path --dataset=CIFAR10
+nbdt-hierarchy --seed=-1 --branching-factor=10 --single-path --dataset=CIFAR10
 ```
 
 ### Visualize Hierarchy
 
-Run the visualization generation script to obtain both the JSON representing
-the hierarchy and the HTML file containing a d3 visualization.
-
-```bash
-python generate_vis.py --single-path
-```
+By default, the generation script outputs both the JSON representing
+the hierarchy and the HTML file containing a d3 visualization. All visualizations
+are stored in `out/`.
 
 <details><summary>See example output.</summary>
 <div>

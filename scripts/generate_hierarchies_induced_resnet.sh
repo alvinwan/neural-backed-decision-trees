@@ -5,6 +5,6 @@ for model in ResNet18; do  # add as many as you want!
       python main.py --model=${model} --dataset=${dataset}
     fi
 
-    python generate_hierarchy.py --method=induced --induced-checkpoint=checkpoint/ckpt-${dataset}-${model}.pth --dataset=${dataset}
+    nbdt-hierarchy --method=induced --induced-checkpoint=checkpoint/ckpt-${dataset}-${model}.pth --dataset=${dataset}
   done;
 done;

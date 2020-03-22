@@ -1,6 +1,7 @@
+#!/usr/bin/env python
 """Generates various graphs for independent node training"""
 
-from nbdt.utils import DATASETS, METHODS, Colors
+from nbdt.utils import DATASETS, METHODS, Colors, fwd
 from nbdt.graph import build_minimal_wordnet_graph, build_random_graph, \
     prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
     get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args, \
@@ -194,8 +195,9 @@ def generate_hierarchy_vis(args):
         print(f'Found just {num_roots} root.')
 
     fname = generate_fname(**vars(args)).replace('graph-', '', 1)
-    generate_vis('nbdt/templates/tree-template.html', tree, 'tree', fname)
-    generate_vis('nbdt/templates/graph-template.html', graph, 'graph', fname)
+    parent = Path(fwd()).parent
+    generate_vis(str(parent / 'nbdt/templates/tree-template.html'), tree, 'tree', fname)
+    generate_vis(str(parent / 'nbdt/templates/graph-template.html'), graph, 'graph', fname)
 
 
 def main():

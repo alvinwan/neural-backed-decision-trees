@@ -2,5 +2,5 @@ for i in "CIFAR10 wrn28_10_cifar10" "CIFAR100 wrn28_10_cifar100" "TinyImagenet20
   read dataset model <<< "${i}";
 
   python main.py --pretrained --model=${model} --dataset=${dataset} --epochs=0
-  python generate_hierarchy.py --method=induced --induced-checkpoint=checkpoint/ckpt-${dataset}-${model}.pth --dataset=${dataset}
+  nbdt-hierarchy --method=induced --induced-checkpoint=checkpoint/ckpt-${dataset}-${model}.pth --dataset=${dataset}
 done;
