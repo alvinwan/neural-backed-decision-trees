@@ -226,7 +226,7 @@ class SoftTreeSupLoss(HardTreeSupLoss):
         class_probs = torch.ones((outputs.size(0), num_classes)).to(outputs.device)
         for node in nodes:
             output = cls.get_output_sub(outputs, node, weighted_average)
-            output = F.softmax(output)
+            output = F.softmax(output, dim=1)
 
             old_indices, new_indices = [], []
             for index_child in range(len(node.children)):

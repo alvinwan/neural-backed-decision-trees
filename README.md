@@ -26,22 +26,27 @@ Pip install the `nbdt` utility and run it on an image of your choosing. This can
 
 ```bash
 pip install nbdt
-nbdt-eval https://images.pexels.com/photos/1170986/pexels-photo-1170986.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
+nbdt https://images.pexels.com/photos/1170986/pexels-photo-1170986.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
 ```
 
 This outputs both the class prediction and all the intermediate decisions, like below:
 
 TODO
+```
+cat
+```
 
 By default, this evaluation utility uses WideResNet pretrained on CIFAR10. You can also pass classes not seen in CIFAR10. Below, we pass a picture of a bear. This bear is also pictured below.
 
 ```bash
-nbdt-eval https://images.pexels.com/photos/1466592/pexels-photo-1466592.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
+nbdt https://images.pexels.com/photos/1466592/pexels-photo-1466592.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
 ```
 
 Like before, this outputs the class prediction and intermediate decisions. Although this class was not seen at train time, the model still correctly disambiguates animal from vehicle, when classifying the bear.
 
-TODO
+```
+bear
+```
 
 <img src="https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=297 align=left>
 <img src="https://images.pexels.com/photos/158109/kodiak-brown-bear-adult-portrait-wildlife-158109.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=252 align=left>

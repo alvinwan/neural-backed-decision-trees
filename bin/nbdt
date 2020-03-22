@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+"""Run evaluation on a single image, using an NBDT"""
+
+from nbdt.model import SoftNBDT
+from pytorchcv.models.wrn_cifar import wrn28_10_cifar10
+from PIL import Image
+from urllib.request import urlopen, Request
+from torchvision import transforms
+import io
+import sys
+
+assert len(sys.argv) > 1, "Need to pass image URL or image path as argument"
+
+classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+
+# load pretrained NBDT
+model = wrn28_10_cifar10()
+model = SoftNBDT(
+  dataset='CIFAR10',
+  model=model,
+  hierarchy='induced-wrn28_10_cifar10',
+  pretrained=True,
+  arch='wrn28_10_cifar10')
+
+# load image
+path = sys.argv[1]
+headers = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.3'
+}
+if 'http' in path:
+  request = Request(path, headers=headers)
+  file = io.BytesIO(urlopen(request).read())
+else:
+  file = path
+im = Image.open(file)
+
+# transform image
+transforms = transforms.Compose([
+  transforms.Resize(32),
+  transforms.CenterCrop(32),
+  transforms.ToTensor()
+])
+x = transforms(im)[None]
+
+# run inference
+outputs = model(x)
+cls = classes[outputs[0]]
+print(cls)
