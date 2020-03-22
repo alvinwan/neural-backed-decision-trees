@@ -61,12 +61,13 @@ Then, pick an NBDT inference mode (hard or soft), dataset, and backbone. By defa
 
 ```python
 from nbdt.model import SoftNBDT
-import torchvision.models as models
-import torch
+from pytorchcv.models.wrn_cifar import wrn28_10_cifar10
 
-model = models.resnet18()
-model = SoftNBDT(dataset='CIFAR10', model=model, hierarchy='induced-resnet18', pretrained=True)
+model = wrn28_10_cifar10()
+model = SoftNBDT(dataset='CIFAR10', model=model, hierarchy='induced-wrn28_10_cifar10', pretrained=True)
 ```
+
+> **Note about model names**: WideResNet models are at `pytorchcv.models.wrn_cifar.wrn28_10_cifar{10,100}` and `nbdt.models.wideresnet.wrn28_10` (for TinyImagenet200). The ResNet models provided with nbdt (`nbdt.models.resnet.ResNet{10,18,34,50,101,152}`) support all datasets. Conversely, the ResNet models provided in torchvision `torchvision.models.resnet18` only supports 224x224 input. 
 
 # Convert Neural Networks to Decision Trees
 
@@ -300,7 +301,7 @@ TODO: python setup.py develop + instructions for adding new datasets, new models
 
 ## Architecture
 
-As a sample, we've included copies of all the above bash scripts but for resnet18. Simply add new model names or new dataset names to these bash scripts to test our method with more models or datasets.
+As a sample, we've included copies of all the above bash scripts but for ResNet18. Simply add new model names or new dataset names to these bash scripts to test our method with more models or datasets.
 
 ```bash
 bash scripts/generate_hierarchies_induced_resnet.sh  # this will train the network on the provided datasets if no checkpoints are found
