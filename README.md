@@ -1,12 +1,15 @@
 # Neural-Backed Decision Trees
 
-Run decision trees that achieve accuracies within 1% of a recently state-of-the-art neural network's (WideResNet) on CIFAR10, CIFAR100, and TinyImagenet200.
+Run decision trees that achieve state-of-the-art accuracy for explainable models on CIFAR10, CIFAR100, TinyImagenet200, and Imagenet. NBDTs achieve accuracies within 1% of the original neural network on CIFAR10, CIFAR100, and TinyImagenet200 with the recently state-of-the-art WideResNet.
+
+<sub>**NBDT Accuracy per dataset**: CIFAR10 (97.57%), CIFAR100 (82.87%), TinyImagenet200 (66.66%), Imagenet (67.47%). [See more results](#results)</sub>
 
 **Table of Contents**
 
-- [Quickstart: Running NBDTs](#quickstart-running-nbdts)
+- [Quickstart: Running and loading NBDTs](#quickstart)
 - [Convert your own neural network into a decision tree](#convert-neural-networks-to-decision-trees)
-- [Training and Evaluation](#training-and-evaluation)
+- [Training and evaluation](#training-and-evaluation)
+- [Results](#results)
 - [Developing](#developing)
 
 ![pipeline](https://user-images.githubusercontent.com/2068077/76384774-1ffb8480-631d-11ea-973f-7cac2a60bb10.jpg)
@@ -15,7 +18,9 @@ Per the pipeline illustration above, we (1) [generate the hierarchy](https://git
 
 <!-- TODO: link to paper-->
 
-# Quickstart: Running NBDTs
+# Quickstart
+
+## Running Pretrained NBDT on Examples
 
 Pip install the `nbdt` utility and run it on an image of your choosing. This can be a local image path or an image URL. Below, we evaluate on an image of a cat, from the web. This cat is pictured below.
 
@@ -44,33 +49,54 @@ TODO
 
 <sub>*Pictures are taken from [pexels.com](http://pexels.com), which are free to use per the [Pexels license](https://www.pexels.com/photo-license/).*</sub>
 
+## Loading Pretrained NBDTs in Code
+
+If you haven't already, pip install the `nbdt` utility.
+
+```bash
+pip install nbdt
+```
+
+Then, pick an NBDT inference mode (hard or soft), dataset, and backbone. By default, we support ResNet18 and WideResNet28_10 for CIFAR10, CIFAR100, and TinyImagenet200.
+
+```python
+from nbdt.model import SoftNBDT
+import torch
+
+model = SoftNBDT(dataset='CIFAR10', model='ResNet18', hierarchy='induced-ResNet18', pretrained=True)
+
+x = torch.randn(1, 3, 32, 32)
+logits = model(x)
+logits, decisions = model.forward_with_decisions(x)
+```
+
 # Convert Neural Networks to Decision Trees
 
 **To convert your neural network** into a neural-backed decision tree, perform the following 3 steps:
 
-1. **First**, pip install the `nbdt` utility:
+1. **First**, if you haven't already, pip install the `nbdt` utility:
 
   ```bash
   pip install nbdt
   ```
 
-2. **Second**, wrap your loss function with a custom NBDT loss. Below, we demonstrate usage of the soft tree supervision loss, on the CIFAR10 dataset. By default, we support the CIFAR10, CIFAR100, TinyImagenet200, and Imagenet1000 image classification datasets.
+2. **Second**, wrap your loss function `criterion` with a custom NBDT loss. Below, we demonstrate usage of the soft tree supervision loss, on the CIFAR10 dataset. By default, we support the CIFAR10, CIFAR100, TinyImagenet200, and Imagenet1000 image classification datasets.
 
   <!-- TODO: If no wnids, generate fake ones. Attempt to dataset.classes. For a new dataset, use cli to generate induced-hierarchy from checkpoint. -->
 
   ```python
   from nbdt.loss import SoftTreeSupLoss
-  criterion = SoftTreeSupLoss.with_defaults('CIFAR10', criterion=criterion)  # pass original loss
+  criterion = SoftTreeSupLoss(dataset='CIFAR10', criterion=criterion)  # `criterion` is your original loss function e.g., nn.CrossEntropyLoss
   ```
 
-3. **Third**, wrap your model with a custom NBDT wrapper as shown below. This is only to run prediction as an NBDT during validation or inference time. Do not wrap your model like below, during training.
-
-  > **Do not wrap your model during training**. When training, the tree supervision loss expects the neural network logits as input, not the NBDT outputs.
+3. **Third**, wrap your `model` with a custom NBDT wrapper as shown below. This is only to run prediction as an NBDT during validation or inference time. Do not wrap your model like below, during training.
 
   ```python
   from nbdt.model import SoftNBDT
-  model = SoftNBDT.with_defaults('CIFAR10', model=model)  # pass original model
+  model = SoftNBDT(dataset='CIFAR10', model=model)  # `model` is your original model
   ```
+  
+  > **Do not wrap your model during training**. When training, the tree supervision loss expects the neural network logits as input, not the NBDT outputs.
 
 :arrow_right: **Example**: See [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models), which applies this 3-step integration to a popular image classification repository `pytorch-image-models`.
 
@@ -86,8 +112,11 @@ nbdt hierarchy --model=ResNet34 --dataset=CIFAR10  # TODO
 ```
 
 ```python
-criterion = SoftTreeSupLoss.with_defaults('CIFAR10', criterion=criterion, name_graph='induced-ResNet34')
-model = SoftNBDT.with_defaults('CIFAR10', model=model, name_graph='induced-ResNet34')
+from nbdt.loss import SoftTreeSupLoss
+from nbdt.model import SoftNBDT
+
+criterion = SoftTreeSupLoss(dataset='CIFAR10', criterion=criterion, hierarchy='induced-ResNet34')
+model = SoftNBDT(dataset='CIFAR10', model=model, hierarchy='induced-ResNet34')
 ```
 </div>
 </details>
@@ -111,6 +140,8 @@ bash scripts/eval_wrn.sh
 ```
 
 The bash scripts above are explained in more detail in [Induced Hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#Induced-Hierarchy), [Soft Tree Supervision Loss](https://github.com/alvinwan/neural-backed-decision-trees#Tree-Supervision-Loss), and [Soft Inference](https://github.com/alvinwan/neural-backed-decision-trees#Soft-Inference). To reproduce our Imagenet results, see [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models).
+
+You can amend these scripts with the appropriate models or datasets to customize your experiments. See step-by-step instructions for and examples of customization in [Developing](#developing).
 
 ## 1. Hierarchies
 
@@ -217,6 +248,7 @@ bash scripts/train_wrn.sh
 
 <details><summary>Line-by-line Explanation. <i>[click to expand]</i></summary>
 <div>
+
 ![tree_supervision_loss](https://user-images.githubusercontent.com/2068077/77226784-3208ce80-6b38-11ea-84bb-5128e3836665.jpg)
 
 As before, the below just explains the above `train_wrn.sh`. You do not need to run the following after running the previous bash script.
@@ -245,6 +277,7 @@ bash scripts/eval_wrn.sh
 
 <details><summary>Line-by-line Explanation. <i>[click to expand]</i></summary>
 <div>
+  
 ![inference_modes](https://user-images.githubusercontent.com/2068077/76388544-9f418600-6326-11ea-9214-17356c71a066.jpg)
   
 As before, the below just explains the above `eval_wrn.sh`. You do not need to run the following after running the previous bash script. Note the following commands are nearly identical to the corresponding train commands -- we drop the `lr`, `path-resume` flags and add `resume`, `eval`, and the `analysis` type (hard or soft inference).
@@ -258,6 +291,10 @@ python main.py --dataset=CIFAR10 --model=wrn28_10_cifar10 --path-graph=./nbdt/hi
 ```
 </div>
 </details>
+
+# Results
+
+
 
 # Developing
 
