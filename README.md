@@ -57,7 +57,7 @@ If you haven't already, pip install the `nbdt` utility.
 pip install nbdt
 ```
 
-Then, pick an NBDT inference mode (hard or soft), dataset, and backbone. By default, we support ResNet18 and WideResNet28_10 for CIFAR10, CIFAR100, and TinyImagenet200. We also support EfficientNet-EdgeTPUSmall for Imagenet.
+Then, pick an NBDT inference mode (hard or soft), dataset, and backbone. By default, we support ResNet18 and WideResNet28_10 for CIFAR10, CIFAR100, and TinyImagenet200. See [nbdt-pytorch-image-models](https://github.com/alvinwan/nbdt-pytorch-image-models) for EfficientNet-EdgeTPUSmall on Imagenet.
 
 ```python
 from nbdt.model import SoftNBDT
@@ -67,7 +67,12 @@ model = wrn28_10_cifar10()
 model = SoftNBDT(dataset='CIFAR10', model=model, hierarchy='induced-wrn28_10_cifar10', pretrained=True)
 ```
 
-> **Note about model names**: WideResNet models are at `pytorchcv.models.wrn_cifar.wrn28_10_cifar{10,100}` and `nbdt.models.wideresnet.wrn28_10` (for TinyImagenet200). The ResNet models provided with nbdt (`nbdt.models.resnet.ResNet{10,18,34,50,101,152}`) support all datasets. Conversely, the ResNet models provided in torchvision `torchvision.models.resnet18` only supports 224x224 input. 
+> **Note about model names**: WideResNet models are at `pytorchcv.models.wrn_cifar.wrn28_10_cifar{10,100}` and `nbdt.models.wideresnet.wrn28_10` (for TinyImagenet200). The ResNet models provided with nbdt (`nbdt.models.resnet.ResNet{10,18,34,50,101,152}`) support all datasets. Conversely, the ResNet models provided in torchvision `torchvision.models.resnet18` only supports 224x224 input. Here are import statements for all models with pretrained NBDTs:
+> ```python
+> from pytorchcv.models.wrn_cifar import wrn28_10_cifar10, wrn28_10_cifar100
+> from nbdt.models.resnet import ResNet10, ResNet18
+> from nbdt.models.wideresnet import wrn28_10
+> ```
 
 # Convert Neural Networks to Decision Trees
 
