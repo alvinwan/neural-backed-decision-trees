@@ -343,3 +343,45 @@ class SoftNBDT(NBDT):
             'Rules': SoftEmbeddedDecisionRules
         })
         super().__init__(*args, **kwargs)
+
+
+class SegNBDT(NBDT):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def coerce_tensor(x):
+        return x.permute(0,2,3,1).reshape(-1, x.shape[1])
+
+    @staticmethod
+    def uncoerce_tensor(x, original_shape):
+        n,c,h,w = original_shape
+        return x.reshape(n,h,w,c).permute(0,3,1,2)
+
+    def forward(self, x):
+        assert len(x.shape) == 4, 'Input must be of shape (N,C,H,W) for segmentation'
+        x = self.model(x)
+        original_shape = x.shape
+        x = SegNBDT.coerce_tensor(x)
+        x = self.rules.forward(x)
+        x = SegNBDT.uncoerce_tensor(x, original_shape)
+        return x
+
+
+class HardSegNBDT(SegNBDT):
+
+    def __init__(self, *args, **kwargs):
+        kwargs.update({
+            'Rules': HardEmbeddedDecisionRules
+        })
+        super().__init__(*args, **kwargs)
+
+
+class SoftSegNBDT(SegNBDT):
+
+    def __init__(self, *args, **kwargs):
+        kwargs.update({
+            'Rules': SoftEmbeddedDecisionRules
+        })
+        super().__init__(*args, **kwargs)
