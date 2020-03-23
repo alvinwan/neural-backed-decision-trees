@@ -53,7 +53,6 @@ CrossEntropyLoss = nn.CrossEntropyLoss
 class TreeSupLoss(nn.Module):
 
     accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
-    accepts_criterion = lambda criterion, **kwargs: criterion
     accepts_path_graph = True
     accepts_path_wnids = True
     accepts_classes = True
@@ -191,13 +190,19 @@ class HardTreeSupLoss(TreeSupLoss):
 
     @classmethod
     def inference(cls, node, outputs, targets, weighted_average=False):
-        classes = [node.old_to_new_classes[int(t)] for t in targets]
-        selector = [bool(cls) for cls in classes]
-        targets_sub = [cls[0] for cls in classes if cls] if targets else None
+        _outputs = outputs
+        targets_sub = targets
+        selector = [True] * outputs.size(0)
 
-        _outputs = outputs[selector]
-        if _outputs.size(0) == 0:
-            return selector, _outputs[:, :node.num_classes], targets_sub
+        if targets:
+            classes = [node.old_to_new_classes[int(t)] for t in targets]
+            selector = [bool(cls) for cls in classes]
+            targets_sub = [cls[0] for cls in classes if cls] if targets else None
+
+            _outputs = outputs[selector]
+            if _outputs.size(0) == 0:
+                return selector, _outputs[:, :node.num_classes], targets_sub
+
         outputs_sub = cls.get_output_sub(_outputs, node, weighted_average)
         return selector, outputs_sub, targets_sub
 

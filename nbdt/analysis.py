@@ -183,7 +183,7 @@ class HardEmbeddedDecisionRules(Noop):
 
     def update_batch(self, outputs, targets):
         super().update_batch(outputs, targets)
-        predicted = self.forward(outputs)
+        predicted = self.forward(outputs).to(targets.device)
 
         n_samples = outputs.size(0)
         self.total += n_samples
@@ -229,6 +229,6 @@ class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
         bayesian_outputs = SoftTreeSupLoss.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)
         n_samples = outputs.size(0)
-        predicted = bayesian_outputs.max(1)[1].to(outputs.device)
+        predicted = bayesian_outputs.max(1)[1]
         predicted._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return predicted
