@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-"""Generates various graphs for independent node training"""
-
 from nbdt.utils import DATASETS, METHODS, Colors, fwd
 from nbdt.graph import build_minimal_wordnet_graph, build_random_graph, \
     prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
@@ -20,7 +17,7 @@ import torchvision
 ############
 
 
-def print_graph_stats(G, name, args):
+def print_graph_stats(G, name):
     num_children = [len(succ) for succ in G.succ]
     print('[{}] \t Nodes: {} \t Depth: {} \t Max Children: {}'.format(
         name,
@@ -35,38 +32,54 @@ def assert_all_wnids_in_graph(G, wnids):
     ]
 
 
-def generate_hierarchy(args):
-    wnids = get_wnids_from_dataset(args.dataset)
+def generate_hierarchy(
+        dataset, method, seed=0, branching_factor=2, extra=0,
+        no_prune=False, fname='', single_path=False,
+        induced_linkage='ward', induced_affinity='euclidean',
+        induced_checkpoint=None, induced_model=None, **kwargs):
+    wnids = get_wnids_from_dataset(dataset)
 
-    if args.method == 'wordnet':
-        G = build_minimal_wordnet_graph(wnids, args.single_path)
-    elif args.method == 'random':
-        G = build_random_graph(wnids, seed=args.seed, branching_factor=args.branching_factor)
-    elif args.method == 'induced':
+    if method == 'wordnet':
+        G = build_minimal_wordnet_graph(wnids, single_path)
+    elif method == 'random':
+        G = build_random_graph(wnids, seed=seed, branching_factor=branching_factor)
+    elif method == 'induced':
         G = build_induced_graph(wnids,
-            dataset=args.dataset,
-            checkpoint=args.induced_checkpoint,
-            model=args.induced_model,
-            linkage=args.induced_linkage,
-            affinity=args.induced_affinity,
-            branching_factor=args.branching_factor)
+            dataset=dataset,
+            checkpoint=induced_checkpoint,
+            model=induced_model,
+            linkage=induced_linkage,
+            affinity=induced_affinity,
+            branching_factor=branching_factor)
     else:
-        raise NotImplementedError(f'Method "{args.method}" not yet handled.')
-    print_graph_stats(G, 'matched', args)
+        raise NotImplementedError(f'Method "{method}" not yet handled.')
+    print_graph_stats(G, 'matched')
     assert_all_wnids_in_graph(G, wnids)
 
-    if not args.no_prune:
+    if not no_prune:
         G = prune_single_successor_nodes(G)
-        print_graph_stats(G, 'pruned', args)
+        print_graph_stats(G, 'pruned')
         assert_all_wnids_in_graph(G, wnids)
 
-    if args.extra > 0:
-        G, n_extra, n_imaginary = augment_graph(G, args.extra, True)
+    if extra > 0:
+        G, n_extra, n_imaginary = augment_graph(G, extra, True)
         print(f'[extra] \t Extras: {n_extra} \t Imaginary: {n_imaginary}')
-        print_graph_stats(G, 'extra', args)
+        print_graph_stats(G, 'extra')
         assert_all_wnids_in_graph(G, wnids)
 
-    path = get_graph_path_from_args(args)
+    path = get_graph_path_from_args(
+        dataset=dataset,
+        method=method,
+        seed=seed,
+        branching_factor=branching_factor,
+        extra=extra,
+        no_prune=no_prune,
+        fname=fname,
+        single_path=single_path,
+        induced_linkage=induced_linkage,
+        induced_affinity=induced_affinity,
+        induced_checkpoint=induced_checkpoint,
+        induced_model=induced_model)
     write_graph(G, path)
 
     Colors.green('==> Wrote tree to {}'.format(path))
@@ -112,7 +125,7 @@ def print_stats(leaves_seen, wnid_set, tree_name, node_type):
 
 def test_hierarchy(args):
     wnids = get_wnids_from_dataset(args.dataset)
-    path = get_graph_path_from_args(args)
+    path = get_graph_path_from_args(**vars(args))
     print('==> Reading from {}'.format(path))
 
     G = read_graph(path)
@@ -180,7 +193,7 @@ def generate_vis(path_template, data, name, fname):
 
 
 def generate_hierarchy_vis(args):
-    path = get_graph_path_from_args(args)
+    path = get_graph_path_from_args(**vars(args))
     print('==> Reading from {}'.format(path))
 
     G = read_graph(path)
@@ -200,16 +213,3 @@ def generate_hierarchy_vis(args):
     parent = Path(fwd()).parent
     generate_vis(str(parent / 'nbdt/templates/tree-template.html'), tree, 'tree', fname)
     generate_vis(str(parent / 'nbdt/templates/graph-template.html'), graph, 'graph', fname)
-
-
-def main():
-    parser = get_parser()
-    args = parser.parse_args()
-
-    generate_hierarchy(args)
-    test_hierarchy(args)
-    generate_hierarchy_vis(args)
-
-
-if __name__ == '__main__':
-    main()

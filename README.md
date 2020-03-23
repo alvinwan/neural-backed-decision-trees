@@ -138,7 +138,7 @@ You can also include arbitrary image classification neural networks not explicit
 ```python
 from nbdt.model import SoftNBDT
 from nbdt.loss import SoftTreeSupLoss
-from nbdt.scripts.hierarchy import generate_hierarchy
+from nbdt.hierarchy import generate_hierarchy
 import pretrainedmodels
 
 model = pretrainedmodels.__dict__['fbresnet152'](num_classes=1000, pretrained='imagenet')
@@ -211,7 +211,7 @@ nbdt-hierarchy --induced-checkpoint=resnet18.pth --dataset=Imagenet1000
 You can also run the hierarchy generation from source directly, without using the command-line tool, by passing in a pretrained model.
 
 ```
-from nbdt.scripts.hierarchy import generate_hierarchy
+from nbdt.hierarchy import generate_hierarchy
 from nbdt.models import wrn28_10_cifar10
 
 model = wrn28_10_cifar10(pretrained=True)

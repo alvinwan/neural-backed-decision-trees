@@ -111,9 +111,24 @@ def get_wnids(path_wnids):
     return wnids
 
 
-def get_graph_path_from_args(args):
-    fname = generate_fname(**vars(args))
-    directory = get_directory(args.dataset)
+def get_graph_path_from_args(
+        dataset, method, seed=0, branching_factor=2, extra=0,
+        no_prune=False, fname='', single_path=False,
+        induced_linkage='ward', induced_affinity='euclidean',
+        induced_checkpoint=None, induced_model=None, **kwargs):
+    fname = generate_fname(
+        method=method,
+        seed=seed,
+        branching_factor=branching_factor,
+        extra=extra,
+        no_prune=no_prune,
+        fname=fname,
+        single_path=single_path,
+        induced_linkage=induced_linkage,
+        induced_affinity=induced_affinity,
+        induced_checkpoint=induced_checkpoint,
+        induced_model=induced_model)
+    directory = get_directory(dataset)
     path = os.path.join(directory, f'{fname}.json')
     return path
 
