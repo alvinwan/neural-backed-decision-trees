@@ -69,22 +69,24 @@ from nbdt.model import SoftNBDT
 from nbdt.models.resnet import ResNet18, wrn28_10_cifar10, wrn28_10_cifar100, wrn28_10  # use wrn28_10 for TinyImagenet200
 
 model = wrn28_10_cifar10()
-model = SoftNBDT(pretrained=True, model=model, dataset='CIFAR10', hierarchy='induced-wrn28_10_cifar10', arch='wrn28_10_cifar10')
+model = SoftNBDT(
+  pretrained=True,
+  model=model,
+  dataset='CIFAR10',
+  hierarchy='induced-wrn28_10_cifar10',
+  arch='wrn28_10_cifar10')
 ```
 
 Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.models.resnet.ResNet18` supports variable size inputs. See [Models](#models) for instructions on using your favorite image classification neural network.
+
+:arrow_right: **Example in ~30 lines**: See [`nbdt/bin/nbdt`](https://github.com/alvinwan/neural-backed-decision-trees/blob/master/nbdt/bin/nbdt), which loads the pretrained model, loads an image, and runs inference on the image in ~30 lines. This file is the executable `nbdt` in the previous section.
 
 # Convert Neural Networks to Decision Trees
 
 **To convert your neural network** into a neural-backed decision tree, perform the following 3 steps:
 
-1. **First**, if you haven't already, pip install the `nbdt` utility:
-
-  ```bash
-  pip install nbdt
-  ```
-
-2. **Second**, wrap your loss function `criterion` with a custom NBDT loss. Below, we demonstrate usage of the soft tree supervision loss, on the CIFAR10 dataset. By default, we support the CIFAR10, CIFAR100, TinyImagenet200, and Imagenet1000 image classification datasets.
+1. **First**, if you haven't already, pip install the `nbdt` utility: `pip install nbdt`
+2. **Second, during training**, wrap your loss `criterion` with a custom NBDT loss. Below, we demonstrate the soft tree supervision loss on the CIFAR10 dataset. By default, we support CIFAR10, CIFAR100, TinyImagenet200, and Imagenet1000.
 
   <!-- TODO: If no wnids, generate fake ones. Attempt to dataset.classes. For a new dataset, use cli to generate induced-hierarchy from checkpoint. -->
 
@@ -93,14 +95,12 @@ Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.m
   criterion = SoftTreeSupLoss(dataset='CIFAR10', criterion=criterion)  # `criterion` is your original loss function e.g., nn.CrossEntropyLoss
   ```
 
-3. **Third**, wrap your `model` with a custom NBDT wrapper as shown below. This is only to run prediction as an NBDT during validation or inference time. Do not wrap your model like below, during training.
+3. **Third, during inference or validation**, wrap your `model` with a custom NBDT wrapper as shown below. This is only to run prediction as an NBDT during validation or inference time. Do not wrap your model like below, during training.
 
   ```python
   from nbdt.model import SoftNBDT
   model = SoftNBDT(dataset='CIFAR10', model=model)  # `model` is your original model
   ```
-
-  > **Do not wrap your model during training**. When training, the tree supervision loss expects the neural network logits as input, not the NBDT outputs.
 
 :arrow_right: **Example integration with repository**: See [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models), which applies this 3-step integration to a popular image classification repository `pytorch-image-models`.
 
