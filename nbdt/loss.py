@@ -16,6 +16,9 @@ keys = (
 )
 
 def add_arguments(parser):
+    parser.add_argument('--hierarchy',
+                        help='Hierarchy to use. If supplied, will be used to '
+                        'generate --path-graph. --path-graph takes precedence.')
     parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
     parser.add_argument('--path-wnids', help='Path to wnids.txt file.')
     parser.add_argument('--max-leaves-supervised', type=int, default=-1,
@@ -32,6 +35,10 @@ def add_arguments(parser):
 
 
 def set_default_values(args):
+    assert not args.hierarchy and args.path_graph, \
+        'Only one, between --hierarchy and --path-graph can be provided.'
+    if args.hierarchy and not args.path_graph:
+        args.path_graph = hierarchy_to_path_graph(args.hierarchy)
     if not args.path_graph:
         args.path_graph = dataset_to_default_path_graph(args.dataset)
     if not args.path_wnids:
