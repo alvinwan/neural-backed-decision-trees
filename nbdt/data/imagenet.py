@@ -6,6 +6,7 @@ from pathlib import Path
 import zipfile
 import urllib.request
 import shutil
+import time
 
 
 
@@ -55,15 +56,18 @@ class TinyImagenet200(Dataset):
             print('==> Already downloaded.')
             return
 
-        print('==> Downloading TinyImagenet200...')
-        file_name = os.path.join(root, 'tiny-imagenet-200.zip')
-        os.makedirs(Path(file_name).parent, exist_ok=True)
-        
-        with urllib.request.urlopen(self.url) as response, open(file_name, 'wb') as out_file:
-            shutil.copyfileobj(response, out_file)
-            print('==> Extracting TinyImagenet200...')
-            with zipfile.ZipFile(file_name) as zf:
-                zf.extractall(root)
+        path = Path(os.path.join(root, 'tiny-imagenet-200.zip'))
+        if not os.path.exists(path):
+            os.makedirs(path.parent, exist_ok=True)
+
+            print('==> Downloading TinyImagenet200...')
+            with urllib.request.urlopen(self.url) as response, \
+                    open(str(path), 'wb') as out_file:
+                shutil.copyfileobj(response, out_file)
+
+        print('==> Extracting TinyImagenet200...')
+        with zipfile.ZipFile(str(path)) as zf:
+            zf.extractall(root)
 
     def __getitem__(self, i):
         return self.dataset[i]
