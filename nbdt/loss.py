@@ -6,7 +6,7 @@ from nbdt.data.custom import Node, dataset_to_dummy_classes
 from nbdt.model import HardEmbeddedDecisionRules, SoftEmbeddedDecisionRules
 from nbdt.utils import (
     Colors, dataset_to_default_path_graph, dataset_to_default_path_wnids,
-    hierarchy_to_path_graph, coerce_tensor
+    hierarchy_to_path_graph, coerce_tensor, uncoerce_tensor
 )
 
 __all__ = names = ('HardTreeSupLoss', 'SoftTreeSupLoss', 'CrossEntropyLoss')
@@ -183,17 +183,15 @@ class SoftTreeSupLoss(TreeSupLoss):
         return loss
 
 
-class HardSegTreeSupLoss(HardTreeSupLoss):
-
-    def forward(self, outputs, targets):
-        outputs, targets = coerce_tensor(outputs), coerce_tensor(targets, is_label=True)
-        loss = super().forward(outputs, targets)
-        return loss
-
-
 class SoftSegTreeSupLoss(SoftTreeSupLoss):
 
     def forward(self, outputs, targets):
-        outputs, targets = coerce_tensor(outputs), coerce_tensor(targets, is_label=True)
-        loss = super().forward(outputs, targets)
+        self.assert_output_not_nbdt(outputs)
+
+        loss = self.criterion(outputs, targets)
+        coerced_outputs = coerce_tensor(outputs)
+        bayesian_outputs = SoftTreeSupLoss.inference(
+            self.nodes, coerced_outputs, self.num_classes, self.weighted_average)
+        bayesian_outputs = uncoerce_tensor(bayesian_outputs, outputs.shape)
+        loss += self.criterion(bayesian_outputs, targets) * self.tree_supervision_weight
         return loss
