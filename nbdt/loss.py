@@ -186,7 +186,7 @@ class SoftTreeSupLoss(TreeSupLoss):
 class HardSegTreeSupLoss(HardTreeSupLoss):
 
     def forward(self, outputs, targets):
-        outputs, targets = coerce_tensor(outputs), coerce_tensor(targets)
+        outputs, targets = coerce_tensor(outputs), coerce_tensor(targets, is_label=True)
         loss = super().forward(outputs, targets)
         return loss
 
@@ -194,6 +194,6 @@ class HardSegTreeSupLoss(HardTreeSupLoss):
 class SoftSegTreeSupLoss(SoftTreeSupLoss):
 
     def forward(self, outputs, targets):
-        outputs, targets = coerce_tensor(outputs), coerce_tensor(targets)
+        outputs, targets = coerce_tensor(outputs), coerce_tensor(targets, is_label=True)
         loss = super().forward(outputs, targets)
         return loss

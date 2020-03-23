@@ -270,8 +270,11 @@ def generate_fname(dataset, arch, path_graph, wnid=None, name='',
     return fname
 
 
-def coerce_tensor(x):
-    return x.permute(0,2,3,1).reshape(-1, x.shape[1])
+def coerce_tensor(x, is_label=False):
+    if is_label:
+        return x.reshape(-1,1)
+    else:
+        return x.permute(0,2,3,1).reshape(-1,x.shape[1])
 
 
 def uncoerce_tensor(x, original_shape):
