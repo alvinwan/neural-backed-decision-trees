@@ -12,11 +12,10 @@ assert len(sys.argv) > 1, "Need to pass image URL or image path as argument"
 # load pretrained NBDT
 model = wrn28_10_cifar10()
 model = SoftNBDT(
+  # pretrained=True,
   dataset='CIFAR10',
-  model=model,
-  hierarchy='induced-wrn28_10_cifar10',
-  pretrained=True,
-  arch='wrn28_10_cifar10')
+  arch='wrn28_10_cifar10',
+  model=model)
 
 # load + transform image
 im = load_image_from_path(sys.argv[1])

@@ -66,15 +66,14 @@ Then, pick an NBDT inference mode (hard or soft), dataset, and backbone. By defa
 
 ```python
 from nbdt.model import SoftNBDT
-from nbdt.models.resnet import ResNet18, wrn28_10_cifar10, wrn28_10_cifar100, wrn28_10  # use wrn28_10 for TinyImagenet200
+from nbdt.models import ResNet18, wrn28_10_cifar10, wrn28_10_cifar100, wrn28_10  # use wrn28_10 for TinyImagenet200
 
 model = wrn28_10_cifar10()
 model = SoftNBDT(
   pretrained=True,
-  model=model,
   dataset='CIFAR10',
-  hierarchy='induced-wrn28_10_cifar10',
-  arch='wrn28_10_cifar10')
+  arch='wrn28_10_cifar10',
+  model=model)
 ```
 
 Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.models.resnet.ResNet18` supports variable size inputs. See [Models](#models) for instructions on using your favorite image classification neural network.

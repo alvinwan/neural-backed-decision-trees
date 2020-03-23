@@ -39,6 +39,9 @@ class NBDT(nn.Module):
             **kwargs):
         super().__init__()
 
+        if dataset and not hierarchy and not path_graph:
+            assert arch, 'Must specify `arch` if no `hierarchy` or `path_graph`'
+            hierarchy = f'induced-{arch}'
         if dataset and hierarchy and not path_graph:
             path_graph = hierarchy_to_path_graph(dataset, hierarchy)
         if dataset and not path_graph:
