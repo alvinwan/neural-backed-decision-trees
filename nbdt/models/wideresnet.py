@@ -7,7 +7,7 @@ __all__ = ('wrn28_10', 'wrn28_10_cifar10', 'wrn28_10_cifar100')
 
 
 model_urls = {
-    ('wrn28_10', 'TinyImagenet200'): ''
+    ('wrn28_10', 'TinyImagenet200'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-TinyImagenet200-wrn28_10.pth'
 }
 
 

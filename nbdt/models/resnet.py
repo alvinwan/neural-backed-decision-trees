@@ -16,9 +16,9 @@ __all__ = ('ResNet10', 'ResNet18', 'ResNet34', 'ResNet50', 'ResNet101', 'ResNet1
 
 
 model_urls = {
-    ('ResNet18', 'CIFAR10'): '',
-    ('ResNet18', 'CIFAR100'): '',
-    ('ResNet18', 'TinyImagenet200'): ''
+    ('ResNet18', 'CIFAR10'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR10-ResNet18.pth',
+    ('ResNet18', 'CIFAR100'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR100-ResNet18.pth',
+    ('ResNet18', 'TinyImagenet200'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-TinyImagenet200-ResNet18.pth'
 }
 
 
