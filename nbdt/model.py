@@ -9,7 +9,9 @@ import torch.nn as nn
 from nbdt.utils import (
     dataset_to_default_path_graph,
     dataset_to_default_path_wnids,
-    hierarchy_to_path_graph)
+    hierarchy_to_path_graph,
+    coerce_tensor,
+    uncoerce_tensor)
 from nbdt.models.utils import load_state_dict_from_key, coerce_state_dict
 from nbdt.data.custom import Node, dataset_to_dummy_classes
 from nbdt.graph import get_root, get_wnids, synset_to_name, wnid_to_name
@@ -350,22 +352,13 @@ class SegNBDT(NBDT):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    @staticmethod
-    def coerce_tensor(x):
-        return x.permute(0,2,3,1).reshape(-1, x.shape[1])
-
-    @staticmethod
-    def uncoerce_tensor(x, original_shape):
-        n,c,h,w = original_shape
-        return x.reshape(n,h,w,c).permute(0,3,1,2)
-
     def forward(self, x):
         assert len(x.shape) == 4, 'Input must be of shape (N,C,H,W) for segmentation'
         x = self.model(x)
         original_shape = x.shape
-        x = SegNBDT.coerce_tensor(x)
+        x = coerce_tensor(x)
         x = self.rules.forward(x)
-        x = SegNBDT.uncoerce_tensor(x, original_shape)
+        x = uncoerce_tensor(x, original_shape)
         return x
 
 

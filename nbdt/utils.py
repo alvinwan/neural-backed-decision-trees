@@ -268,3 +268,12 @@ def generate_fname(dataset, arch, path_graph, wnid=None, name='',
         if tree_supervision_weight is not None and tree_supervision_weight != 1:
             fname += f'-tsw{tree_supervision_weight}'
     return fname
+
+
+def coerce_tensor(x):
+    return x.permute(0,2,3,1).reshape(-1, x.shape[1])
+
+
+def uncoerce_tensor(x, original_shape):
+    n,c,h,w = original_shape
+    return x.reshape(n,h,w,c).permute(0,3,1,2)
