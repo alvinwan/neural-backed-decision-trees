@@ -53,6 +53,7 @@ CrossEntropyLoss = nn.CrossEntropyLoss
 class TreeSupLoss(nn.Module):
 
     accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
+    accepts_criterion = lambda criterion, **kwargs: criterion
     accepts_path_graph = True
     accepts_path_wnids = True
     accepts_classes = True
