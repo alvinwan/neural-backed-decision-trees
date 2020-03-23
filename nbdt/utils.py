@@ -30,7 +30,7 @@ def fwd():
 
 
 def dataset_to_default_path_graph(dataset):
-    return hierarchy_to_path_graph(dataset, 'wordnet-single')
+    return hierarchy_to_path_graph(dataset, 'induced')
 
 
 def hierarchy_to_path_graph(dataset, hierarchy):
@@ -209,14 +209,14 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
         include_classes=(), num_samples=0, max_leaves_supervised=-1,
         min_leaves_supervised=-1, tree_supervision_weight=0.5,
-        weighted_average=False, fine_tune=False,
-        loss='CrossEntropyLoss', path_graph_set_default=False, **kwargs):
+        weighted_average=False, fine_tune=False, loss='CrossEntropyLoss',
+        **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
     fname += '-' + model
     if name:
         fname += '-' + name
-    if path_graph and not path_graph_set_default:
+    if path_graph:
         path = Path(path_graph)
         fname += '-' + path.stem.replace('graph-', '', 1)
     if include_labels:

@@ -3,8 +3,7 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset
 from collections import defaultdict
-from nbdt.utils import dataset_to_default_path_graph, \
-    dataset_to_default_path_wnids, DATASET_TO_NUM_CLASSES, DATASETS
+from nbdt.utils import DATASET_TO_NUM_CLASSES, DATASETS
 from collections import defaultdict
 from nbdt.graph import get_wnids, read_graph, get_leaves, get_non_leaves, \
     get_leaf_weights, FakeSynset
@@ -28,14 +27,6 @@ def add_arguments(parser):
     parser.add_argument('--include-labels', nargs='*', type=int)
     parser.add_argument('--exclude-labels', nargs='*', type=int)
     parser.add_argument('--include-classes', nargs='*', type=int)
-
-
-def set_default_values(args):
-    if not args.path_graph:
-        args.path_graph = dataset_to_default_path_graph(args.dataset)
-        args.path_graph_set_default = True
-    if not args.path_wnids:
-        args.path_wnids = dataset_to_default_path_wnids(args.dataset)
 
 
 def dataset_to_dummy_classes(dataset):

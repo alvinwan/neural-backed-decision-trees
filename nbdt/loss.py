@@ -31,6 +31,13 @@ def add_arguments(parser):
                         help='Weight assigned to tree supervision losses')
 
 
+def set_default_values(args):
+    if not args.path_graph:
+        args.path_graph = dataset_to_default_path_graph(args.dataset)
+    if not args.path_wnids:
+        args.path_wnids = dataset_to_default_path_wnids(args.dataset)
+
+
 CrossEntropyLoss = nn.CrossEntropyLoss
 
 

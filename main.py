@@ -53,7 +53,7 @@ analysis.add_arguments(parser)
 
 args = parser.parse_args()
 
-data.custom.set_default_values(args)
+loss.set_default_values(args)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0  # best test accuracy
