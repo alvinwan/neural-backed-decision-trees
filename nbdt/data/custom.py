@@ -6,7 +6,7 @@ from collections import defaultdict
 from nbdt.utils import DATASET_TO_NUM_CLASSES, DATASETS
 from collections import defaultdict
 from nbdt.graph import get_wnids, read_graph, get_leaves, get_non_leaves, \
-    get_leaf_weights, FakeSynset
+    get_leaf_weights, FakeSynset, get_leaf_to_path, wnid_to_synset
 from . import imagenet
 import torch.nn as nn
 import random
@@ -44,6 +44,7 @@ class Node:
         self.wnid = wnid
         self.wnids = get_wnids(path_wnids)
         self.G = read_graph(path_graph)
+        self.synset = wnid_to_synset(wnid)
 
         self.original_classes = classes
         self.num_original_classes = len(self.wnids)
@@ -184,6 +185,19 @@ class Node:
         wnids = sorted(wnid_to_node)
         nodes = [wnid_to_node[wnid] for wnid in wnids]
         return nodes
+
+    @staticmethod
+    def get_leaf_to_path_nodes(nodes):
+        node = nodes[0]
+        leaf_to_path = get_leaf_to_path(node.G)
+        wnid_to_node = {node.wnid: node for node in nodes}
+        leaf_to_path_nodes = {}
+        for leaf in leaf_to_path:
+            leaf_to_path_nodes[leaf] = [
+                wnid_to_node[wnid] for wnid in leaf_to_path[leaf]
+                if wnid in wnid_to_node
+            ]
+        return leaf_to_path_nodes
 
     @staticmethod
     def get_root_node_wnid(path_graph):

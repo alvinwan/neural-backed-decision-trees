@@ -133,6 +133,11 @@ def get_graph_path_from_args(
     return path
 
 
+##########
+# SYNSET #
+##########
+
+
 def synset_to_wnid(synset):
     return f'{synset.pos()}{synset.offset():08d}'
 
@@ -149,6 +154,11 @@ def wnid_to_synset(wnid):
 
 def synset_to_name(synset):
     return synset.name().split('.')[0]
+
+
+########
+# TREE #
+########
 
 
 def is_leaf(G, node):
@@ -188,6 +198,21 @@ def get_depth(G):
     return max([_get_depth(root) for root in get_roots(G)])
 
 
+def get_leaf_to_path(G):
+    leaf_to_path = {}
+    for root in get_roots(G):
+        frontier = [(root, [])]
+        while frontier:
+            node, path = frontier.pop(0)
+            path += [node]
+            if is_leaf(G, node):
+                leaf_to_path[node] = path
+                continue
+            frontier.extend([(child, path) for child in G.succ[node]])
+    return leaf_to_path
+
+
+
 def get_leaf_weights(G, node, weight=1):
     """
     This is rather specific to our needs. Basically, a node with k children
@@ -215,6 +240,11 @@ def set_node_label(G, synset):
 
 def set_random_node_label(G, i):
     nx.set_node_attributes(G, {i: ''}, 'label')
+
+
+##########
+# GRAPHS #
+##########
 
 
 def build_minimal_wordnet_graph(wnids, single_path=False):

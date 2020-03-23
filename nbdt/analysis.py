@@ -162,7 +162,7 @@ class HardEmbeddedDecisionRules(Noop):
         self.correct = 0
         self.total = 0
 
-    def forward(self, outputs):
+    def forward_with_decisions(self, outputs):
         wnid_to_pred_selector = {}
         for node in self.nodes:
             selector, outputs_sub, _ = HardTreeSupLoss.inference(
@@ -175,10 +175,14 @@ class HardEmbeddedDecisionRules(Noop):
 
         _, predicted = outputs.max(1)
         n_samples = outputs.size(0)
-        predicted = self.traverse_tree(
+        predicted, decisions = self.traverse_tree(
             predicted, wnid_to_pred_selector, n_samples).to(outputs.device)
 
         predicted._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
+        return predicted, decisions
+
+    def forward(self, outputs):
+        predicted, _ = self.forward_with_decisions(outputs)
         return predicted
 
     def update_batch(self, outputs, targets):
@@ -194,8 +198,10 @@ class HardEmbeddedDecisionRules(Noop):
     def traverse_tree(self, _, wnid_to_pred_selector, n_samples):
         wnid_root = get_root(self.G)
         node_root = self.wnid_to_node[wnid_root]
+        decisions = []
         preds = []
         for index in range(n_samples):
+            decision = [node_root]
             wnid, node = wnid_root, node_root
             while node is not None:
                 if node.wnid not in wnid_to_pred_selector:
@@ -209,10 +215,12 @@ class HardEmbeddedDecisionRules(Noop):
                 index_child = pred_sub[index_new]
                 wnid = node.children[index_child]
                 node = self.wnid_to_node.get(wnid, None)
+                decision.append(node)
             cls = self.wnid_to_class.get(wnid, None)
             pred = -1 if cls is None else self.classes.index(cls)
             preds.append(pred)
-        return torch.Tensor(preds).long()
+            decisions.append(decision)
+        return torch.Tensor(preds).long(), decisions
 
     def end_test(self, epoch):
         super().end_test(epoch)
@@ -224,6 +232,18 @@ class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
     """Evaluation is soft."""
 
     name = 'NBDT-Soft'
+
+    def forward_with_decisions(self, outputs):
+        predicted = self.forward(outputs)
+
+        decisions = []
+        node = self.nodes[0]
+        leaf_to_path_nodes = Node.get_leaf_to_path_nodes(self.nodes)
+        for index, prediction in enumerate(predicted):
+            leaf = node.wnids[prediction]
+            decision = leaf_to_path_nodes[leaf]
+            decisions.append(decision)
+        return predicted, decisions
 
     def forward(self, outputs):
         bayesian_outputs = SoftTreeSupLoss.inference(

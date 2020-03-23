@@ -71,7 +71,7 @@ class NBDT(nn.Module):
         this class to function. The constructor for this class may generate
         some of these required arguments if initially missing.
         """
-        self.rules = Rules(path_graph, path_wnids, classes)
+        self.rules = Rules(dataset, path_graph, path_wnids, classes)
         self.model = model
 
         if pretrained:
@@ -92,6 +92,11 @@ class NBDT(nn.Module):
         x = self.model(x)
         x = self.rules.forward(x)
         return x
+
+    def forward_with_decisions(self, x):
+        x = self.model(x)
+        x, decisions = self.rules.forward_with_decisions(x)
+        return x, decisions
 
 
 class HardNBDT(NBDT):
