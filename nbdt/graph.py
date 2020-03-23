@@ -347,11 +347,14 @@ MODEL_FC_KEYS = (
 
 
 def build_induced_graph(wnids, checkpoint, model=None, linkage='ward',
-        affinity='euclidean', branching_factor=2, dataset='CIFAR10'):
+        affinity='euclidean', branching_factor=2, dataset='CIFAR10',
+        state_dict=None):
     num_classes = len(wnids)
-    assert checkpoint or model, \
-        'Need to specify either `checkpoint` or `method`.'
-    if checkpoint:
+    assert checkpoint or model or state_dict, \
+        'Need to specify either `checkpoint` or `method` or `state_dict`.'
+    if state_dict:
+        centers = get_centers_from_state_dict(state_dict)
+    elif checkpoint:
         centers = get_centers_from_checkpoint(checkpoint)
     else:
         centers = get_centers_from_model(model, num_classes, dataset)

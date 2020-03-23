@@ -36,7 +36,7 @@ def generate_hierarchy(
         dataset, method, seed=0, branching_factor=2, extra=0,
         no_prune=False, fname='', single_path=False,
         induced_linkage='ward', induced_affinity='euclidean',
-        induced_checkpoint=None, induced_model=None, **kwargs):
+        induced_checkpoint=None, induced_model=None, model=None, **kwargs):
     wnids = get_wnids_from_dataset(dataset)
 
     if method == 'wordnet':
@@ -50,7 +50,8 @@ def generate_hierarchy(
             model=induced_model,
             linkage=induced_linkage,
             affinity=induced_affinity,
-            branching_factor=branching_factor)
+            branching_factor=branching_factor,
+            state_dict=model.state_dict() if model is not None else None)
     else:
         raise NotImplementedError(f'Method "{method}" not yet handled.')
     print_graph_stats(G, 'matched')
