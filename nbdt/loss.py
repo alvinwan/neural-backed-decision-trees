@@ -12,7 +12,7 @@ __all__ = names = ('HardTreeSupLoss', 'SoftTreeSupLoss', 'CrossEntropyLoss')
 keys = (
     'path_graph', 'path_wnids', 'max_leaves_supervised',
     'min_leaves_supervised', 'weighted_average', 'tree_supervision_weight',
-    'classes'
+    'classes', 'dataset'
 )
 
 def add_arguments(parser):
@@ -37,6 +37,8 @@ def add_arguments(parser):
 def set_default_values(args):
     assert not (args.hierarchy and args.path_graph), \
         'Only one, between --hierarchy and --path-graph can be provided.'
+    if 'TreeSupLoss' not in args.loss:
+        return
     if args.hierarchy and not args.path_graph:
         args.path_graph = hierarchy_to_path_graph(args.dataset, args.hierarchy)
     if not args.path_graph:
@@ -50,6 +52,7 @@ CrossEntropyLoss = nn.CrossEntropyLoss
 
 class TreeSupLoss(nn.Module):
 
+    accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
     accepts_path_graph = True
     accepts_path_wnids = True
     accepts_classes = True

@@ -14,7 +14,7 @@ import csv
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules')
-keys = ('path_graph', 'path_wnids', 'weighted_average', 'classes')
+keys = ('path_graph', 'path_wnids', 'weighted_average', 'classes', 'dataset')
 
 
 def add_arguments(parser):
@@ -128,6 +128,7 @@ class IgnoredSamples(Noop):
 class HardEmbeddedDecisionRules(Noop):
     """Evaluation is hard."""
 
+    accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
     accepts_path_graph = True
     accepts_path_wnids = True
     accepts_weighted_average = True
@@ -221,6 +222,8 @@ class HardEmbeddedDecisionRules(Noop):
 
 class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
     """Evaluation is soft."""
+
+    name = 'NBDT-Soft'
 
     def forward(self, outputs):
         bayesian_outputs = SoftTreeSupLoss.inference(
