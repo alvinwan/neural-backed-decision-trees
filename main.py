@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-from nbdt import data, analysis, loss
+from nbdt import data, analysis, loss, models
 
 import torchvision
 import torchvision.transforms as transforms
@@ -12,7 +12,6 @@ import torchvision.transforms as transforms
 import os
 import argparse
 
-from nbdt import models
 from nbdt.utils import (
     progress_bar, generate_fname, populate_kwargs, Colors
 )

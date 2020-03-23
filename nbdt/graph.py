@@ -13,8 +13,6 @@ import os
 
 
 def get_parser():
-    import models
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--dataset',
