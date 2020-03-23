@@ -288,7 +288,7 @@ python main.py --lr=0.01 --dataset=CIFAR10 --model=wrn28_10_cifar10 --hierarchy=
 
 ![tree_supervision_loss](https://user-images.githubusercontent.com/2068077/77226784-3208ce80-6b38-11ea-84bb-5128e3836665.jpg)
 
-The tree supervision loss features two variants: a hard version and a soft version. Simply change the loss to `HardTreeSupLoss` or `SoftTreeSupLoss`, depending on the one you want. 
+The tree supervision loss features two variants: a hard version and a soft version. Simply change the loss to `HardTreeSupLoss` or `SoftTreeSupLoss`, depending on the one you want.
 
 ```bash
 # fine-tune the wrn pretrained checkpoint on CIFAR10 with hard tree supervision loss
@@ -335,14 +335,36 @@ python main.py --dataset=CIFAR10 --model=wrn28_10_cifar10 --hierarchy=induced-wr
 
 # Developing
 
-TODO: python setup.py develop + instructions for adding new datasets, new models, etc.
+As discussed above, you can use the `nbdt` python library to integrate NBDT training into any existing training pipeline. However, if you wish to use the barebones training utilities here, refer to the following sections for adding custom models and datasets.
+
+If you have not already, start by cloning the repository and installing all requirements.
+
+```bash
+git clone git@github.com:alvinwan/neural-backed-decision-trees.git
+cd neural-backed-decision-trees
+python setup.py develop
+```
 
 ## Models
 
-As a sample, we've included copies of all the above bash scripts but for ResNet18. You can replace ResNet18 with your favorite network: You can use any [`torchvision`](https://pytorch.org/docs/stable/torchvision/models.html) model or any [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch) model, as we directly support both model zoos.
+As a sample, we've included copies of all the above bash scripts but for ResNet18.
 
 ```bash
-bash scripts/generate_hierarchies_induced_resnet.sh  # this will train the network on the provided datasets if no checkpoints are found
-bash scripts/train_resnet.sh
-bash scripts/eval_resnet.sh
+bash scripts/gen_train_eval_resnet.sh
 ```
+
+Without any modifications to `main.py`, you can replace ResNet18 with your favorite network: Pass  any [`torchvision.models`](https://pytorch.org/docs/stable/torchvision/models.html) model or any [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch) model to `--model`, as we directly support both model zoos. Note that the former only supports models pretrained on Imagenet. The latter supports models pretrained on CIFAR10 and CIFAR100; for each dataset, the corresponding model name includes the dataset e.g., `wrn28_10_cifar10`. However, neither supports models pretrained on TinyImagenet.
+
+To add a new model from scratch:
+
+1. Create a new file containing your network, such as `./nbdt/models/yournet.py`. This file should contain an `__all__` only exposing functions that return a model. These functions should accept `pretrained: bool` and `progress: bool`, then forward all other keyword arguments to the model constructor.
+2. Expose it via `./nbdt/models/__init__.py`: `from .yournet import *`.
+3. Train the original neural network on the target dataset. e.g., `python main.py --model=yournet18`.
+
+## Dataset
+
+Without any modifications to `main.py`, you can use any image classification dataset found at [`torchvision.datasets`](https://pytorch.org/docs/stable/torchvision/datasets.html) by passing it to `--dataset`. To add a new dataset from scratch:
+
+1. Create a new file containing your dataloader, such as `./nbdt/data/yourdata.py`. Like before, expose only what's necessary via `__all__`.
+2. Expose it via `'./nbdt/data/__init__.py'`: `from .yourdata import *`.
+3. Train the original neural network on the target dataset. e.g., `python main.py --dataset=yourdata10`
