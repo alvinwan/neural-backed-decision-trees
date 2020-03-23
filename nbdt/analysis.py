@@ -134,8 +134,22 @@ class HardEmbeddedDecisionRules(Noop):
 
     name = 'NBDT-Hard'
 
-    def __init__(self, path_graph, path_wnids, classes=(), weighted_average=False):
+    def __init__(self,
+            dataset,
+            path_graph=None,
+            path_wnids=None,
+            classes=(),
+            weighted_average=False):
+
+        if not path_graph:
+            path_graph = dataset_to_default_path_graph(dataset)
+        if not path_wnids:
+            path_wnids = dataset_to_default_path_wnids(dataset)
+        if not classes:
+            classes = dataset_to_dummy_classes(dataset)
         super().__init__(classes)
+        assert all([dataset, path_graph, path_wnids, classes])
+
         self.nodes = Node.get_nodes(path_graph, path_wnids, classes)
         self.G = self.nodes[0].G
         self.wnid_to_node = {node.wnid: node for node in self.nodes}
@@ -146,14 +160,6 @@ class HardEmbeddedDecisionRules(Noop):
         self.weighted_average = weighted_average
         self.correct = 0
         self.total = 0
-
-    @classmethod
-    def with_defaults(cls, dataset, **kwargs):
-        assert 'path_graph' not in kwargs and 'path_wnids' not in kwargs, \
-            '`from_dataset` sets both the path_graph and path_wnids'
-        path_graph = dataset_to_default_path_graph(dataset)
-        path_wnids = dataset_to_default_path_wnids(dataset)
-        return cls(path_graph, path_wnids, **kwargs)
 
     def forward(self, outputs):
         wnid_to_pred_selector = {}
