@@ -8,7 +8,7 @@ def get_pretrained_model(
         progress=True,
         root='.cache/torch/checkpoints'):
     if pretrained:
-        state_dict = load_state_dict_from_key(
+        state_dict = load_state_dict_from_arch_dataset(
             arch, dataset, model_urls, pretrained, progress, root)
         model.load_state_dict(state_dict)
     return model

@@ -44,7 +44,9 @@ def generate_hierarchy(args):
         G = build_random_graph(wnids, seed=args.seed, branching_factor=args.branching_factor)
     elif args.method == 'induced':
         G = build_induced_graph(wnids,
+            dataset=args.dataset,
             checkpoint=args.induced_checkpoint,
+            model=args.induced_model,
             linkage=args.induced_linkage,
             affinity=args.induced_affinity,
             branching_factor=args.branching_factor)

@@ -31,7 +31,7 @@ nbdt https://images.pexels.com/photos/1170986/pexels-photo-1170986.jpeg?auto=com
 
 This outputs both the class prediction and all the intermediate decisions, like below:
 
-TODO
+<!-- TODO: add intermedaite dedcisions -->
 ```
 cat
 ```
@@ -111,22 +111,30 @@ model = SoftNBDT(dataset='CIFAR10', model=model, hierarchy='induced-wrn28_10_cif
 
 <!-- TODO: include simpler example -->
 
-<details><summary>Want to build or use your own induced hierarchy? <i>[click to expand]</i></summary>
+<details><summary>**Want to build and use your own induced hierarchy?** <i>[click to expand]</i></summary>
 <div>
 
-(Optional) You may also build and use your own induced hierarchies, instead of the default induced hierarchy provided. Use the `nbdt` utility to generate a new induced hierarchy from a pretrained model, then specify the hierarchy to use.
+**You may also build and use your own induced hierarchies**, instead of the default induced hierarchy provided. Use the `nbdt` utility to generate a new induced hierarchy from a pretrained model, then specify the hierarchy to use.
 
 ```bash
-nbdt-hierarchy --model=ResNet34 --dataset=CIFAR10
+nbdt-hierarchy --induced-model=efficientnet_b0 --dataset=Imagenet1000
 ```
 
 ```python
 from nbdt.loss import SoftTreeSupLoss
 from nbdt.model import SoftNBDT
 
-criterion = SoftTreeSupLoss(dataset='CIFAR10', criterion=criterion, hierarchy='induced-ResNet34')
-model = SoftNBDT(dataset='CIFAR10', model=model, hierarchy='induced-ResNet34')
+criterion = SoftTreeSupLoss(dataset='Imagenet1000', criterion=criterion, hierarchy='induced-efficientnet_b0')
+model = SoftNBDT(dataset='Imagenet1000', model=model, hierarchy='induced-efficientnet_b0')
 ```
+
+Alternatively, you may specify a checkpoint to load model weights from, for arbitrary neural networks not included in the NBDT list of pretrained models.
+
+```bash
+wget https://download.pytorch.org/models/resnet18-5c106cde.pth -O resnet18.pth
+nbdt-hierarchy --induced-checkpoint=resnet18.pth
+```
+
 </div>
 </details>
 

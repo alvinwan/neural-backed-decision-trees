@@ -6,6 +6,7 @@ from nbdt.utils import DATASETS, METHODS, fwd
 from networkx.readwrite.json_graph import node_link_data, node_link_graph
 from sklearn.cluster import AgglomerativeClustering
 from pathlib import Path
+import nbdt.models as models
 import torch
 import argparse
 import os
@@ -37,23 +38,26 @@ def get_parser():
         help='structure_released.xml apparently is missing many CIFAR100 classes. '
         'As a result, pruning does not work for CIFAR100. Random will randomly '
         'join clusters together, iteratively, to make a roughly-binary tree.',
-        default='wordnet')
+        default='induced')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--branching-factor', type=int, default=2)
     parser.add_argument('--induced-checkpoint', type=str,
-        help='(induced graph) Checkpoint to load into model. The fc weights '
-        'are used for clustering.')
+        help='(induced hierarchy) Checkpoint to load into model. The fc weights'
+        ' are used for clustering.')
+    parser.add_argument('--induced-model', type=str, default='ResNet18',
+        help='(induced hierarchy) Model name to get pretrained fc weights for.',
+        choices=list(models.get_model_choices()))
     parser.add_argument('--induced-linkage', type=str, default='ward',
-        help='(induced graph) Linkage type used for agglomerative clustering')
+        help='(induced hierarchy) Linkage type used for agglomerative clustering')
     parser.add_argument('--induced-affinity', type=str, default='euclidean',
-        help='(induced graph) Metric used for computing similarity')
+        help='(induced hierarchy) Metric used for computing similarity')
     return parser
 
 
 def generate_fname(method, seed=0, branching_factor=2, extra=0,
                    no_prune=False, fname='', single_path=False,
                    induced_linkage='ward', induced_affinity='euclidean',
-                   induced_checkpoint=None, **kwargs):
+                   induced_checkpoint=None, induced_model=None, **kwargs):
     if fname:
         return fname
 
@@ -62,15 +66,21 @@ def generate_fname(method, seed=0, branching_factor=2, extra=0,
         if seed != 0:
             fname += f'-seed{seed}'
     if method == 'induced':
-        assert induced_checkpoint is not None, \
-            'Cannot build induced graph without a checkpoint'
+        assert induced_checkpoint or induced_model, \
+            'Induced hierarchy needs either `induced_model` or `induced_checkpoint`'
         if induced_linkage != 'ward' and induced_linkage is not None:
             fname += f'-linkage{induced_linkage}'
         if induced_affinity != 'euclidean' and induced_affinity is not None:
             fname += f'-affinity{induced_affinity}'
-        checkpoint_stem = Path(induced_checkpoint).stem
-        checkpoint_suffix = '-'.join(checkpoint_stem.split('-')[2:])
-        checkpoint_fname = checkpoint_suffix.replace('-induced', '')
+        if induced_checkpoint:
+            checkpoint_stem = Path(induced_checkpoint).stem
+            if checkpoint_stem.startswith('ckpt-') and checkpoint_stem.count('-') >= 2:
+                checkpoint_suffix = '-'.join(checkpoint_stem.split('-')[2:])
+                checkpoint_fname = checkpoint_suffix.replace('-induced', '')
+            else:
+                checkpoint_fname = checkpoint_stem
+        else:
+            checkpoint_fname = induced_model
         fname += f'-{checkpoint_fname}'
     if method in ('random', 'induced'):
         if branching_factor != 2:
@@ -317,10 +327,26 @@ def read_graph(path):
 ################
 
 
-def build_induced_graph(wnids, checkpoint, linkage='ward', affinity='euclidean',
-        branching_factor=2):
-    centers = get_centers(checkpoint)
-    n_classes = centers.size(0)
+MODEL_FC_KEYS = (
+    'fc.weight', 'linear.weight', 'module.linear.weight',
+    'module.net.linear.weight', 'output.weight', 'module.output.weight',
+    'output.fc.weight', 'module.output.fc.weight', 'classifier.weight')
+
+
+def build_induced_graph(wnids, checkpoint, model=None, linkage='ward',
+        affinity='euclidean', branching_factor=2, dataset='CIFAR10'):
+    num_classes = len(wnids)
+    assert checkpoint or model, \
+        'Need to specify either `checkpoint` or `method`.'
+    if checkpoint:
+        centers = get_centers_from_checkpoint(checkpoint)
+    else:
+        centers = get_centers_from_model(model, num_classes, dataset)
+    assert num_classes == centers.size(0), (
+        f'The model FC supports {centers.size(0)} classes. However, the dataset'
+        f' {dataset} features {num_classes} classes. Try passing the '
+        '`--dataset` with the right number of classes.'
+    )
 
     G = nx.DiGraph()
 
@@ -344,37 +370,62 @@ def build_induced_graph(wnids, checkpoint, linkage='ward', affinity='euclidean',
         index_to_wnid[index] = parent.wnid
 
         for child in pair:
-            if child < n_classes:
+            if child < num_classes:
                 child_wnid = wnids[child]
             else:
-                child_wnid = index_to_wnid[child - n_classes]
+                child_wnid = index_to_wnid[child - num_classes]
             G.add_edge(parent.wnid, child_wnid)
 
     assert len(list(get_roots(G))) == 1, list(get_roots(G))
     return G
 
 
-def get_centers(checkpoint):
+def get_centers_from_checkpoint(checkpoint):
     data = torch.load(checkpoint, map_location=torch.device('cpu'))
 
     for key in ('net', 'state_dict'):
         try:
-            net = data[key]
+            state_dict = data[key]
             break
         except:
-            net = data
+            state_dict = data
 
-    keys = ('fc.weight', 'linear.weight', 'module.linear.weight',
-            'module.net.linear.weight', 'output.weight', 'module.output.weight',
-            'output.fc.weight', 'module.output.fc.weight', 'classifier.weight')
-    fc = None
-    for key in keys:
-        if key in net:
-            fc = net[key]
-            break
+    fc = get_centers_from_state_dict(state_dict)
     assert fc is not None, (
-        f'Could not find FC weights in {checkpoint} with keys: {net.keys()}')
-    return fc.detach()
+        f'Could not find FC weights in checkpoint {checkpoint} with keys: {net.keys()}')
+    return fc
+
+
+def get_centers_from_model(model, num_classes, dataset):
+    net = None
+    try:
+        net = getattr(models, model)(
+            pretrained=True,
+            num_classes=num_classes,
+            dataset=dataset)
+    except TypeError as e:
+        print(f'Ignoring TypeError. Retrying without `dataset` kwarg: {e}')
+    try:
+        net = getattr(models, model)(
+            pretrained=True,
+            num_classes=num_classes)
+    except TypeError as e:
+        print(e)
+    assert net is not None, f'Could not find pretrained model {model}'
+    fc = get_centers_from_state_dict(net.state_dict())
+    assert fc is not None, (
+        f'Could not find FC weights in model {model} with keys: {net.keys()}')
+    return fc
+
+
+def get_centers_from_state_dict(state_dict):
+    fc = None
+    for key in MODEL_FC_KEYS:
+        if key in state_dict:
+            fc = state_dict[key]
+            break
+    if fc is not None:
+        return fc.detach()
 
 
 ####################
