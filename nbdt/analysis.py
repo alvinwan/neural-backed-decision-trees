@@ -1,7 +1,7 @@
 from nbdt.graph import get_root, get_wnids
 from nbdt.utils import (
     set_np_printoptions, dataset_to_default_path_graph,
-    dataset_to_default_path_wnids
+    dataset_to_default_path_wnids, dataset_to_dummy_classes
 )
 from nbdt.loss import HardTreeSupLoss, SoftTreeSupLoss
 from nbdt.data.custom import Node
