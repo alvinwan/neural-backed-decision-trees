@@ -9,9 +9,12 @@ import time
 import math
 import numpy as np
 
+from urllib.request import urlopen, Request
+from PIL import Image
 import torch.nn as nn
 import torch.nn.init as init
 from pathlib import Path
+import io
 
 # tree-generation consntants
 METHODS = ('wordnet', 'random', 'induced')
@@ -21,6 +24,12 @@ DATASET_TO_NUM_CLASSES = {
     'CIFAR100': 100,
     'TinyImagenet200': 200,
     'Imagenet1000': 1000
+}
+DATASET_TO_CLASSES = {
+    'CIFAR10': [
+        'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog',
+        'horse', 'ship', 'truck'
+    ]
 }
 
 
@@ -59,6 +68,19 @@ def populate_kwargs(args, kwargs, object, name='Dataset', keys=(), globals={}):
             Colors.red(
                 f'Warning: {name} does not support custom '
                 f'{key}: {value}')
+
+
+def load_image_from_path(path):
+    """Path can be local or a URL"""
+    headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.3'
+    }
+    if 'http' in path:
+      request = Request(path, headers=headers)
+      file = io.BytesIO(urlopen(request).read())
+    else:
+      file = path
+    return Image.open(file)
 
 
 class Colors:
