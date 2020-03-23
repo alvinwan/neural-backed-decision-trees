@@ -158,7 +158,9 @@ if args.resume:
             net.load_state_dict(checkpoint)
             Colors.cyan(f'==> Checkpoint found at {resume_path}')
 
-loss_kwargs = {'criterion': nn.CrossEntropyLoss()}
+criterion = nn.CrossEntropyLoss()
+
+loss_kwargs = {}
 class_criterion = getattr(loss, args.loss)
 populate_kwargs(args, loss_kwargs, class_criterion, name=f'Loss {args.loss}',
     keys=loss.keys, globals=globals())

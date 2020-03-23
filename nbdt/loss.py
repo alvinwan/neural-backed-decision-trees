@@ -12,7 +12,7 @@ __all__ = names = ('HardTreeSupLoss', 'SoftTreeSupLoss', 'CrossEntropyLoss')
 keys = (
     'path_graph', 'path_wnids', 'max_leaves_supervised',
     'min_leaves_supervised', 'weighted_average', 'tree_supervision_weight',
-    'classes', 'dataset'
+    'classes', 'dataset', 'criterion'
 )
 
 def add_arguments(parser):
@@ -52,6 +52,7 @@ CrossEntropyLoss = nn.CrossEntropyLoss
 
 class TreeSupLoss(nn.Module):
 
+    accepts_criterion = lambda criterion, **kwargs: criterion
     accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
     accepts_path_graph = True
     accepts_path_wnids = True
