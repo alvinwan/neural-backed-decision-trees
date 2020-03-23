@@ -1,10 +1,10 @@
 from nbdt.graph import get_root, get_wnids
 from nbdt.utils import (
     set_np_printoptions, dataset_to_default_path_graph,
-    dataset_to_default_path_wnids, dataset_to_dummy_classes
+    dataset_to_default_path_wnids
 )
 from nbdt.loss import HardTreeSupLoss, SoftTreeSupLoss
-from nbdt.data.custom import Node
+from nbdt.data.custom import Node, dataset_to_dummy_classes
 import torch
 import torch.nn as nn
 import numpy as np
