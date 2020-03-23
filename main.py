@@ -12,7 +12,7 @@ import torchvision.transforms as transforms
 import os
 import argparse
 
-import models
+from nbdt import models
 from nbdt.utils import (
     progress_bar, generate_fname, populate_kwargs, Colors
 )

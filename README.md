@@ -345,13 +345,15 @@ cd neural-backed-decision-trees
 python setup.py develop
 ```
 
-## Models
-
-As a sample, we've included copies of all the above bash scripts but for ResNet18.
+As a sample, we've included copies of the WideResNet bash script but for ResNet18.
 
 ```bash
 bash scripts/gen_train_eval_resnet.sh
 ```
+
+For any models that have pretrained checkpoints for the datasets of interest (e.g., CIFAR10, CIFAR100, and Imagenet models from `pytorchcv` or Imagenet models from `torchvision`), modify `scripts/gen_train_eval_pretrained.sh`; it suffices to change the model name. For all models that do not have pretrained checkpoint for the dataset of interest, modify `scripts/gen_train_eval_nopretrained.sh`.
+
+## Models
 
 Without any modifications to `main.py`, you can replace ResNet18 with your favorite network: Pass  any [`torchvision.models`](https://pytorch.org/docs/stable/torchvision/models.html) model or any [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch) model to `--model`, as we directly support both model zoos. Note that the former only supports models pretrained on Imagenet. The latter supports models pretrained on CIFAR10 and CIFAR100; for each dataset, the corresponding model name includes the dataset e.g., `wrn28_10_cifar10`. However, neither supports models pretrained on TinyImagenet.
 
