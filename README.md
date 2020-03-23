@@ -355,7 +355,7 @@ For any models that have pretrained checkpoints for the datasets of interest (e.
 
 ## Models
 
-Without any modifications to `main.py`, you can replace ResNet18 with your favorite network: Pass  any [`torchvision.models`](https://pytorch.org/docs/stable/torchvision/models.html) model or any [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch) model to `--model`, as we directly support both model zoos. Note that the former only supports models pretrained on Imagenet. The latter supports models pretrained on CIFAR10 and CIFAR100; for each dataset, the corresponding model name includes the dataset e.g., `wrn28_10_cifar10`. However, neither supports models pretrained on TinyImagenet.
+Without any modifications to `main.py`, you can replace ResNet18 with your favorite network: Pass  any [`torchvision.models`](https://pytorch.org/docs/stable/torchvision/models.html) model or any [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch) model to `--model`, as we directly support both model zoos. Note that the former only supports models pretrained on Imagenet. The latter supports models pretrained on CIFAR10, CIFAR100, andd Imagenet; for each dataset, the corresponding model name includes the dataset e.g., `wrn28_10_cifar10`. However, neither supports models pretrained on TinyImagenet.
 
 To add a new model from scratch:
 
