@@ -41,7 +41,7 @@ By default, this evaluation utility uses WideResNet pretrained on CIFAR10. You c
 nbdt https://images.pexels.com/photos/1466592/pexels-photo-1466592.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
 ```
 
-Like before, this outputs the class prediction and intermediate decisions. Although this class was not seen at train time, the model still correctly disambiguates animal from vehicle, when classifying the bear.
+Like before, this outputs the class prediction and intermediate decisions. Although the *Bear* class was not seen at train time, the model still correctly picks *Vertebrate* over *Instrumentality* (which is, in the CIFAR10 case, equivalent to *Vehicles*).
 
 ```
 Prediction: bear // Decisions: vertebrate, placental, ungulate, horse
@@ -223,19 +223,41 @@ generate_hierarchy(dataset='Imagenet1000', induced_model='wrn28_10_cifar10', mod
 <div>
 
 By default, the generation script outputs the HTML file containing a d3
-visualization. All visualizations are stored in `out/`. The above script will
-output the following.
+visualization. All visualizations are stored in `out/`. We will generate another visualization with larger font size and includes wordnet IDs where available.
 
 ```
-==> Reading from ./data/CIFAR10/graph-wordnet.json
-==> Found just 1 root.
-==> Wrote HTML to out/wordnet-tree.html
-==> Wrote HTML to out/wordnet-graph.html
+nbdt-hierarchy --vis-sublabels --vis-zoom=1.25 --dataset=CIFAR10 --induced-model=wrn28_10_cifar10
 ```
 
-Open up `out/wordnet-tree.html` in your browser to view the d3 tree visualization.
+The above script's output will end with the following.
 
-<img width="1436" alt="Screen Shot 2020-02-22 at 1 52 51 AM" src="https://user-images.githubusercontent.com/2068077/75101893-ca8f4b80-5598-11ea-9b47-7adcc3fc3027.png">
+```
+==> Reading from ./nbdt/hierarchies/CIFAR10/graph-induced-wrn28_10_cifar10.json
+Found just 1 root.
+==> Wrote HTML to out/induced-wrn28_10_cifar10-tree.html
+```
+
+Open up `out/induced-wrn28_10_cifar10-tree.html` in your browser to view the d3 tree visualization.
+
+<img width="873" alt="Screen Shot 2020-03-24 at 1 51 49 AM" src="https://user-images.githubusercontent.com/2068077/77406559-1426ae00-6d72-11ea-90da-ae3e78b7b206.png">
+
+</div>
+</details>
+
+<details><summary><b>Want to reproduce hierarchy visualizations from the paper?</b> <i>[click to expand]</i></summary>
+<div>
+
+To generate figures from the paper, use a larger zoom and do not include sublabels. The checkpoints used to generate the induced hierarchy visualizations are included in this repository's hub of models.
+
+```
+nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --induced-model=ResNet10
+nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --induced-model=wrn28_10_cifar10
+```
+
+<img width="183" alt="aquatic_wordnet" src="https://user-images.githubusercontent.com/2068077/77405563-9b732200-6d70-11ea-9423-81c907763baa.png" align="left">
+<img width="171" alt="aquatic_induced" src="https://user-images.githubusercontent.com/2068077/77405566-9dd57c00-6d70-11ea-9ed9-b5e90f44e31c.png" align="left">
+<img width="166" alt="CIFAR10_WRN_Tree" src="https://user-images.githubusercontent.com/2068077/77405567-9e6e1280-6d70-11ea-9de2-ca0a23bd842c.png" align="left">
+<img width="204" alt="CIFAR10_ResNet10_Tree" src="https://user-images.githubusercontent.com/2068077/77405568-9e6e1280-6d70-11ea-96b3-4d31dbc331e6.png">
 
 </div>
 </details>
@@ -258,9 +280,24 @@ The below just explains the above `generate_hierarchies_wordnet.sh`, using CIFAR
 nbdt-wnids --dataset=CIFAR10
 
 # Generate hierarchy, using the WNIDs. This is required for all datasets: CIFAR10, CIFAR100, TinyImagenet200
-nbdt-hierarchy --method=wordnet --single-path --dataset=CIFAR10
+nbdt-hierarchy --method=wordnet --dataset=CIFAR10
 ```
 </details>
+
+<details><summary><b>See example visualization.</b> <i>[click to expand]</i></summary>
+<div>
+
+We can generate a visualization with a slightly improved zoom and with wordnet IDs. By default, the script builds the Wordnet hierarchy for CIFAR10.
+
+```
+nbdt-hierarchy --method=wordnet --vis-zoom=1.25 --vis-sublabels
+```
+
+<img width="1002" alt="Screen Shot 2020-03-24 at 2 02 16 AM" src="https://user-images.githubusercontent.com/2068077/77407533-81870e80-6d73-11ea-9841-14b2caf13285.png">
+
+</div>
+</details>
+
 
 ### Random Hierarchy
 
