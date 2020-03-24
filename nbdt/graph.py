@@ -54,6 +54,8 @@ def get_parser():
         help='Use curved lines for edges')
     parser.add_argument('--vis-sublabels', action='store_true',
         help='Show sublabels')
+    parser.add_argument('--vis-gray', action='store_true',
+        help='Color all nodes gray, instead of coloring leaves blue.')
     return parser
 
 

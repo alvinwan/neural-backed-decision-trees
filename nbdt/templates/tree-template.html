@@ -50,7 +50,7 @@ html {
 var zoom_factor = CONFIG_ZOOM;
 var show_sublabels = CONFIG_SHOW_SUBLABELS;
 var straight_lines = CONFIG_STRAIGHT_LINES;
-var treeData = [CONFIG_TREE_DATA]
+var treeData = CONFIG_TREE_DATA;
 
 // copy-pasta'ed the code in this file from https://bl.ocks.org/d3noob/8375092
 
@@ -96,6 +96,27 @@ gradient.append("svg:stop")
 gradient.append("svg:stop")
     .attr("offset", "100%")
     .attr("stop-color", "#737373ff")
+    .attr("stop-opacity", 1);
+
+// gradient
+var gradient2 = svg.append("svg:defs")
+    .append("svg:linearGradient")
+    .attr("id", "gradientBlue")
+    .attr("x1", "0%")
+    .attr("y1", "0%")
+    .attr("x2", "100%")
+    .attr("y2", "100%")
+    .attr("spreadMethod", "pad");
+
+// Define the gradient colors
+gradient2.append("svg:stop")
+    .attr("offset", "0%")
+    .attr("stop-color", "#dfe9fbff")
+    .attr("stop-opacity", 1);
+
+gradient2.append("svg:stop")
+    .attr("offset", "100%")
+    .attr("stop-color", "#6e9be7ff")
     .attr("stop-opacity", 1);
 
 // arrow
@@ -176,7 +197,12 @@ function update(source) {
 
   nodeEnter.append("circle")
 	  .attr("r", 1e-6)
-	  .style("fill", function(d) { return d._children ? "#fff" : "url(#gradientGray)";});
+	  .style("fill", function(d) {
+      if (d._children) return "#fff";
+      if (d.color == "blue") return "url(#gradientBlue)";
+      return "url(#gradientGray)";
+    })
+    .style("stroke", function(d) { return d.color == "blue" ? "#1155cc" : "#666666" });
 
   // Transition nodes to their new position.
   var nodeUpdate = node.transition()
@@ -185,7 +211,11 @@ function update(source) {
 
   nodeUpdate.select("circle")
 	  .attr("r", 10)
-	  .style("fill", function(d) { return d._children ? "#fff" : "url(#gradientGray)";});
+	  .style("fill", function(d) {
+      if (d._children) return "#fff";
+      if (d.color == "blue") return "url(#gradientBlue)";
+      return "url(#gradientGray)";
+    });
 
   nodeUpdate.select("text")
 	  .style("fill-opacity", 1);
@@ -216,7 +246,7 @@ function update(source) {
 
     link.enter().insert("line", "g")
           .attr("class", "link")
-          .style("stroke", "#666666")
+          .style("stroke", function(d) { return d.color == "blue" ? "#1155cc" : "#666666" });
 
     arrow.style("fill", "#666666")
 

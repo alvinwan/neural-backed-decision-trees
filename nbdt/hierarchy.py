@@ -156,12 +156,14 @@ def test_hierarchy(args):
 #######
 
 
-def build_tree(G, root, parent='null'):
+def build_tree(G, root, parent='null', color_leaves_blue=True):
+    children = [build_tree(G, child, root, color_leaves_blue) for child in G.succ[root]]
     return {
         'sublabel': root,
         'label': G.nodes[root].get('label', ''),
         'parent': parent,
-        'children': [build_tree(G, child, root) for child in G.succ[root]]
+        'children': children,
+        'color': 'gray' if len(children) or not color_leaves_blue else 'blue'
     }
 
 
@@ -213,7 +215,7 @@ def generate_hierarchy_vis(args):
     roots = list(get_roots(G))
     num_roots = len(roots)
     root = next(get_roots(G))
-    tree = build_tree(G, root)
+    tree = build_tree(G, root, color_leaves_blue=not args.vis_gray)
     graph = build_graph(G)
 
     if num_roots > 1:
