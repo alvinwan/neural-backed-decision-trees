@@ -1,4 +1,4 @@
-from nbdt.graph import get_root, get_wnids
+from nbdt.graph import get_root, get_wnids, wnid_to_synset
 from nbdt.utils import (
     set_np_printoptions, dataset_to_default_path_graph,
     dataset_to_default_path_wnids
