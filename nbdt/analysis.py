@@ -1,4 +1,4 @@
-from nbdt.graph import get_root, get_wnids, wnid_to_synset
+from nbdt.graph import get_root, get_wnids, synset_to_name
 from nbdt.utils import (
     set_np_printoptions, dataset_to_default_path_graph,
     dataset_to_default_path_wnids
@@ -216,7 +216,7 @@ class HardEmbeddedDecisionRules(Noop):
                 index_child = pred_sub[index_new]
                 wnid = node.children[index_child]
                 node = self.wnid_to_node.get(wnid, None)
-                decision.append({'node': node, 'name': wnid_to_synset(wnid).name()})
+                decision.append({'node': node, 'name': wnid_to_name(wnid)})
             cls = self.wnid_to_class.get(wnid, None)
             pred = -1 if cls is None else self.classes.index(cls)
             preds.append(pred)

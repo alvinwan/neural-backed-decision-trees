@@ -1,8 +1,8 @@
 # Neural-Backed Decision Trees
 
-Run decision trees that achieve state-of-the-art accuracy for explainable models on CIFAR10, CIFAR100, TinyImagenet200, and Imagenet. NBDTs achieve accuracies within 1% of the original neural network on CIFAR10, CIFAR100, and TinyImagenet200 with the recently state-of-the-art WideResNet.
+Run decision trees that achieve state-of-the-art accuracy for explainable models on CIFAR10, CIFAR100, TinyImagenet200, and ImageNet. NBDTs achieve accuracies within 1% of the original neural network on CIFAR10, CIFAR100, and TinyImagenet200 with the recently state-of-the-art WideResNet.
 
-<sub>**NBDT Accuracy per dataset**: CIFAR10 (97.57%), CIFAR100 (82.87%), TinyImagenet200 (66.66%), Imagenet (67.47%). [See more results](#results)</sub>
+<sub>**NBDT Accuracy per dataset**: CIFAR10 (97.57%), CIFAR100 (82.87%), TinyImagenet200 (66.66%), ImageNet (67.47%). [See more results](#results)</sub>
 
 **Table of Contents**
 
@@ -31,9 +31,8 @@ nbdt https://images.pexels.com/photos/1170986/pexels-photo-1170986.jpeg?auto=com
 
 This outputs both the class prediction and all the intermediate decisions, like below:
 
-<!-- TODO: add intermedaite dedcisions -->
 ```
-cat
+Prediction: cat // Decisions: vertebrate, placental, carnivore, cat
 ```
 
 By default, this evaluation utility uses WideResNet pretrained on CIFAR10. You can also pass classes not seen in CIFAR10. Below, we pass a picture of a bear. This bear is also pictured below.
@@ -45,7 +44,7 @@ nbdt https://images.pexels.com/photos/1466592/pexels-photo-1466592.jpeg?auto=com
 Like before, this outputs the class prediction and intermediate decisions. Although this class was not seen at train time, the model still correctly disambiguates animal from vehicle, when classifying the bear.
 
 ```
-bear
+Prediction: bear // Decisions: vertebrate, placental, ungulate, horse
 ```
 
 <img src="https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=297 align=left>
@@ -62,7 +61,7 @@ If you haven't already, pip install the `nbdt` utility.
 pip install nbdt
 ```
 
-Then, pick an NBDT inference mode (hard or soft), dataset, and backbone. By default, we support ResNet18 and WideResNet28x10 for CIFAR10, CIFAR100, and TinyImagenet200. See [nbdt-pytorch-image-models](https://github.com/alvinwan/nbdt-pytorch-image-models) for EfficientNet-EdgeTPUSmall on Imagenet.
+Then, pick an NBDT inference mode (hard or soft), dataset, and backbone. By default, we support ResNet18 and WideResNet28x10 for CIFAR10, CIFAR100, and TinyImagenet200. See [nbdt-pytorch-image-models](https://github.com/alvinwan/nbdt-pytorch-image-models) for EfficientNet-EdgeTPUSmall on ImageNet.
 
 ```python
 from nbdt.model import SoftNBDT
@@ -174,7 +173,7 @@ To reproduce the core experimental results in our paper -- ignoring ablation stu
 bash scripts/gen_train_eval_wideresnet.sh
 ```
 
-Want more transparent step-by-step instructions? The bash scripts above are explained in more detail in the following sections: [Induced Hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#Induced-Hierarchy), [Soft Tree Supervision Loss](https://github.com/alvinwan/neural-backed-decision-trees#Tree-Supervision-Loss), and [Soft Inference](https://github.com/alvinwan/neural-backed-decision-trees#Soft-Inference). These scripts reproduce our CIFAR10, CIFAR100, and TinyImagenet200 results. To reproduce our Imagenet results, see [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models).
+Want more transparent step-by-step instructions? The bash scripts above are explained in more detail in the following sections: [Induced Hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#Induced-Hierarchy), [Soft Tree Supervision Loss](https://github.com/alvinwan/neural-backed-decision-trees#Tree-Supervision-Loss), and [Soft Inference](https://github.com/alvinwan/neural-backed-decision-trees#Soft-Inference). These scripts reproduce our CIFAR10, CIFAR100, and TinyImagenet200 results. To reproduce our ImageNet results, see [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models).
 
 For all scripts, you can use any [`torchvision`](https://pytorch.org/docs/stable/torchvision/models.html) model or any [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch) model, as we directly support both model zoos. Customization for each step is explained below.
 
@@ -199,7 +198,7 @@ The script loads the pretrained model (Step A), populates the leaves of the tree
 # different architecture: ResNet18
 nbdt-hierarchy --induced-model=ResNet18 --dataset=CIFAR10
 
-# different dataset: Imagenet
+# different dataset: ImageNet
 nbdt-hierarchy --induced-model=efficientnet_b7 --dataset=Imagenet1000
 
 # arbitrary checkpoint
@@ -245,9 +244,9 @@ visualization.
 </details>
 
 
-### Wordnet Hierarchy
+### WordNet Hierarchy
 
-Run the following to generate and test Wordnet hierarchies for CIFAR10, CIFAR100, and TinyImagenet200. The script also downloads the NLTK Wordnet corpus.
+Run the following to generate and test WordNet hierarchies for CIFAR10, CIFAR100, and TinyImagenet200. The script also downloads the NLTK WordNet corpus.
 
 ```bash
 bash scripts/generate_hierarchies_wordnet.sh
@@ -350,11 +349,11 @@ As a sample, we've included copies of the WideResNet bash script but for ResNet1
 bash scripts/gen_train_eval_resnet.sh
 ```
 
-For any models that have pretrained checkpoints for the datasets of interest (e.g., CIFAR10, CIFAR100, and Imagenet models from `pytorchcv` or Imagenet models from `torchvision`), modify `scripts/gen_train_eval_pretrained.sh`; it suffices to change the model name. For all models that do not have pretrained checkpoint for the dataset of interest, modify `scripts/gen_train_eval_nopretrained.sh`.
+For any models that have pretrained checkpoints for the datasets of interest (e.g., CIFAR10, CIFAR100, and ImageNet models from `pytorchcv` or ImageNet models from `torchvision`), modify `scripts/gen_train_eval_pretrained.sh`; it suffices to change the model name. For all models that do not have pretrained checkpoint for the dataset of interest, modify `scripts/gen_train_eval_nopretrained.sh`.
 
 ## Models
 
-Without any modifications to `main.py`, you can replace ResNet18 with your favorite network: Pass  any [`torchvision.models`](https://pytorch.org/docs/stable/torchvision/models.html) model or any [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch) model to `--model`, as we directly support both model zoos. Note that the former only supports models pretrained on Imagenet. The latter supports models pretrained on CIFAR10, CIFAR100, andd Imagenet; for each dataset, the corresponding model name includes the dataset e.g., `wrn28_10_cifar10`. However, neither supports models pretrained on TinyImagenet.
+Without any modifications to `main.py`, you can replace ResNet18 with your favorite network: Pass  any [`torchvision.models`](https://pytorch.org/docs/stable/torchvision/models.html) model or any [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch) model to `--model`, as we directly support both model zoos. Note that the former only supports models pretrained on ImageNet. The latter supports models pretrained on CIFAR10, CIFAR100, andd ImageNet; for each dataset, the corresponding model name includes the dataset e.g., `wrn28_10_cifar10`. However, neither supports models pretrained on TinyImagenet.
 
 To add a new model from scratch:
 

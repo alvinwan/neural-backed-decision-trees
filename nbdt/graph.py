@@ -152,6 +152,10 @@ def wnid_to_synset(wnid):
         return FakeSynset(wnid)
 
 
+def wnid_to_name(wnid):
+    return synset_to_name(wnid_to_synset(wnid))
+
+
 def synset_to_name(synset):
     return synset.name().split('.')[0]
 
