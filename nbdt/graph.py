@@ -49,6 +49,11 @@ def get_parser():
         help='(induced hierarchy) Linkage type used for agglomerative clustering')
     parser.add_argument('--induced-affinity', type=str, default='euclidean',
         help='(induced hierarchy) Metric used for computing similarity')
+    parser.add_argument('--vis-zoom', type=float, default=1.0)
+    parser.add_argument('--vis-curved', action='store_true',
+        help='Use curved lines for edges')
+    parser.add_argument('--vis-sublabels', action='store_true',
+        help='Show sublabels')
     return parser
 
 

@@ -2,41 +2,40 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-
-    <title>Tree Example</title>
-
+    <title>Hierarchy Visualization as Tree | Neural-Backed Decision Tree</title>
     <style>
+html {
+  font-size: 16px;  /* CONFIG_ZOOM */
+}
 
-	.node {
-		cursor: pointer;
-	}
+.node {
+	cursor: pointer;
+}
 
-	.node circle {
-	  fill: #fff;
-	  stroke: steelblue;
-	  stroke-width: 3px;
-	}
+.node circle {
+  fill: rgb(102,102,102);
+  stroke: #666666;
+  stroke-width: 0.12em;
+  r: 0.6em
+}
 
-	.node text {
-	  font: 12px sans-serif;
-    font-weight: bold;
-	}
+.node text {
+  font: 0.9em sans-serif;
+  font-weight:bold;
+}
 
-  .node text.small {
-	  font: 8px sans-serif;
-    color:#ccc;
-	}
+.node text.small {
+  font: 0.7em sans-serif;
+  color:#ccc;
+}
 
-	.link {
-	  fill: none;
-	  stroke: #ccc;
-	  stroke-width: 2px;
-	}
-
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 0.1em;
+}
     </style>
-
   </head>
-
   <body>
 
 <!-- load the d3.js library -->
@@ -44,14 +43,18 @@
 
 <script>
 
-// I copy-pasta from new_CIFAR100-image_d3.json
-// the code in this file from https://bl.ocks.org/d3noob/8375092
-var treeData = ['TREE_DATA_CONSTANT_TO_BE_REPLACED'];
+// CONSTANTS that python will impute
+
+var show_sublabels = false;  // CONFIG_SHOW_SUBLABELS
+var straight_lines = true;  // CONFIG_STRAIGHT_LINES
+var treeData = []  // CONFIG_TREE_DATA
+
+// copy-pasta'ed the code in this file from https://bl.ocks.org/d3noob/8375092
 
 // ************** Generate the tree diagram	 *****************
 var margin = {top: 20, right: 120, bottom: 20, left: 120},
-	width = 3000 - margin.right - margin.left,
-	height = 700 - margin.top - margin.bottom;
+	  width = 3000 - margin.right - margin.left,
+	  height = 800 - margin.top - margin.bottom;
 
 var i = 0,
 	duration = 750,
@@ -69,13 +72,49 @@ var svg = d3.select("body").append("svg")
   .append("g")
 	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+// define custom reusable elements
+
+// gradient
+var gradient = svg.append("svg:defs")
+    .append("svg:linearGradient")
+    .attr("id", "gradientGray")
+    .attr("x1", "0%")
+    .attr("y1", "0%")
+    .attr("x2", "100%")
+    .attr("y2", "100%")
+    .attr("spreadMethod", "pad");
+
+// Define the gradient colors
+gradient.append("svg:stop")
+    .attr("offset", "0%")
+    .attr("stop-color", "#bfbfbfff")
+    .attr("stop-opacity", 1);
+
+gradient.append("svg:stop")
+    .attr("offset", "100%")
+    .attr("stop-color", "#737373ff")
+    .attr("stop-opacity", 1);
+
+// arrow
+var arrow = svg.append("svg:defs").append("svg:marker")
+    .attr("id", "arrow")
+    .attr("viewBox", "0 -5 10 10")
+    .attr("markerWidth", 5)
+    .attr("markerHeight", 5)
+    .attr("orient", "auto")
+    .attr('fill', '#CCCCCC')
+
+arrow.append("svg:path")
+    .attr("d", "M0,-5L10,0L0,5")
+// end custom elements
+
 root = treeData[0];
 root.x0 = height / 2;
 root.y0 = 0;
 
 update(root);
 
-d3.select(self.frameElement).style("height", "500px");
+d3.select(self.frameElement).style("height", height + "px"););
 
 function update(source) {
 
@@ -94,26 +133,44 @@ function update(source) {
   var nodeEnter = node.enter().append("g")
 	  .attr("class", "node")
 	  .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
-	  .on("click", click);
-
-  nodeEnter.append("circle")
-	  .attr("r", 1e-6)
-	  .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+	  .on("click", click)
+    .attr("d", function(d) {
+          d.radius = 21 * 2;
+          d.marker_end = 7 * 2;
+          d.marker_start = 0;
+          d.padding = 20 * 2;  // enabled by getTargetNodeCircumferencePoint
+    })
 
   nodeEnter.append("text")
-	  .attr("x", function(d) { return d.children || d._children ? -13 : 13; })
-	  .attr("dy", ".35em")
-	  .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
-	  .text(function(d) { return d.label; })
-	  .style("fill-opacity", 1e-6);
+    .text(function(d) { return d.label; })
+    .attr("dy", function(d) { return show_sublabels ? "-0.2em" : "0.3em"});
 
   nodeEnter.append("text")
     .attr("class", "small")
-	  .attr("x", function(d) { return d.children || d._children ? -13 : 13; })
-	  .attr("dy", "1.9em")
-	  .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
-	  .text(function(d) { return d.name; })
-    .style("fill-opacity", 1e-6);
+    .attr("dy", "1.2em")
+    .text(function(d) { return show_sublabels ? d.name : ""; })
+
+  function textOnLeft(d) {
+    children = d.children || d._children;
+    if (!children) return false;
+    return children.length % 2 != 0;
+  }
+
+  nodeEnter.insert("rect", "text")
+    .attr("x", function(d, i){ return textOnLeft(d) ? this.parentNode.getBBox().x - this.parentNode.getBBox().width + 2 : this.parentNode.getBBox().x + 32 })
+    .attr("y", function(d){ return this.parentNode.getBBox().y; })
+    .attr("width", function(d){ return this.parentNode.getBBox().width - 5; })
+    .attr("height", function(d) {return this.parentNode.getBBox().height; })
+    .style("fill", "rgba(255,255,255,0.8)");
+
+  nodeEnter.selectAll("text")
+	  .attr("x", function(d) { return textOnLeft(d) ? -13 : 13; })
+    .attr("dx", function(d) { return textOnLeft(d) ? "-0.5em" : "0.5em"; })
+	  .attr("text-anchor", function(d) { return textOnLeft(d) ? "end" : "start"; });
+
+  nodeEnter.append("circle")
+	  .attr("r", 1e-6)
+	  .style("fill", function(d) { return d._children ? "#fff" : "url(#gradientGray)";});
 
   // Transition nodes to their new position.
   var nodeUpdate = node.transition()
@@ -122,7 +179,7 @@ function update(source) {
 
   nodeUpdate.select("circle")
 	  .attr("r", 10)
-	  .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+	  .style("fill", function(d) { return d._children ? "#fff" : "url(#gradientGray)";});
 
   nodeUpdate.select("text")
 	  .style("fill-opacity", 1);
@@ -145,36 +202,78 @@ function update(source) {
   nodeExit.select("text.small")
 	  .style("fill-opacity", 1e-6);
 
-  // Update the links…
-  var link = svg.selectAll("path.link")
-	  .data(links, function(d) { return d.target.id; });
+  if (straight_lines) {
 
-  // Enter any new links at the parent's previous position.
-  link.enter().insert("path", "g")
-	  .attr("class", "link")
-	  .attr("d", function(d) {
-		var o = {x: source.x0, y: source.y0};
-		return diagonal({source: o, target: o});
-	  });
+    // Update the links…
+    var link = svg.selectAll("line")
+  	  .data(links, function(d) { return d.target.id; });
+
+    link.enter().insert("line", "g")
+          .attr("class", "link")
+          .style("stroke", "#666666")
+
+    arrow.style("fill", "#666666")
+
+    link.attr('x1', function(d) {
+             return getTargetNodeCircumferencePoint(d.target, d.source, d.target.marker_start)[1];
+        })
+        .attr('y1', function(d) {
+             return getTargetNodeCircumferencePoint(d.target, d.source, d.target.marker_start)[0];
+        })
+        .attr("x2", function(d) {
+             return getTargetNodeCircumferencePoint(d.source, d.target, d.target.marker_end)[1];
+        })
+        .attr("y2", function(d) {
+             return getTargetNodeCircumferencePoint(d.source, d.target, d.target.marker_end)[0];
+        })
+        .attr('marker-end', function(d) { return "url(#arrow)"; })
+
+
+
+    function getTargetNodeCircumferencePoint(source, target, end) {
+
+        var t_radius = (target.radius + target.padding) / 2.0 + end;
+        var dx = target.x - source.x;
+        var dy = target.y - source.y;
+        var gamma = Math.atan2(dy, dx); // Math.atan2 returns the angle in the correct quadrant as opposed to Math.atan
+        var tx = target.x - (Math.cos(gamma) * t_radius);
+        var ty = target.y - (Math.sin(gamma) * t_radius);
+
+        return [tx, ty];
+    }
+  } else {
+
+    // Update the links…
+    var link = svg.selectAll("path.link")
+  	  .data(links, function(d) { return d.target.id; });
+
+    // Enter any new links at the parent's previous position.
+    link.enter().insert("path", "g")
+  	  .attr("class", "link")
+  	  .attr("d", function(d) {
+    		var o = {x: source.x0, y: source.y0};
+    		return diagonal({source: o, target: o});
+  	  });
+  }
 
   // Transition links to their new position.
   link.transition()
-	  .duration(duration)
-	  .attr("d", diagonal);
+    .duration(duration)
+    .attr("d", diagonal);
 
   // Transition exiting nodes to the parent's new position.
   link.exit().transition()
-	  .duration(duration)
-	  .attr("d", function(d) {
-		var o = {x: source.x, y: source.y};
-		return diagonal({source: o, target: o});
-	  })
-	  .remove();
+    .duration(duration)
+    .attr("d", function(d) {
+      var o = {x: source.x, y: source.y};
+      return diagonal({source: o, target: o});
+    })
+    .remove();
 
   // Stash the old positions for transition.
   nodes.forEach(function(d) {
-	d.x0 = d.x;
-	d.y0 = d.y;
+  	d.x0 = d.x;
+  	d.y0 = d.y;
   });
 }
 

@@ -158,7 +158,7 @@ def test_hierarchy(args):
 
 def build_tree(G, root, parent='null'):
     return {
-        'name': root,
+        'sublabel': root,
         'label': G.nodes[root].get('label', ''),
         'parent': parent,
         'children': [build_tree(G, child, root) for child in G.succ[root]]
@@ -179,11 +179,22 @@ def build_graph(G):
     }
 
 
-def generate_vis(path_template, data, name, fname):
+def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
+        show_sublabels=False):
     with open(path_template) as f:
-        html = f.read().replace(
-            "'TREE_DATA_CONSTANT_TO_BE_REPLACED'",
-            json.dumps(data))
+        html = f.read() \
+        .replace(
+            "[]  // CONFIG_TREE_DATA",
+            json.dumps([data])) \
+        .replace(
+            "16px;  /* CONFIG_ZOOM */",
+            f"{zoom * 16.}px") \
+        .replace(
+            "true;  // CONFIG_STRAIGHT_LINES",
+            str(straight_lines).lower()) \
+        .replace(
+            "false;  // CONFIG_SHOW_SUBLABELS",
+            str(show_sublabels).lower())
 
     os.makedirs('out', exist_ok=True)
     path_html = f'out/{fname}-{name}.html'
@@ -212,5 +223,8 @@ def generate_hierarchy_vis(args):
 
     fname = generate_fname(**vars(args)).replace('graph-', '', 1)
     parent = Path(fwd()).parent
-    generate_vis(str(parent / 'nbdt/templates/tree-template.html'), tree, 'tree', fname)
-    generate_vis(str(parent / 'nbdt/templates/graph-template.html'), graph, 'graph', fname)
+    generate_vis(
+        str(parent / 'nbdt/templates/tree-template.html'), tree, 'tree', fname,
+        zoom=args.vis_zoom,
+        straight_lines=not args.vis_curved,
+        show_sublabels=args.vis_sublabels)

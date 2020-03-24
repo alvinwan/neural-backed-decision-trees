@@ -222,24 +222,21 @@ generate_hierarchy(dataset='Imagenet1000', induced_model='wrn28_10_cifar10', mod
 <details><summary><b>See example visualization.</b> <i>[click to expand]</i></summary>
 <div>
 
-By default, the generation script outputs both the JSON representing
-the hierarchy and the HTML file containing a d3 visualization. All visualizations
-are stored in `out/`. The above script will output the following.
+By default, the generation script outputs the HTML file containing a d3
+visualization. All visualizations are stored in `out/`. The above script will
+output the following.
 
 ```
-==> Reading from ./data/CIFAR10/graph-wordnet-single.json
+==> Reading from ./data/CIFAR10/graph-wordnet.json
 ==> Found just 1 root.
-==> Wrote HTML to out/wordnet-single-tree.html
-==> Wrote HTML to out/wordnet-single-graph.html
+==> Wrote HTML to out/wordnet-tree.html
+==> Wrote HTML to out/wordnet-graph.html
 ```
 
-There are two visualizations. Open up `out/wordnet-single-tree.html` in your browser
-to view the d3 tree visualization.
+Open up `out/wordnet-tree.html` in your browser to view the d3 tree visualization.
 
 <img width="1436" alt="Screen Shot 2020-02-22 at 1 52 51 AM" src="https://user-images.githubusercontent.com/2068077/75101893-ca8f4b80-5598-11ea-9b47-7adcc3fc3027.png">
 
-Open up `out/wordnet-single-graph.html` in your browser to view the d3 graph
-visualization.
 </div>
 </details>
 
