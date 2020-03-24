@@ -187,15 +187,18 @@ class Node:
         return nodes
 
     @staticmethod
-    def get_leaf_to_path_nodes(nodes):
+    def get_leaf_to_path(nodes):
         node = nodes[0]
         leaf_to_path = get_leaf_to_path(node.G)
         wnid_to_node = {node.wnid: node for node in nodes}
         leaf_to_path_nodes = {}
         for leaf in leaf_to_path:
             leaf_to_path_nodes[leaf] = [
-                wnid_to_node[wnid] for wnid in leaf_to_path[leaf]
-                if wnid in wnid_to_node
+                {
+                    'node': wnid_to_node.get(wnid, None),
+                    'name': wnid_to_synset(wnid).name()
+                }
+                for wnid in leaf_to_path[leaf]
             ]
         return leaf_to_path_nodes
 

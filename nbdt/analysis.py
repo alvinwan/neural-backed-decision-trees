@@ -176,7 +176,8 @@ class HardEmbeddedDecisionRules(Noop):
         _, predicted = outputs.max(1)
         n_samples = outputs.size(0)
         predicted, decisions = self.traverse_tree(
-            predicted, wnid_to_pred_selector, n_samples).to(outputs.device)
+            predicted, wnid_to_pred_selector, n_samples)
+        predicted = predicted.to(outputs.device)
 
         predicted._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return predicted, decisions
@@ -201,7 +202,7 @@ class HardEmbeddedDecisionRules(Noop):
         decisions = []
         preds = []
         for index in range(n_samples):
-            decision = [node_root]
+            decision = [{'node': node_root, 'name': 'root'}]
             wnid, node = wnid_root, node_root
             while node is not None:
                 if node.wnid not in wnid_to_pred_selector:
@@ -215,7 +216,7 @@ class HardEmbeddedDecisionRules(Noop):
                 index_child = pred_sub[index_new]
                 wnid = node.children[index_child]
                 node = self.wnid_to_node.get(wnid, None)
-                decision.append(node)
+                decision.append({'node': node, 'name': wnid_to_synset(wnid).name()})
             cls = self.wnid_to_class.get(wnid, None)
             pred = -1 if cls is None else self.classes.index(cls)
             preds.append(pred)
@@ -238,7 +239,7 @@ class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
 
         decisions = []
         node = self.nodes[0]
-        leaf_to_path_nodes = Node.get_leaf_to_path_nodes(self.nodes)
+        leaf_to_path_nodes = Node.get_leaf_to_path(self.nodes)
         for index, prediction in enumerate(predicted):
             leaf = node.wnids[prediction]
             decision = leaf_to_path_nodes[leaf]

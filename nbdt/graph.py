@@ -204,13 +204,12 @@ def get_leaf_to_path(G):
         frontier = [(root, [])]
         while frontier:
             node, path = frontier.pop(0)
-            path += [node]
+            path = path + [node]
             if is_leaf(G, node):
                 leaf_to_path[node] = path
                 continue
             frontier.extend([(child, path) for child in G.succ[node]])
     return leaf_to_path
-
 
 
 def get_leaf_weights(G, node, weight=1):

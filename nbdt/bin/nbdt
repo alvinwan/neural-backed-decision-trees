@@ -15,6 +15,7 @@ model = SoftNBDT(
   # pretrained=True,
   dataset='CIFAR10',
   arch='wrn28_10_cifar10',
+  hierarchy='wordnet-single',
   model=model)
 
 # load + transform image
@@ -31,5 +32,5 @@ x = transforms(im)[None]
 outputs, decisions = model.forward_with_decisions(x)  # use `model(x)` to obtain just logits
 cls = DATASET_TO_CLASSES['CIFAR10'][outputs[0]]
 print('Prediction:', cls, '// Decisions:', ', '.join([
-    node.synset.name() for node in decisions[0]
+    info['name'] for info in decisions[0]
 ]))
