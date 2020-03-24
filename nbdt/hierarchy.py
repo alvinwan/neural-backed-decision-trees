@@ -184,16 +184,16 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
     with open(path_template) as f:
         html = f.read() \
         .replace(
-            "[]  // CONFIG_TREE_DATA",
+            "CONFIG_TREE_DATA",
             json.dumps([data])) \
         .replace(
-            "16px;  /* CONFIG_ZOOM */",
-            f"{zoom * 16.}px") \
+            "CONFIG_ZOOM",
+            str(zoom)) \
         .replace(
-            "true;  // CONFIG_STRAIGHT_LINES",
+            "CONFIG_STRAIGHT_LINES",
             str(straight_lines).lower()) \
         .replace(
-            "false;  // CONFIG_SHOW_SUBLABELS",
+            "CONFIG_SHOW_SUBLABELS",
             str(show_sublabels).lower())
 
     os.makedirs('out', exist_ok=True)

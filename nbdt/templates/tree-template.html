@@ -3,9 +3,10 @@
   <head>
     <meta charset="utf-8">
     <title>Hierarchy Visualization as Tree | Neural-Backed Decision Tree</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond&display=swap" rel="stylesheet">
     <style>
 html {
-  font-size: 16px;  /* CONFIG_ZOOM */
+  font-size: calc(16px * CONFIG_ZOOM);
 }
 
 .node {
@@ -16,23 +17,25 @@ html {
   fill: rgb(102,102,102);
   stroke: #666666;
   stroke-width: 0.12em;
-  r: 0.6em
+  r: 0.6em;
 }
 
 .node text {
-  font: 0.9em sans-serif;
+  font-size:0.9em;
+  font-family: 'Cormorant Garamond', serif;
   font-weight:bold;
 }
 
 .node text.small {
-  font: 0.7em sans-serif;
+  font-size:0.7em;
+  font-family: 'Cormorant Garamond', serif;
   color:#ccc;
 }
 
 .link {
   fill: none;
   stroke: #ccc;
-  stroke-width: 0.1em;
+  stroke-width: 0.07em;
 }
     </style>
   </head>
@@ -44,17 +47,17 @@ html {
 <script>
 
 // CONSTANTS that python will impute
-
-var show_sublabels = false;  // CONFIG_SHOW_SUBLABELS
-var straight_lines = true;  // CONFIG_STRAIGHT_LINES
-var treeData = []  // CONFIG_TREE_DATA
+var zoom_factor = CONFIG_ZOOM;
+var show_sublabels = CONFIG_SHOW_SUBLABELS;
+var straight_lines = CONFIG_STRAIGHT_LINES;
+var treeData = [CONFIG_TREE_DATA]
 
 // copy-pasta'ed the code in this file from https://bl.ocks.org/d3noob/8375092
 
 // ************** Generate the tree diagram	 *****************
-var margin = {top: 20, right: 120, bottom: 20, left: 120},
+var margin = {top: 20, right: 120, bottom: 20, left: 140},
 	  width = 3000 - margin.right - margin.left,
-	  height = 800 - margin.top - margin.bottom;
+	  height = 750 - margin.top - margin.bottom;
 
 var i = 0,
 	duration = 750,
@@ -109,12 +112,13 @@ arrow.append("svg:path")
 // end custom elements
 
 root = treeData[0];
+root['force_text_on_left'] = true;
 root.x0 = height / 2;
 root.y0 = 0;
 
 update(root);
 
-d3.select(self.frameElement).style("height", height + "px"););
+d3.select(self.frameElement).style("height", height + "px");
 
 function update(source) {
 
@@ -135,10 +139,10 @@ function update(source) {
 	  .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
 	  .on("click", click)
     .attr("d", function(d) {
-          d.radius = 21 * 2;
-          d.marker_end = 7 * 2;
-          d.marker_start = 0;
-          d.padding = 20 * 2;  // enabled by getTargetNodeCircumferencePoint
+          d.radius = 21 * CONFIG_ZOOM;
+          d.marker_end = 7 * CONFIG_ZOOM;
+          d.marker_start = 0 * CONFIG_ZOOM;
+          d.padding = 20 * CONFIG_ZOOM;  // enabled by getTargetNodeCircumferencePoint
     })
 
   nodeEnter.append("text")
@@ -151,6 +155,7 @@ function update(source) {
     .text(function(d) { return show_sublabels ? d.name : ""; })
 
   function textOnLeft(d) {
+    if (d.force_text_on_left) return true;
     children = d.children || d._children;
     if (!children) return false;
     return children.length % 2 != 0;
@@ -163,9 +168,10 @@ function update(source) {
     .attr("height", function(d) {return this.parentNode.getBBox().height; })
     .style("fill", "rgba(255,255,255,0.8)");
 
+  dx = 5 * Math.pow(2.5, 2);
   nodeEnter.selectAll("text")
 	  .attr("x", function(d) { return textOnLeft(d) ? -13 : 13; })
-    .attr("dx", function(d) { return textOnLeft(d) ? "-0.5em" : "0.5em"; })
+    .attr("dx", function(d) { return textOnLeft(d) ? -dx + "px" : dx + "px"; })
 	  .attr("text-anchor", function(d) { return textOnLeft(d) ? "end" : "start"; });
 
   nodeEnter.append("circle")
