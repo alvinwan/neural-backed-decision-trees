@@ -173,7 +173,7 @@ function update(source) {
   nodeEnter.append("text")
     .attr("class", "small")
     .attr("dy", "1.2em")
-    .text(function(d) { return show_sublabels ? d.name : ""; })
+    .text(function(d) { return show_sublabels ? d.sublabel : ""; })
 
   function textOnLeft(d) {
     if (d.force_text_on_left) return true;

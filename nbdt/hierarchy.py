@@ -159,7 +159,7 @@ def test_hierarchy(args):
 def build_tree(G, root, parent='null', color_leaves_blue=True):
     children = [build_tree(G, child, root, color_leaves_blue) for child in G.succ[root]]
     return {
-        'sublabel': root,
+        'sublabel': root if not root.startswith('f') else '',  # WARNING: hacky, ignores fake wnids -- this will have to be changed lol
         'label': G.nodes[root].get('label', ''),
         'parent': parent,
         'children': children,
