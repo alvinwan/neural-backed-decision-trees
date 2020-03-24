@@ -26,9 +26,9 @@ def get_parser():
         help='Percent extra nodes to add to the tree. If 100, the number of '
         'nodes in tree are doubled. Note this is an integral percent.')
     parser.add_argument(
-        '--single-path',
+        '--multi-path',
         action='store_true',
-        help='Ensure every leaf only has one path from the root.')
+        help='Allows each leaf multiple paths to the root.')
     parser.add_argument('--no-prune', action='store_true', help='Do not prune.')
     parser.add_argument('--fname', type=str,
         help='Override all settings and just provide a path to a graph')
@@ -53,7 +53,7 @@ def get_parser():
 
 
 def generate_fname(method, seed=0, branching_factor=2, extra=0,
-                   no_prune=False, fname='', single_path=False,
+                   no_prune=False, fname='', multi_path=False,
                    induced_linkage='ward', induced_affinity='euclidean',
                    induced_checkpoint=None, induced_model=None, **kwargs):
     if fname:
@@ -87,8 +87,8 @@ def generate_fname(method, seed=0, branching_factor=2, extra=0,
         fname += f'-extra{extra}'
     if no_prune:
         fname += '-noprune'
-    if single_path:
-        fname += '-single'
+    if multi_path:
+        fname += '-multi'
     return fname
 
 
@@ -113,7 +113,7 @@ def get_wnids(path_wnids):
 
 def get_graph_path_from_args(
         dataset, method, seed=0, branching_factor=2, extra=0,
-        no_prune=False, fname='', single_path=False,
+        no_prune=False, fname='', multi_path=False,
         induced_linkage='ward', induced_affinity='euclidean',
         induced_checkpoint=None, induced_model=None, **kwargs):
     fname = generate_fname(
@@ -123,7 +123,7 @@ def get_graph_path_from_args(
         extra=extra,
         no_prune=no_prune,
         fname=fname,
-        single_path=single_path,
+        multi_path=multi_path,
         induced_linkage=induced_linkage,
         induced_affinity=induced_affinity,
         induced_checkpoint=induced_checkpoint,
@@ -246,7 +246,7 @@ def set_random_node_label(G, i):
 ##########
 
 
-def build_minimal_wordnet_graph(wnids, single_path=False):
+def build_minimal_wordnet_graph(wnids, multi_path=False):
     G = nx.DiGraph()
 
     for wnid in wnids:
@@ -255,7 +255,7 @@ def build_minimal_wordnet_graph(wnids, single_path=False):
         set_node_label(G, synset)
 
         if wnid == 'n10129825':  # hardcode 'girl' to not be child of 'woman'
-            if single_path:
+            if not multi_path:
                 G.add_edge('n09624168', 'n10129825')  # child of 'male' (sibling to 'male_child')
             else:
                 G.add_edge('n09619168', 'n10129825')  # child of 'female'
@@ -270,7 +270,7 @@ def build_minimal_wordnet_graph(wnids, single_path=False):
                 G.add_edge(synset_to_wnid(hypernym), synset_to_wnid(current))
                 hypernyms.append(hypernym)
 
-                if single_path:
+                if not multi_path:
                     break
 
         children = [(key, wnid_to_synset(key).name()) for key in G.succ[wnid]]
