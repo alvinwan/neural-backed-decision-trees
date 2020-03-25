@@ -1,4 +1,4 @@
-from nbdt.graph import get_root, get_wnids, synset_to_name
+from nbdt.graph import get_root, get_wnids, synset_to_name, wnid_to_name
 from nbdt.utils import (
     set_np_printoptions, dataset_to_default_path_graph,
     dataset_to_default_path_wnids
@@ -174,13 +174,16 @@ class HardEmbeddedDecisionRules(Noop):
             wnid_to_pred_selector[node.wnid] = (preds_sub, selector)
 
         _, predicted = outputs.max(1)
+
         n_samples = outputs.size(0)
+        n_classes = outputs.size(1)
         predicted, decisions = self.traverse_tree(
             predicted, wnid_to_pred_selector, n_samples)
         predicted = predicted.to(outputs.device)
 
-        predicted._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
-        return predicted, decisions
+        outputs = torch.eye(n_classes)[predicted]
+        outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
+        return outputs, decisions
 
     def forward(self, outputs):
         predicted, _ = self.forward_with_decisions(outputs)
@@ -247,9 +250,7 @@ class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
         return predicted, decisions
 
     def forward(self, outputs):
-        bayesian_outputs = SoftTreeSupLoss.inference(
+        outputs = SoftTreeSupLoss.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)
-        n_samples = outputs.size(0)
-        predicted = bayesian_outputs.max(1)[1]
-        predicted._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
-        return predicted
+        outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
+        return outputs
