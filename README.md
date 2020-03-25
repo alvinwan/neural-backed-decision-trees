@@ -8,9 +8,9 @@ Run decision trees that achieve state-of-the-art accuracy for explainable models
 
 **Table of Contents**
 
-- [Quickstart: Running and loading NBDTs](#quickstart) ![http://google.com](https://img.shields.io/badge/demo-Try%20Images-green) ![http://google.com](https://img.shields.io/badge/Google%20Cloud%20Shell-Try%20CLI-green)
-- [Convert your own neural network into a decision tree](#convert-neural-networks-to-decision-trees) ![http://repl.it](https://img.shields.io/badge/repl.it-Try%20Code%20w/o%20login-green) ![http://colab.research.google.com](https://img.shields.io/badge/Google%20Colab-Try%20Code%20with%20GPUs-green)
-- [Training and evaluation](#training-and-evaluation) ![http://colab.research.google.com](https://img.shields.io/badge/Google%20Colab-Try%20Code%20with%20GPUs-green)
+- [Quickstart: Running and loading NBDTs](#quickstart)
+- [Convert your own neural network into a decision tree](#convert-neural-networks-to-decision-trees)
+- [Training and evaluation](#training-and-evaluation)
 - [Results](#results)
 - [Developing](#developing)
 
