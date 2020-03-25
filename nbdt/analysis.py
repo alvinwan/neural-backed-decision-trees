@@ -242,7 +242,8 @@ class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
     name = 'NBDT-Soft'
 
     def forward_with_decisions(self, outputs):
-        predicted = self.forward(outputs)
+        outputs = self.forward(outputs)
+        _, predicted = outputs.max(1)
 
         decisions = []
         node = self.nodes[0]
@@ -251,7 +252,7 @@ class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
             leaf = node.wnids[prediction]
             decision = leaf_to_path_nodes[leaf]
             decisions.append(decision)
-        return predicted, decisions
+        return outputs, decisions
 
     def forward(self, outputs):
         outputs = SoftTreeSupLoss.inference(

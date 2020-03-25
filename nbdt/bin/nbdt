@@ -32,8 +32,8 @@ x = transforms(im)[None]
 
 # run inference
 outputs, decisions = model.forward_with_decisions(x)  # use `model(x)` to obtain just logits
-outputs = [3]
-cls = DATASET_TO_CLASSES['CIFAR10'][outputs[0]]
+_, predicted = outputs.max(1)
+cls = DATASET_TO_CLASSES['CIFAR10'][predicted[0]]
 print('Prediction:', cls, '// Decisions:', ', '.join([
     info['name'] for info in decisions[0]
 ][1:]))  # [1:] to skip the root
