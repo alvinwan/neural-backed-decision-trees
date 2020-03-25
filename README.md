@@ -28,7 +28,7 @@ Pip install the `nbdt` utility and run it on an image of your choosing. This can
 
 ```bash
 pip install nbdt
-nbdt https://images.pexels.com/photos/1170986/pexels-photo-1170986.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
+nbdt https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
 ```
 
 This outputs both the class prediction and all the intermediate decisions, like below:
@@ -66,6 +66,8 @@ pip install nbdt
 ```
 
 Then, pick an NBDT inference mode (hard or soft), dataset, and backbone. By default, we support ResNet18 and WideResNet28x10 for CIFAR10, CIFAR100, and TinyImagenet200. See [nbdt-pytorch-image-models](https://github.com/alvinwan/nbdt-pytorch-image-models) for EfficientNet-EdgeTPUSmall on ImageNet.
+
+<sub>[Try below script on Google Colab]()</sub>
 
 ```python
 from nbdt.model import SoftNBDT
