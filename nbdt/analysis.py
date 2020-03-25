@@ -162,6 +162,8 @@ class HardEmbeddedDecisionRules(Noop):
         self.correct = 0
         self.total = 0
 
+        self.I = torch.eye(len(classes))
+
     def forward_with_decisions(self, outputs):
         wnid_to_pred_selector = {}
         for node in self.nodes:
@@ -179,9 +181,11 @@ class HardEmbeddedDecisionRules(Noop):
         n_classes = outputs.size(1)
         predicted, decisions = self.traverse_tree(
             predicted, wnid_to_pred_selector, n_samples)
-        predicted = predicted.to(outputs.device)
 
-        outputs = torch.eye(n_classes)[predicted]
+        if self.I.device != outputs.device:
+            self.I = self.I.to(outputs.device)
+
+        outputs = self.I[predicted]
         outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return outputs, decisions
 
