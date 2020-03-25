@@ -1,6 +1,6 @@
 # Neural-Backed Decision Trees
 
-[Project Page]() &nbsp;//&nbsp; [Paper]() &nbsp;//&nbsp; [No-code Web Demo]() &nbsp;//&nbsp; [Colab Notebook]()
+[Project Page]() &nbsp;//&nbsp; [Paper]() &nbsp;//&nbsp; [No-code Web Demo]() &nbsp;//&nbsp; [Colab Notebook](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb)
 
 Run decision trees that achieve state-of-the-art accuracy for explainable models on CIFAR10, CIFAR100, TinyImagenet200, and ImageNet. NBDTs achieve accuracies within 1% of the original neural network on CIFAR10, CIFAR100, and TinyImagenet200 with the recently state-of-the-art WideResNet; and within 2% of the original neural network on Imagenet, using recently state-of-the-art EfficientNet.
 
@@ -57,7 +57,7 @@ Prediction: bear // Decisions: vertebrate, placental, ungulate, horse
 
 ## Loading Pretrained NBDTs in Code
 
-<i>Don't want to download? Try inference on a pre-filled [Google Colab Notebook]().</i>
+<i>Don't want to download? Try inference on a pre-filled [Google Colab Notebook](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb).</i>
 
 If you haven't already, pip install the `nbdt` utility.
 
@@ -67,7 +67,7 @@ pip install nbdt
 
 Then, pick an NBDT inference mode (hard or soft), dataset, and backbone. By default, we support ResNet18 and WideResNet28x10 for CIFAR10, CIFAR100, and TinyImagenet200. See [nbdt-pytorch-image-models](https://github.com/alvinwan/nbdt-pytorch-image-models) for EfficientNet-EdgeTPUSmall on ImageNet.
 
-<sub>[Try below script on Google Colab]()</sub>
+<sub>[Try below script on Google Colab](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb)</sub>
 
 ```python
 from nbdt.model import SoftNBDT
@@ -83,9 +83,7 @@ model = SoftNBDT(
 
 Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.models.resnet.ResNet18` supports variable size inputs. See [Models](#models) for instructions on using your favorite image classification neural network.
 
-Examples:
-
-**Example in ~30 lines**: See [`nbdt/bin/nbdt`](https://github.com/alvinwan/neural-backed-decision-trees/blob/master/nbdt/bin/nbdt), which loads the pretrained model, loads an image, and runs inference on the image in ~30 lines. This file is the executable `nbdt` in the previous section.
+**Example in ~30 lines**: See [`nbdt/bin/nbdt`](https://github.com/alvinwan/neural-backed-decision-trees/blob/master/nbdt/bin/nbdt), which loads the pretrained model, loads an image, and runs inference on the image in ~30 lines. This file is the executable `nbdt` in the previous section. Try this in a [Google Colab Notebook](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb).
 
 # Convert Neural Networks to Decision Trees
 
@@ -107,8 +105,6 @@ Examples:
   from nbdt.model import SoftNBDT
   model = SoftNBDT(dataset='CIFAR10', model=model)  # `model` is your original model
   ```
-
-Examples:
 
 **Example integration with repository**: See [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models), which applies this 3-step integration to a popular image classification repository `pytorch-image-models`.
 
