@@ -39,7 +39,7 @@ def get_parser():
         default='induced')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--branching-factor', type=int, default=2)
-    parser.add_argument('--induced-checkpoint', type=str,
+    parser.add_argument('--checkpoint', type=str,
         help='(induced hierarchy) Checkpoint to load into model. The fc weights'
         ' are used for clustering.')
     parser.add_argument('--arch', type=str, default='ResNet18',
@@ -69,7 +69,7 @@ def get_parser():
 def generate_fname(method, seed=0, branching_factor=2, extra=0,
                    no_prune=False, fname='', multi_path=False,
                    induced_linkage='ward', induced_affinity='euclidean',
-                   induced_checkpoint=None, arch=None, **kwargs):
+                   checkpoint=None, arch=None, **kwargs):
     if fname:
         return fname
 
@@ -78,14 +78,14 @@ def generate_fname(method, seed=0, branching_factor=2, extra=0,
         if seed != 0:
             fname += f'-seed{seed}'
     if method == 'induced':
-        assert induced_checkpoint or arch, \
-            'Induced hierarchy needs either `arch` or `induced_checkpoint`'
+        assert checkpoint or arch, \
+            'Induced hierarchy needs either `arch` or `checkpoint`'
         if induced_linkage != 'ward' and induced_linkage is not None:
             fname += f'-linkage{induced_linkage}'
         if induced_affinity != 'euclidean' and induced_affinity is not None:
             fname += f'-affinity{induced_affinity}'
-        if induced_checkpoint:
-            checkpoint_stem = Path(induced_checkpoint).stem
+        if checkpoint:
+            checkpoint_stem = Path(checkpoint).stem
             if checkpoint_stem.startswith('ckpt-') and checkpoint_stem.count('-') >= 2:
                 checkpoint_suffix = '-'.join(checkpoint_stem.split('-')[2:])
                 checkpoint_fname = checkpoint_suffix.replace('-induced', '')
@@ -129,7 +129,7 @@ def get_graph_path_from_args(
         dataset, method, seed=0, branching_factor=2, extra=0,
         no_prune=False, fname='', multi_path=False,
         induced_linkage='ward', induced_affinity='euclidean',
-        induced_checkpoint=None, arch=None, **kwargs):
+        checkpoint=None, arch=None, **kwargs):
     fname = generate_fname(
         method=method,
         seed=seed,
@@ -140,7 +140,7 @@ def get_graph_path_from_args(
         multi_path=multi_path,
         induced_linkage=induced_linkage,
         induced_affinity=induced_affinity,
-        induced_checkpoint=induced_checkpoint,
+        checkpoint=checkpoint,
         arch=arch)
     directory = get_directory(dataset)
     path = os.path.join(directory, f'{fname}.json')

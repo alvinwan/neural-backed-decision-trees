@@ -38,7 +38,7 @@ def generate_hierarchy(
         dataset, method, seed=0, branching_factor=2, extra=0,
         no_prune=False, fname='', single_path=False,
         induced_linkage='ward', induced_affinity='euclidean',
-        induced_checkpoint=None, arch=None, model=None, **kwargs):
+        checkpoint=None, arch=None, model=None, **kwargs):
     wnids = get_wnids_from_dataset(dataset)
 
     if method == 'wordnet':
@@ -48,7 +48,7 @@ def generate_hierarchy(
     elif method == 'induced':
         G = build_induced_graph(wnids,
             dataset=dataset,
-            checkpoint=induced_checkpoint,
+            checkpoint=checkpoint,
             model=arch,
             linkage=induced_linkage,
             affinity=induced_affinity,
@@ -81,7 +81,7 @@ def generate_hierarchy(
         single_path=single_path,
         induced_linkage=induced_linkage,
         induced_affinity=induced_affinity,
-        induced_checkpoint=induced_checkpoint,
+        checkpoint=checkpoint,
         arch=arch)
     write_graph(G, path)
 

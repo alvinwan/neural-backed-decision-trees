@@ -94,8 +94,6 @@ Examples:
 1. **First**, if you haven't already, pip install the `nbdt` utility: `pip install nbdt`
 2. **Second, during training**, wrap your loss `criterion` with a custom NBDT loss. Below, we demonstrate the soft tree supervision loss on the CIFAR10 dataset. By default, we support CIFAR10, CIFAR100, TinyImagenet200, and Imagenet1000.
 
-  <!-- TODO: If no wnids, generate fake ones. Attempt to dataset.classes. For a new dataset, use cli to generate induced-hierarchy from checkpoint. -->
-
   ```python
   from nbdt.loss import SoftTreeSupLoss
   criterion = SoftTreeSupLoss(dataset='CIFAR10', criterion=criterion)  # `criterion` is your original loss function e.g., nn.CrossEntropyLoss
@@ -213,7 +211,7 @@ nbdt-hierarchy --arch=efficientnet_b7 --dataset=Imagenet1000
 
 # arbitrary checkpoint
 wget https://download.pytorch.org/models/resnet18-5c106cde.pth -O resnet18.pth
-nbdt-hierarchy --induced-checkpoint=resnet18.pth --dataset=Imagenet1000
+nbdt-hierarchy --checkpoint=resnet18.pth --dataset=Imagenet1000
 ```
 
 You can also run the hierarchy generation from source directly, without using the command-line tool, by passing in a pretrained model.
@@ -401,13 +399,14 @@ Without any modifications to `main.py`, you can replace ResNet18 with your favor
 To add a new model from scratch:
 
 1. Create a new file containing your network, such as `./nbdt/models/yournet.py`. This file should contain an `__all__` only exposing functions that return a model. These functions should accept `pretrained: bool` and `progress: bool`, then forward all other keyword arguments to the model constructor.
-2. Expose it via `./nbdt/models/__init__.py`: `from .yournet import *`.
+2. Expose your new file via `./nbdt/models/__init__.py`: `from .yournet import *`.
 3. Train the original neural network on the target dataset. e.g., `python main.py --arch=yournet18`.
 
 ## Dataset
 
 Without any modifications to `main.py`, you can use any image classification dataset found at [`torchvision.datasets`](https://pytorch.org/docs/stable/torchvision/datasets.html) by passing it to `--dataset`. To add a new dataset from scratch:
 
-1. Create a new file containing your dataloader, such as `./nbdt/data/yourdata.py`. Like before, expose only what's necessary via `__all__`.
-2. Expose it via `'./nbdt/data/__init__.py'`: `from .yourdata import *`.
-3. Train the original neural network on the target dataset. e.g., `python main.py --dataset=yourdata10`
+1. Create a new file containing your dataset, such as `./nbdt/data/yourdata.py`. Like before, only expose the dataset class via `__all__`. This dataset class should support a `.classes` attribute which returns a list of human-readable class names.
+2. Expose your new file via `'./nbdt/data/__init__.py'`: `from .yourdata import *`.
+3. Create a text file with wordnet IDs in `./nbdt/wnids/{dataset}.txt`. This list should be in the same order that your dataset's `.classes` is.
+4. Train the original neural network on the target dataset. e.g., `python main.py --dataset=yourdata10`

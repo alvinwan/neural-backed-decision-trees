@@ -8,8 +8,8 @@ weight=1
 # 0. train the baseline neural network
 python main.py --dataset=${dataset} --model=${model}
 
-# 1. generate hieararchy -- for models without a pretrained checkpoint, use `induced-checkpoint`
-nbdt-hierarchy --dataset=${dataset} --induced-checkpoint=./checkpoint/ckpt-${dataset}-${model}.pth
+# 1. generate hieararchy -- for models without a pretrained checkpoint, use `checkpoint`
+nbdt-hierarchy --dataset=${dataset} --checkpoint=./checkpoint/ckpt-${dataset}-${model}.pth
 
 # 2. train with soft tree supervision loss -- for models without a pretrained checkpoint, use `path-resume` OR just train from scratch, without `path-resume`
 # python main.py --lr=0.01 --dataset=${dataset} --model=${model} --hierarchy=induced-${model} --path-resume=./checkpoint/ckpt-${dataset}-${model}.pth --loss=SoftTreeSupLoss --tree-supervision-weight=${weight}  # fine-tuning
