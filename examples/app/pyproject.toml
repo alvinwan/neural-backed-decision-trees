@@ -1,0 +1,10 @@
+[tool]
+[tool.poetry]
+name = "nbdt-demo"
+version = "0.0.1"
+description = ""
+authors = ["Alvin Wan <hi@alvinwan.com>"]
+[tool.poetry.dependencies]
+python = "^3.7"
+nbdt = "^0.0.1"
+flask = "^1.1.1"
