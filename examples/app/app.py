@@ -4,6 +4,8 @@ from nbdt.models import wrn28_10_cifar10
 from torchvision import transforms
 from nbdt.utils import DATASET_TO_CLASSES, load_image_from_path, maybe_install_wordnet
 
+
+maybe_install_wordnet()
 app = Flask(__name__)
 
 

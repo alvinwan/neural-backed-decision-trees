@@ -1,6 +1,6 @@
 # Neural-Backed Decision Trees
 
-[Project Page]() &nbsp;//&nbsp; [Paper]() &nbsp;//&nbsp; [No-code Web Demo]() &nbsp;//&nbsp; [Colab Notebook](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb)
+[Project Page]() &nbsp;//&nbsp; [Paper]() &nbsp;//&nbsp; [No-code Web Demo](https://nbdt--alvinwan1.repl.co) &nbsp;//&nbsp; [Colab Notebook](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb)
 
 Run decision trees that achieve state-of-the-art accuracy for explainable models on CIFAR10, CIFAR100, TinyImagenet200, and ImageNet. NBDTs achieve accuracies within 1% of the original neural network on CIFAR10, CIFAR100, and TinyImagenet200 with the recently state-of-the-art WideResNet; and within 2% of the original neural network on Imagenet, using recently state-of-the-art EfficientNet.
 
@@ -22,7 +22,7 @@ Per the pipeline illustration above, we (1) [generate the hierarchy](https://git
 
 ## Running Pretrained NBDT on Examples
 
-<i>Don't want to download? Try your own images on the [web demo]().</i>
+<i>Don't want to download? Try your own images on the [web demo](https://nbdt--alvinwan1.repl.co).</i>
 
 Pip install the `nbdt` utility and run it on an image of your choosing. This can be a local image path or an image URL. Below, we evaluate on an image of a cat, from the web. This cat is pictured below.
 
