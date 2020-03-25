@@ -50,7 +50,9 @@ def dataset_to_default_path_wnids(dataset):
     return os.path.join(fwd(), f'wnids/{dataset}.txt')
 
 
-def populate_kwargs(args, kwargs, object, name='Dataset', keys=(), globals={}):
+def generate_kwargs(args, object, name='Dataset', keys=(), globals={}, kwargs=None):
+    kwargs = kwargs or {}
+
     for key in keys:
         accepts_key = getattr(object, f'accepts_{key}', False)
         if not accepts_key:
@@ -68,6 +70,7 @@ def populate_kwargs(args, kwargs, object, name='Dataset', keys=(), globals={}):
             Colors.red(
                 f'Warning: {name} does not support custom '
                 f'{key}: {value}')
+    return kwargs
 
 
 def load_image_from_path(path):
@@ -227,7 +230,7 @@ def set_np_printoptions():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
 
-def generate_fname(dataset, model, path_graph, wnid=None, name='',
+def generate_fname(dataset, arch, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
         include_classes=(), num_samples=0, max_leaves_supervised=-1,
         min_leaves_supervised=-1, tree_supervision_weight=0.5,
@@ -235,7 +238,7 @@ def generate_fname(dataset, model, path_graph, wnid=None, name='',
         **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
-    fname += '-' + model
+    fname += '-' + arch
     if name:
         fname += '-' + name
     if path_graph:
