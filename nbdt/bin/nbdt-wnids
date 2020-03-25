@@ -7,9 +7,10 @@ from nbdt import data
 from nltk.corpus import wordnet as wn
 from nbdt.graph import synset_to_wnid, write_wnids, FakeSynset
 from pathlib import Path
-from nbdt.utils import Colors, generate_kwargs
+from nbdt.utils import Colors, generate_kwargs, maybe_install_wordnet
 import os
 
+maybe_install_wordnet()
 
 datasets = ('CIFAR10', 'CIFAR100') + data.imagenet.names + data.custom.names
 

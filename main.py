@@ -13,8 +13,10 @@ import os
 import argparse
 
 from nbdt.utils import (
-    progress_bar, generate_fname, generate_kwargs, Colors
+    progress_bar, generate_fname, generate_kwargs, Colors, maybe_install_wordnet
 )
+
+maybe_install_wordnet()
 
 datasets = ('CIFAR10', 'CIFAR100') + data.imagenet.names + data.custom.names
 

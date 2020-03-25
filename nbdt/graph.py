@@ -1,7 +1,6 @@
 import networkx as nx
 import json
 import random
-from nltk.corpus import wordnet as wn
 from nbdt.utils import DATASETS, METHODS, fwd
 from networkx.readwrite.json_graph import node_link_data, node_link_graph
 from sklearn.cluster import AgglomerativeClustering
@@ -157,6 +156,8 @@ def synset_to_wnid(synset):
 
 
 def wnid_to_synset(wnid):
+    from nltk.corpus import wordnet as wn  # entire script should not depend on wn
+
     offset = int(wnid[1:])
     pos = wnid[0]
 

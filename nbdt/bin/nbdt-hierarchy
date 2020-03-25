@@ -2,9 +2,12 @@
 
 from nbdt.hierarchy import generate_hierarchy, test_hierarchy, generate_hierarchy_vis
 from nbdt.graph import get_parser
+from nbdt.utils import maybe_install_wordnet
 
 
 def main():
+    maybe_install_wordnet()
+    
     parser = get_parser()
     args = parser.parse_args()
 

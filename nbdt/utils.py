@@ -15,6 +15,7 @@ import torch.nn as nn
 import torch.nn.init as init
 from pathlib import Path
 import io
+import nltk
 
 # tree-generation consntants
 METHODS = ('wordnet', 'random', 'induced')
@@ -31,6 +32,11 @@ DATASET_TO_CLASSES = {
         'horse', 'ship', 'truck'
     ]
 }
+
+
+def maybe_install_wordnet():
+    if not nltk.data.find('corpora/wordnet'):
+        nltk.download('wordnet')
 
 
 def fwd():
