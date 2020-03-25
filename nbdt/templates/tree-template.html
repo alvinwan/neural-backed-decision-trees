@@ -185,9 +185,16 @@ function update(source) {
   nodeEnter.insert("rect", "text")
     .attr("x", function(d, i){ return textOnLeft(d) ? this.parentNode.getBBox().x - this.parentNode.getBBox().width + 2 : this.parentNode.getBBox().x + 32 })
     .attr("y", function(d){ return this.parentNode.getBBox().y; })
-    .attr("width", function(d){ return this.parentNode.getBBox().width - 5; })
+    .attr("width", function(d){ return Math.max(this.parentNode.getBBox().width - 5, 0); })
     .attr("height", function(d) {return this.parentNode.getBBox().height; })
     .style("fill", "rgba(255,255,255,0.8)");
+
+  nodeEnter.append("svg:image")
+    .attr("xlink:href", function(d) { return d.image ? d.image.href : '' })
+    .attr("x", function(d) { return this.parentNode.getBBox().width + 40; })
+    .attr("y", function(d) { return d.image ? -d.image.height / 2 : 0; })
+    .attr("height", function(d) { return d.image ? d.image.height : 0 })
+    .attr("width", function(d) { return d.image ? d.image.width : 0 });
 
   dx = 5 * Math.pow(2.5, 2);
   nodeEnter.selectAll("text")

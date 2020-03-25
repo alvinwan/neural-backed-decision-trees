@@ -3,13 +3,15 @@ from nbdt.graph import build_minimal_wordnet_graph, build_random_graph, \
     prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
     get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args, \
     augment_graph, get_depth, build_induced_graph, read_graph, get_leaves, \
-    get_roots
+    get_roots, synset_to_wnid, wnid_to_name
 from nbdt import data
 from networkx.readwrite.json_graph import adjacency_data
 from pathlib import Path
 import os
 import json
 import torchvision
+import base64
+from io import BytesIO
 
 
 ############
@@ -156,20 +158,52 @@ def test_hierarchy(args):
 #######
 
 
-def build_tree(G, root, parent='null', color_leaves_blue=True, force_labels_left=()):
+def build_tree(G, root,
+        parent='null',
+        color_leaves_blue=True,
+        force_labels_left=(),
+        include_leaf_images=False,
+        dataset=None,
+        image_resize_factor=1):
     children = [
-        build_tree(G, child, root, color_leaves_blue, force_labels_left)
-        for child in G.succ[root]
-    ]
+        build_tree(G, child, root,
+            color_leaves_blue=color_leaves_blue,
+            force_labels_left=force_labels_left,
+            include_leaf_images=include_leaf_images,
+            dataset=dataset,
+            image_resize_factor=image_resize_factor)
+        for child in G.succ[root]]
     label = G.nodes[root].get('label', '')
-    return {
-        'sublabel': root if not root.startswith('f') else '',  # WARNING: hacky, ignores fake wnids -- this will have to be changed lol
+    sublabel = root
+
+    if root.startswith('f'):  # WARNING: hacky, ignores fake wnids -- this will have to be changed lol
+        sublabel = ''
+
+    node = {
+        'sublabel': sublabel,
         'label': label,
         'parent': parent,
         'children': children,
-        'color': 'gray' if len(children) or not color_leaves_blue else 'blue',
-        'force_text_on_left': label in force_labels_left
     }
+
+    is_leaf = len(children) == 0
+    if is_leaf and color_leaves_blue:
+        node['color'] = 'blue'
+
+    if label in force_labels_left:
+        node['force_text_on_left'] = True
+
+    if include_leaf_images and is_leaf:
+        image = get_class_image_from_dataset(dataset, label)
+        base64_encode = image_to_base64_encode(image, format="jpeg")
+        image_href = f"data:image/jpeg;base64,{base64_encode.decode('utf-8')}"
+        image_height, image_width = image.size
+        node['image'] = {
+            'href': image_href,
+            'width': image_width * image_resize_factor,
+            'height': image_height *  image_resize_factor
+        }
+    return node
 
 
 def build_graph(G):
@@ -184,6 +218,33 @@ def build_graph(G):
             'target': v
         } for u, v in G.edges]
     }
+
+
+def get_class_image_from_dataset(dataset, candidate):
+    """Returns image for given class `candidate`. Image is PIL."""
+    if isinstance(candidate, int):
+        candidate = dataset.classes[candidate]
+    for sample, label in dataset:
+        intersection = compare_wnids(dataset.classes[label], candidate)
+        if label == candidate or intersection:
+            return sample
+    raise UserWarning(f'No samples with label {candidate} found.')
+
+
+def compare_wnids(label1, label2):
+    from nltk.corpus import wordnet as wn  # entire script should not depend on wordnet
+    synsets1 = wn.synsets(label1, pos=wn.NOUN)
+    synsets2 = wn.synsets(label2, pos=wn.NOUN)
+    wnids1 = set(map(synset_to_wnid, synsets1))
+    wnids2 = set(map(synset_to_wnid, synsets2))
+    return wnids1.intersection(wnids2)
+
+
+def image_to_base64_encode(image, format="jpeg"):
+    """Converts PIL image to base64 encoding, ready for use as data uri."""
+    buffered = BytesIO()
+    image.save(buffered, format=format)
+    return base64.b64encode(buffered.getvalue())
 
 
 def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
@@ -223,9 +284,18 @@ def generate_hierarchy_vis(args):
     roots = list(get_roots(G))
     num_roots = len(roots)
     root = next(get_roots(G))
+
+    dataset = None
+    if args.dataset:
+        cls = getattr(data, args.dataset)
+        dataset = cls(root='./data', train=False, download=False)
+
     tree = build_tree(G, root,
         color_leaves_blue=not args.vis_gray,
-        force_labels_left=args.vis_force_labels_left or [])
+        force_labels_left=args.vis_force_labels_left or [],
+        dataset=dataset,
+        include_leaf_images=args.vis_leaf_images,
+        image_resize_factor=args.vis_image_resize_factor)
     graph = build_graph(G)
 
     if num_roots > 1:

@@ -58,6 +58,11 @@ def get_parser():
         help='Color all nodes gray, instead of coloring leaves blue.')
     parser.add_argument('--vis-force-labels-left', nargs='*',
         help='Labels to force text left of the node.')
+    parser.add_argument('--vis-leaf-images', action='store_true',
+        help='Include sample images for each leaf/class.')
+    parser.add_argument('--vis-image-resize-factor', type=float, default=1.,
+        help='Factor to resize image size by. Default image size is provided '
+             'by the original image. e.g., 32 for CIFAR10, 224 for Imagenet')
     return parser
 
 
