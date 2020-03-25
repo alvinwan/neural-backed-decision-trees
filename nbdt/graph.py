@@ -516,6 +516,9 @@ class FakeSynset:
     def name(self):
         return '(generated)'
 
+    def definition(self):
+        return '(generated)'
+
 
 def augment_graph(G, extra, allow_imaginary=False, seed=0, max_retries=10000):
     """Augment graph G with extra% more nodes.
