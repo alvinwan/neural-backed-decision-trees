@@ -170,7 +170,7 @@ For more information on generating different hierarchies, see [Induced Hierarchy
 **To reproduce experimental results**, start by cloning the repository and installing all requirements.
 
 ```bash
-git clone git@github.com:alvinwan/neural-backed-decision-trees.git
+git clone git@github.com:alvinwan/neural-backed-decision-trees.git  # or http addr if you don't have private-public github key setup
 cd neural-backed-decision-trees
 python setup.py develop
 ```
@@ -379,7 +379,7 @@ As discussed above, you can use the `nbdt` python library to integrate NBDT trai
 If you have not already, start by cloning the repository and installing all requirements.
 
 ```bash
-git clone git@github.com:alvinwan/neural-backed-decision-trees.git
+git clone git@github.com:alvinwan/neural-backed-decision-trees.git  # or http addr if you don't have private-public github key setup
 cd neural-backed-decision-trees
 python setup.py develop
 ```
