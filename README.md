@@ -406,7 +406,13 @@ To add a new model from scratch:
 
 Without any modifications to `main.py`, you can use any image classification dataset found at [`torchvision.datasets`](https://pytorch.org/docs/stable/torchvision/datasets.html) by passing it to `--dataset`. To add a new dataset from scratch:
 
-1. Create a new file containing your dataset, such as `./nbdt/data/yourdata.py`. Like before, only expose the dataset class via `__all__`. This dataset class should support a `.classes` attribute which returns a list of human-readable class names.
+1. Create a new file containing your dataset, such as `./nbdt/data/yourdata.py`. Say the data class is `YourData`. Like before, only expose the dataset class via `__all__`. This dataset class should support a `.classes` attribute which returns a list of human-readable class names.
 2. Expose your new file via `'./nbdt/data/__init__.py'`: `from .yourdata import *`.
-3. Create a text file with wordnet IDs in `./nbdt/wnids/{dataset}.txt`. This list should be in the same order that your dataset's `.classes` is.
+3. Create a text file with wordnet IDs in `./nbdt/wnids/{dataset}.txt`. This list should be in the same order that your dataset's `.classes` is. You may optionally use the utility `nbdt-wnids` to generate wnids (see note below)
 4. Train the original neural network on the target dataset. e.g., `python main.py --dataset=yourdata10`
+
+> **\*Note**: You may optionally use the utility `nbdt-wnids` to generate wnids:
+> ```
+> nbdt-wnids --dataset=YourData
+> ```
+> , where `YourData` is your dataset name. If a provided class name from `YourData.classes` does not exist in the WordNet corpus, the script will generate a fake wnid. This does not affect training but subsequent analysis scripts will be unable to provide WordNet-imputed node meanings.
