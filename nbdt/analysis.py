@@ -186,12 +186,12 @@ class HardEmbeddedDecisionRules(Noop):
         return outputs, decisions
 
     def forward(self, outputs):
-        predicted, _ = self.forward_with_decisions(outputs)
-        return predicted
+        outputs, _ = self.forward_with_decisions(outputs)
+        return outputs
 
     def update_batch(self, outputs, targets):
         super().update_batch(outputs, targets)
-        predicted = self.forward(outputs).to(targets.device)
+        predicted = self.forward(outputs).max(1)[1].to(targets.device)
 
         n_samples = outputs.size(0)
         self.total += n_samples
