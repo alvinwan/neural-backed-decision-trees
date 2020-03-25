@@ -1,4 +1,20 @@
-'''Train CIFAR10 with PyTorch.'''
+"""
+Neural-Backed Decision Trees training script on CIFAR10, CIFAR100, TinyImagenet200
+
+The original version of this `main.py` was taken from
+
+    https://github.com/kuangliu/pytorch-cifar
+
+and extended in
+
+    https://github.com/alvinwan/pytorch-cifar-plus
+
+The script has since been heavily modified to support a number of different
+configurations and options. See the current repository for a full description
+of its bells and whistles.
+
+    https://github.com/alvinwan/neural-backed-decision-trees
+"""
 import torch
 import torch.nn as nn
 import torch.optim as optim
