@@ -56,6 +56,8 @@ def get_parser():
         help='Show sublabels')
     parser.add_argument('--vis-gray', action='store_true',
         help='Color all nodes gray, instead of coloring leaves blue.')
+    parser.add_argument('--vis-force-labels-left', nargs='*',
+        help='Labels to force text left of the node.')
     return parser
 
 

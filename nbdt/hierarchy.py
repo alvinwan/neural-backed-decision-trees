@@ -156,14 +156,19 @@ def test_hierarchy(args):
 #######
 
 
-def build_tree(G, root, parent='null', color_leaves_blue=True):
-    children = [build_tree(G, child, root, color_leaves_blue) for child in G.succ[root]]
+def build_tree(G, root, parent='null', color_leaves_blue=True, force_labels_left=()):
+    children = [
+        build_tree(G, child, root, color_leaves_blue, force_labels_left)
+        for child in G.succ[root]
+    ]
+    label = G.nodes[root].get('label', '')
     return {
         'sublabel': root if not root.startswith('f') else '',  # WARNING: hacky, ignores fake wnids -- this will have to be changed lol
-        'label': G.nodes[root].get('label', ''),
+        'label': label,
         'parent': parent,
         'children': children,
-        'color': 'gray' if len(children) or not color_leaves_blue else 'blue'
+        'color': 'gray' if len(children) or not color_leaves_blue else 'blue',
+        'force_text_on_left': label in force_labels_left
     }
 
 
@@ -196,7 +201,10 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
             str(straight_lines).lower()) \
         .replace(
             "CONFIG_SHOW_SUBLABELS",
-            str(show_sublabels).lower())
+            str(show_sublabels).lower()) \
+        .replace(
+            "CONFIG_TITLE",
+            fname)
 
     os.makedirs('out', exist_ok=True)
     path_html = f'out/{fname}-{name}.html'
@@ -215,7 +223,9 @@ def generate_hierarchy_vis(args):
     roots = list(get_roots(G))
     num_roots = len(roots)
     root = next(get_roots(G))
-    tree = build_tree(G, root, color_leaves_blue=not args.vis_gray)
+    tree = build_tree(G, root,
+        color_leaves_blue=not args.vis_gray,
+        force_labels_left=args.vis_force_labels_left or [])
     graph = build_graph(G)
 
     if num_roots > 1:
@@ -223,7 +233,7 @@ def generate_hierarchy_vis(args):
     else:
         print(f'Found just {num_roots} root.')
 
-    fname = generate_fname(**vars(args)).replace('graph-', '', 1)
+    fname = generate_fname(**vars(args)).replace('graph-', f'{args.dataset}-', 1)
     parent = Path(fwd()).parent
     generate_vis(
         str(parent / 'nbdt/templates/tree-template.html'), tree, 'tree', fname,
