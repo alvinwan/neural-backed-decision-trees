@@ -160,11 +160,11 @@ if args.resume:
             Colors.cyan(f'==> Checkpoint found at {resume_path}')
 
 criterion = nn.CrossEntropyLoss()
-
-loss_kwargs = {}
 class_criterion = getattr(loss, args.loss)
-populate_kwargs(args, loss_kwargs, class_criterion, name=f'Loss {args.loss}',
-    keys=loss.keys, globals=globals())
+loss_kwargs = generate_kwargs(args, class_criterion,
+    name=f'Loss {args.loss}',
+    keys=loss.keys,
+    globals=globals())
 criterion = class_criterion(**loss_kwargs)
 
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
@@ -260,10 +260,11 @@ def test(epoch, analyzer, checkpoint=True):
     analyzer.end_test(epoch)
 
 
-analyzer_kwargs = {}
 class_analysis = getattr(analysis, args.analysis or 'Noop')
-populate_kwargs(args, analyzer_kwargs, class_analysis,
-    name=f'Analyzer {args.analysis}', keys=analysis.keys, globals=globals())
+analyzer_kwargs = generate_kwargs(args, class_analysis,
+    name=f'Analyzer {args.analysis}',
+    keys=analysis.keys,
+    globals=globals())
 analyzer = class_analysis(**analyzer_kwargs)
 
 
