@@ -1,8 +1,10 @@
 # Neural-Backed Decision Trees
 
-Run decision trees that achieve state-of-the-art accuracy for explainable models on CIFAR10, CIFAR100, TinyImagenet200, and ImageNet. NBDTs achieve accuracies within 1% of the original neural network on CIFAR10, CIFAR100, and TinyImagenet200 with the recently state-of-the-art WideResNet.
+[Project Page]() &nbsp;//&nbsp; [Paper]() &nbsp;//&nbsp; [No-code Web Demo]() &nbsp;//&nbsp; [Colab Notebook]()
 
-<sub>**NBDT Accuracy per dataset**: CIFAR10 (97.57%), CIFAR100 (82.87%), TinyImagenet200 (66.66%), ImageNet (67.47%). [See more results](#results)</sub>
+Run decision trees that achieve state-of-the-art accuracy for explainable models on CIFAR10, CIFAR100, TinyImagenet200, and ImageNet. NBDTs achieve accuracies within 1% of the original neural network on CIFAR10, CIFAR100, and TinyImagenet200 with the recently state-of-the-art WideResNet; and within 2% of the original neural network on Imagenet, using recently state-of-the-art EfficientNet.
+
+<sub>**NBDT Accuracy per dataset**: CIFAR10 (97.57%), CIFAR100 (82.87%), TinyImagenet200 (66.66%), ImageNet (70.41%). [See more results](#results)</sub>
 
 **Table of Contents**
 
@@ -16,11 +18,11 @@ Run decision trees that achieve state-of-the-art accuracy for explainable models
 
 Per the pipeline illustration above, we (1) [generate the hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#1-Hierarchies) and (2) train the neural network [with a tree supervision loss](https://github.com/alvinwan/neural-backed-decision-trees#2-Tree-Supervision-Loss). Then, we (3) [run inference](https://github.com/alvinwan/neural-backed-decision-trees#3-Inference) by featurizing images using the network backbone and running embedded decision rules.
 
-<!-- TODO: link to paper-->
-
 # Quickstart
 
 ## Running Pretrained NBDT on Examples
+
+<i>Don't want to download? Try your own images on the [web demo]().</i>
 
 Pip install the `nbdt` utility and run it on an image of your choosing. This can be a local image path or an image URL. Below, we evaluate on an image of a cat, from the web. This cat is pictured below.
 
@@ -47,13 +49,15 @@ Like before, this outputs the class prediction and intermediate decisions. Altho
 Prediction: bear // Decisions: vertebrate, placental, ungulate, horse
 ```
 
-<img src="https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=297 align=left>
-<img src="https://images.pexels.com/photos/158109/kodiak-brown-bear-adult-portrait-wildlife-158109.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=252 align=left>
-<img src="https://images.pexels.com/photos/1490908/pexels-photo-1490908.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=252>
+<img src="https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=307 align=left>
+<img src="https://images.pexels.com/photos/158109/kodiak-brown-bear-adult-portrait-wildlife-158109.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=262 align=left>
+<img src="https://images.pexels.com/photos/1490908/pexels-photo-1490908.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=262>
 
 <sub>*Pictures are taken from [pexels.com](http://pexels.com), which are free to use per the [Pexels license](https://www.pexels.com/photo-license/).*</sub>
 
 ## Loading Pretrained NBDTs in Code
+
+<i>Don't want to download? Try inference on a pre-filled [Google Colab Notebook]().</i>
 
 If you haven't already, pip install the `nbdt` utility.
 
@@ -77,9 +81,13 @@ model = SoftNBDT(
 
 Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.models.resnet.ResNet18` supports variable size inputs. See [Models](#models) for instructions on using your favorite image classification neural network.
 
-:arrow_right: **Example in ~30 lines**: See [`nbdt/bin/nbdt`](https://github.com/alvinwan/neural-backed-decision-trees/blob/master/nbdt/bin/nbdt), which loads the pretrained model, loads an image, and runs inference on the image in ~30 lines. This file is the executable `nbdt` in the previous section.
+Examples:
+
+**Example in ~30 lines**: See [`nbdt/bin/nbdt`](https://github.com/alvinwan/neural-backed-decision-trees/blob/master/nbdt/bin/nbdt), which loads the pretrained model, loads an image, and runs inference on the image in ~30 lines. This file is the executable `nbdt` in the previous section.
 
 # Convert Neural Networks to Decision Trees
+
+<i>Don't want to download? Try on MNIST in a pre-filled [Google Colab Notebook]().</i>
 
 **To convert your neural network** into a neural-backed decision tree, perform the following 3 steps:
 
@@ -100,35 +108,13 @@ Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.m
   model = SoftNBDT(dataset='CIFAR10', model=model)  # `model` is your original model
   ```
 
-:arrow_right: **Example integration with repository**: See [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models), which applies this 3-step integration to a popular image classification repository `pytorch-image-models`.
+Examples:
 
-<!-- TODO: include simpler example -->
+**Example integration with repository**: See [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models), which applies this 3-step integration to a popular image classification repository `pytorch-image-models`.
 
-<details><summary><b>Want to build and use your own induced hierarchy?</b> <i>[click to expand]</i></summary>
-<div>
+**Example notebook with MNIST training**: Try the [Google Colab Notebook]() with example training for MNIST, applying this 3-step integration to a simple pipeline.
 
-Use the `nbdt-hierarchy` utility to generate a new induced hierarchy from a pretrained model.
-
-```bash
-nbdt-hierarchy --induced-model=efficientnet_b0 --dataset=Imagenet1000
-```
-
-Then, pass the hierarchy name to the loss and models. You may alternatively pass the fully-qualified `path_graph` path.
-
-```python
-from nbdt.loss import SoftTreeSupLoss
-from nbdt.model import SoftNBDT
-
-criterion = SoftTreeSupLoss(dataset='Imagenet1000', criterion=criterion, hierarchy='induced-efficientnet_b0')
-model = SoftNBDT(dataset='Imagenet1000', model=model, hierarchy='induced-efficientnet_b0')
-```
-
-For more information on generating different hierarchies, see [Induced Hierarchy](#induced-hierarchy).
-
-</div>
-</details>
-
-<details><summary><b>Example integration with a random neural network</b> <i>[click to expand]</i></summary>
+<details><summary><b>Example integration with a random neural network in 16 lines</b> <i>[click to expand]</i></summary>
 <div>
 
 You can also include arbitrary image classification neural networks not explicitly supported in this repository. For example, after installing [`pretrained-models.pytorch`](https://github.com/Cadene/pretrained-models.pytorch#quick-examples) using pip, you can instantiate and pass any pretrained model into our NBDT utility functions.
@@ -150,6 +136,30 @@ criterion = SoftTreeSupLoss(dataset='Imagenet1000', hierarchy='induced-fbresnet1
 
 # 3. Run inference using embedded decision rules
 model = SoftNBDT(model=model, dataset='Imagenet1000', hierarchy='induced-fbresnet152')
+```
+
+For more information on generating different hierarchies, see [Induced Hierarchy](#induced-hierarchy).
+
+</div>
+</details>
+
+<details><summary><b>Want to build and use your own induced hierarchy?</b> <i>[click to expand]</i></summary>
+<div>
+
+Use the `nbdt-hierarchy` utility to generate a new induced hierarchy from a pretrained model.
+
+```bash
+nbdt-hierarchy --induced-model=efficientnet_b0 --dataset=Imagenet1000
+```
+
+Then, pass the hierarchy name to the loss and models. You may alternatively pass the fully-qualified `path_graph` path.
+
+```python
+from nbdt.loss import SoftTreeSupLoss
+from nbdt.model import SoftNBDT
+
+criterion = SoftTreeSupLoss(dataset='Imagenet1000', criterion=criterion, hierarchy='induced-efficientnet_b0')
+model = SoftNBDT(dataset='Imagenet1000', model=model, hierarchy='induced-efficientnet_b0')
 ```
 
 For more information on generating different hierarchies, see [Induced Hierarchy](#induced-hierarchy).
@@ -251,13 +261,11 @@ To generate figures from the paper, use a larger zoom and do not include sublabe
 
 ```
 nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --induced-model=ResNet10
-nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --induced-model=wrn28_10_cifar10
+nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --induced-model=wrn28_10_cifar10 --vis-leaf-images --vis-image-resize-factor=1.5
 ```
 
-<img width="183" alt="aquatic_wordnet" src="https://user-images.githubusercontent.com/2068077/77405563-9b732200-6d70-11ea-9423-81c907763baa.png" align="left">
-<img width="171" alt="aquatic_induced" src="https://user-images.githubusercontent.com/2068077/77405566-9dd57c00-6d70-11ea-9ed9-b5e90f44e31c.png" align="left">
-<img width="166" alt="CIFAR10_WRN_Tree" src="https://user-images.githubusercontent.com/2068077/77405567-9e6e1280-6d70-11ea-9de2-ca0a23bd842c.png" align="left">
-<img width="204" alt="CIFAR10_ResNet10_Tree" src="https://user-images.githubusercontent.com/2068077/77405568-9e6e1280-6d70-11ea-96b3-4d31dbc331e6.png">
+<img width="430" alt="CIFAR10-induced-wrn28_10_cifar10" src="https://user-images.githubusercontent.com/2068077/77514842-beffa080-6e34-11ea-952c-2b49f6a30891.png">
+<img width="430" alt="CIFAR10_ResNet10_Tree" src="https://user-images.githubusercontent.com/2068077/77405568-9e6e1280-6d70-11ea-96b3-4d31dbc331e6.png">
 
 </div>
 </details>
@@ -273,6 +281,7 @@ bash scripts/generate_hierarchies_wordnet.sh
 
 <details><summary><b>See how it works.</b> <i>[click to expand]</i></summary>
 <div>
+
 The below just explains the above `generate_hierarchies_wordnet.sh`, using CIFAR10. You do not need to run the following after running the above bash script.
 
 ```bash
