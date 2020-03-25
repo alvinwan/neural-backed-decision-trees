@@ -11,6 +11,8 @@ import torchvision.transforms as transforms
 
 import os
 import argparse
+import onnxruntime as ort
+import numpy as np
 
 from nbdt.utils import (
     progress_bar, generate_fname, generate_kwargs, Colors, maybe_install_wordnet
@@ -39,6 +41,7 @@ parser.add_argument('--name', default='',
 parser.add_argument('--pretrained', action='store_true',
                     help='Download pretrained model. Not all models support this.')
 parser.add_argument('--eval', help='eval only', action='store_true')
+parser.add_argument('--onnx', help='export only', action='store_true')
 
 # options specific to this project and its dataloaders
 parser.add_argument('--loss', choices=loss.names, default='CrossEntropyLoss')
@@ -141,6 +144,19 @@ checkpoint_fname = generate_fname(**vars(args))
 checkpoint_path = './checkpoint/{}.pth'.format(checkpoint_fname)
 print(f'==> Checkpoints will be saved to: {checkpoint_path}')
 
+
+# TODO(alvin): fix checkpoint structure so that this isn't neededd
+def load_state_dict(state_dict):
+    try:
+        net.load_state_dict(state_dict)
+    except RuntimeError as e:
+        if 'Missing key(s) in state_dict:' in str(e):
+            net.load_state_dict({
+                key.replace('module.', '', 1): value
+                for key, value in state_dict.items()
+            })
+
+
 resume_path = args.path_resume or checkpoint_path
 if args.resume:
     # Load checkpoint.
@@ -149,17 +165,18 @@ if args.resume:
     if not os.path.exists(resume_path):
         print('==> No checkpoint found. Skipping...')
     else:
-        checkpoint = torch.load(resume_path)
+        checkpoint = torch.load(resume_path, map_location=torch.device(device))
 
         if 'net' in checkpoint:
-            net.load_state_dict(checkpoint['net'])
+            load_state_dict(checkpoint['net'])
             best_acc = checkpoint['acc']
             start_epoch = checkpoint['epoch']
             Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
                   f'{best_acc} at {resume_path}')
         else:
-            net.load_state_dict(checkpoint)
+            load_state_dict(checkpoint)
             Colors.cyan(f'==> Checkpoint found at {resume_path}')
+
 
 criterion = nn.CrossEntropyLoss()
 class_criterion = getattr(loss, args.loss)
@@ -268,6 +285,34 @@ analyzer_kwargs = generate_kwargs(args, class_analysis,
     keys=analysis.keys,
     globals=globals())
 analyzer = class_analysis(**analyzer_kwargs)
+
+
+if args.onnx:
+    if not args.resume and not args.pretrained:
+        Colors.red(' * Warning: Model is not loaded from checkpoint. '
+        'Use --resume or --pretrained (if supported)')
+
+    fname = f"out/{checkpoint_fname}.onnx"
+    dummy_input = torch.randn(1, 3, 32, 32)
+    torch.onnx.export(
+        net, dummy_input, fname,
+        input_names=["x"], output_names=["outputs"])
+    print(f"=> Wrote ONNX export to {fname}")
+
+    outputs_torch = net(dummy_input)
+    outputs_torch = outputs_torch.detach().numpy()
+
+    ort_session = ort.InferenceSession(fname)
+    outputs_onnx = ort_session.run(None, {
+        'x': dummy_input.numpy()
+    })
+
+    if (outputs_torch == outputs_onnx).all():
+        Colors.green("=> ONNX export check succeeded: Outputs match.")
+    else:
+        Colors.red("=> ONNX export check failed: Outputs do not match.")
+
+    exit()
 
 
 if args.eval:
