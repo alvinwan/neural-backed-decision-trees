@@ -5,7 +5,7 @@ for i in "CIFAR10 ${MODEL_NAME}_cifar10 1" "CIFAR100 ${MODEL_NAME}_cifar100 1" "
   read dataset model weight <<< "${i}";
 
   # 1. generate hieararchy
-  nbdt-hierarchy  --dataset=${dataset} --induced-model=${model}
+  nbdt-hierarchy  --dataset=${dataset} --arch=${model}
 
   # 2. train with soft tree supervision loss
   python main.py --lr=0.01 --dataset=${dataset} --model=${model} --hierarchy=induced-${model} --pretrained --loss=SoftTreeSupLoss --tree-supervision-weight=${weight}

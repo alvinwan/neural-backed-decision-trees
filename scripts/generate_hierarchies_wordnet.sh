@@ -9,5 +9,5 @@ done;
 # Generate and test hierarchies
 for dataset in CIFAR10 CIFAR100 TinyImagenet200;
 do
-  nbdt-hierarchy --dataset=${dataset} --single-path --method=wordnet;
+  nbdt-hierarchy --dataset=${dataset} --method=wordnet;
 done;

@@ -4,7 +4,7 @@ for i in "CIFAR10 1" "CIFAR100 1" "TinyImagenet200 10"; do
   read dataset weight <<< "${i}";
 
   # 1. generate hieararchy
-  nbdt-hierarchy --dataset=${dataset} --induced-model=ResNet18
+  nbdt-hierarchy --dataset=${dataset} --arch=ResNet18
 
   # 2. train with soft tree supervision loss
   python main.py --dataset=${dataset} --model=${model} --hierarchy=induced-${model} --loss=SoftTreeSupLoss --tree-supervision-weight=${weight}

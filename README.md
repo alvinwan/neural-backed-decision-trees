@@ -128,7 +128,7 @@ import pretrainedmodels
 model = pretrainedmodels.__dict__['fbresnet152'](num_classes=1000, pretrained='imagenet')
 
 # 1. generate hierarchy from pretrained model
-generate_hierarchy(dataset='Imagenet1000', induced_model='fbresnet152', model=model)
+generate_hierarchy(dataset='Imagenet1000', arch='fbresnet152', model=model)
 
 # 2. Fine-tune model with tree supervision loss
 criterion = ...
@@ -149,7 +149,7 @@ For more information on generating different hierarchies, see [Induced Hierarchy
 Use the `nbdt-hierarchy` utility to generate a new induced hierarchy from a pretrained model.
 
 ```bash
-nbdt-hierarchy --induced-model=efficientnet_b0 --dataset=Imagenet1000
+nbdt-hierarchy --arch=efficientnet_b0 --dataset=Imagenet1000
 ```
 
 Then, pass the hierarchy name to the loss and models. You may alternatively pass the fully-qualified `path_graph` path.
@@ -194,7 +194,7 @@ For all scripts, you can use any [`torchvision`](https://pytorch.org/docs/stable
 Run the following to generate and test induced hierarchies for CIFAR10 based off of the WideResNet model.
 
 ```bash
-nbdt-hierarchy --induced-model=wrn28_10_cifar10 --dataset=CIFAR10
+nbdt-hierarchy --arch=wrn28_10_cifar10 --dataset=CIFAR10
 ```
 
 <details><summary><b>See how it works and how to configure.</b> <i>[click to expand]</i></summary>
@@ -206,10 +206,10 @@ The script loads the pretrained model (Step A), populates the leaves of the tree
 
 ```bash
 # different architecture: ResNet18
-nbdt-hierarchy --induced-model=ResNet18 --dataset=CIFAR10
+nbdt-hierarchy --arch=ResNet18 --dataset=CIFAR10
 
 # different dataset: ImageNet
-nbdt-hierarchy --induced-model=efficientnet_b7 --dataset=Imagenet1000
+nbdt-hierarchy --arch=efficientnet_b7 --dataset=Imagenet1000
 
 # arbitrary checkpoint
 wget https://download.pytorch.org/models/resnet18-5c106cde.pth -O resnet18.pth
@@ -223,7 +223,7 @@ from nbdt.hierarchy import generate_hierarchy
 from nbdt.models import wrn28_10_cifar10
 
 model = wrn28_10_cifar10(pretrained=True)
-generate_hierarchy(dataset='Imagenet1000', induced_model='wrn28_10_cifar10', model=model)
+generate_hierarchy(dataset='Imagenet1000', arch='wrn28_10_cifar10', model=model)
 ```
 
 </div>
@@ -236,7 +236,7 @@ By default, the generation script outputs the HTML file containing a d3
 visualization. All visualizations are stored in `out/`. We will generate another visualization with larger font size and includes wordnet IDs where available.
 
 ```
-nbdt-hierarchy --vis-sublabels --vis-zoom=1.25 --dataset=CIFAR10 --induced-model=wrn28_10_cifar10
+nbdt-hierarchy --vis-sublabels --vis-zoom=1.25 --dataset=CIFAR10 --arch=wrn28_10_cifar10
 ```
 
 The above script's output will end with the following.
@@ -260,8 +260,8 @@ Open up `out/induced-wrn28_10_cifar10-tree.html` in your browser to view the d3 
 To generate figures from the paper, use a larger zoom and do not include sublabels. The checkpoints used to generate the induced hierarchy visualizations are included in this repository's hub of models.
 
 ```
-nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --induced-model=ResNet10
-nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --induced-model=wrn28_10_cifar10 --vis-leaf-images --vis-image-resize-factor=1.5
+nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --arch=ResNet10
+nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --arch=wrn28_10_cifar10 --vis-leaf-images --vis-image-resize-factor=1.5
 ```
 
 <img width="430" alt="CIFAR10-induced-wrn28_10_cifar10" src="https://user-images.githubusercontent.com/2068077/77514842-beffa080-6e34-11ea-952c-2b49f6a30891.png">
@@ -313,7 +313,7 @@ nbdt-hierarchy --method=wordnet --vis-zoom=1.25 --vis-sublabels
 Use `--method=random` to randomly generate a binary-ish hierarchy. Optionally, use the `--seed` (`--seed=-1` to *not* shuffle leaves) and `--branching-factor` flags. When debugging, we set branching factor to the number of classes. For example, the sanity check hierarchy for CIFAR10 is
 
 ```bash
-nbdt-hierarchy --seed=-1 --branching-factor=10 --single-path --dataset=CIFAR10
+nbdt-hierarchy --seed=-1 --branching-factor=10 --dataset=CIFAR10
 ```
 
 ## 2. Tree Supervision Loss
@@ -321,7 +321,7 @@ nbdt-hierarchy --seed=-1 --branching-factor=10 --single-path --dataset=CIFAR10
 In the below training commands, we uniformly use `--path-resume=<path/to/checkpoint> --lr=0.01` to fine-tune instead of training from scratch. Our results using a recently state-of-the-art pretrained checkpoint (WideResNet) were fine-tuned. Run the following to fine-tune WideResNet with soft tree supervision loss on CIFAR10.
 
 ```bash
-python main.py --lr=0.01 --dataset=CIFAR10 --model=wrn28_10_cifar10 --hierarchy=induced-wrn28_10_cifar10 --pretrained --loss=SoftTreeSupLoss
+python main.py --lr=0.01 --dataset=CIFAR10 --arch=wrn28_10_cifar10 --hierarchy=induced-wrn28_10_cifar10 --pretrained --loss=SoftTreeSupLoss
 ```
 
 <details><summary><b>See how it works and how to configure.</b> <i>[click to expand]</i></summary>
@@ -333,10 +333,10 @@ The tree supervision loss features two variants: a hard version and a soft versi
 
 ```bash
 # fine-tune the wrn pretrained checkpoint on CIFAR10 with hard tree supervision loss
-python main.py --lr=0.01 --dataset=CIFAR10 --model=wrn28_10_cifar10 --hierarchy=induced-wrn28_10_cifar10 --pretrained --loss=HardTreeSupLoss
+python main.py --lr=0.01 --dataset=CIFAR10 --arch=wrn28_10_cifar10 --hierarchy=induced-wrn28_10_cifar10 --pretrained --loss=HardTreeSupLoss
 
 # fine-tune the wrn pretrained checkpoint on CIFAR10 with soft tree supervision loss
-python main.py --lr=0.01 --dataset=CIFAR10 --model=wrn28_10_cifar10 --hierarchy=induced-wrn28_10_cifar10 --pretrained --loss=SoftTreeSupLoss
+python main.py --lr=0.01 --dataset=CIFAR10 --arch=wrn28_10_cifar10 --hierarchy=induced-wrn28_10_cifar10 --pretrained --loss=SoftTreeSupLoss
 ```
 
 To train from scratch, use `--lr=0.1` and do not pass the `--path-resume` or `--pretrained` flags. We fine-tune WideResnet on CIFAR10, CIFAR100, but where the baseline neural network accuracy is reproducible, we train from scratch.
@@ -350,7 +350,7 @@ Like with the tree supervision loss variants, there are two inference variants: 
 Run the following bash script to obtain these numbers.
 
 ```bash
-python main.py --dataset=CIFAR10 --model=wrn28_10_cifar10 --hierarchy=induced-wrn28_10_cifar10 --loss=SoftTreeSupLoss --eval --resume --analysis=SoftEmbeddedDecisionRules
+python main.py --dataset=CIFAR10 --arch=wrn28_10_cifar10 --hierarchy=induced-wrn28_10_cifar10 --loss=SoftTreeSupLoss --eval --resume --analysis=SoftEmbeddedDecisionRules
 ```
 
 <details><summary><b>See how it works and how to configure.</b> <i>[click to expand]</i></summary>
@@ -362,10 +362,10 @@ Note the following commands are nearly identical to the corresponding train comm
 
 ```bash
 # running soft inference on soft-supervised model
-python main.py --dataset=CIFAR10 --model=wrn28_10_cifar10 --hierarchy=induced-wrn28_10_cifar10 --loss=SoftTreeSupLoss --eval --resume --analysis=SoftEmbeddedDecisionRules
+python main.py --dataset=CIFAR10 --arch=wrn28_10_cifar10 --hierarchy=induced-wrn28_10_cifar10 --loss=SoftTreeSupLoss --eval --resume --analysis=SoftEmbeddedDecisionRules
 
 # running hard inference on soft-supervised model
-python main.py --dataset=CIFAR10 --model=wrn28_10_cifar10 --hierarchy=induced-wrn28_10_cifar10 --loss=SoftTreeSupLoss --eval --resume --analysis=HardEmbeddedDecisionRules
+python main.py --dataset=CIFAR10 --arch=wrn28_10_cifar10 --hierarchy=induced-wrn28_10_cifar10 --loss=SoftTreeSupLoss --eval --resume --analysis=HardEmbeddedDecisionRules
 ```
 </div>
 </details>
@@ -396,13 +396,13 @@ For any models that have pretrained checkpoints for the datasets of interest (e.
 
 ## Models
 
-Without any modifications to `main.py`, you can replace ResNet18 with your favorite network: Pass  any [`torchvision.models`](https://pytorch.org/docs/stable/torchvision/models.html) model or any [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch) model to `--model`, as we directly support both model zoos. Note that the former only supports models pretrained on ImageNet. The latter supports models pretrained on CIFAR10, CIFAR100, andd ImageNet; for each dataset, the corresponding model name includes the dataset e.g., `wrn28_10_cifar10`. However, neither supports models pretrained on TinyImagenet.
+Without any modifications to `main.py`, you can replace ResNet18 with your favorite network: Pass  any [`torchvision.models`](https://pytorch.org/docs/stable/torchvision/models.html) model or any [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch) model to `--arch`, as we directly support both model zoos. Note that the former only supports models pretrained on ImageNet. The latter supports models pretrained on CIFAR10, CIFAR100, andd ImageNet; for each dataset, the corresponding model name includes the dataset e.g., `wrn28_10_cifar10`. However, neither supports models pretrained on TinyImagenet.
 
 To add a new model from scratch:
 
 1. Create a new file containing your network, such as `./nbdt/models/yournet.py`. This file should contain an `__all__` only exposing functions that return a model. These functions should accept `pretrained: bool` and `progress: bool`, then forward all other keyword arguments to the model constructor.
 2. Expose it via `./nbdt/models/__init__.py`: `from .yournet import *`.
-3. Train the original neural network on the target dataset. e.g., `python main.py --model=yournet18`.
+3. Train the original neural network on the target dataset. e.g., `python main.py --arch=yournet18`.
 
 ## Dataset
 

@@ -6,7 +6,7 @@ dataset=CIFAR10
 weight=1
 
 # 1. generate hieararchy
-nbdt-hierarchy --dataset=${dataset} --induced-model=${model}
+nbdt-hierarchy --dataset=${dataset} --arch=${model}
 
 # 2. train with soft tree supervision loss
 python main.py --lr=0.01 --dataset=${dataset} --model=${model} --hierarchy=induced-${model} --pretrained --loss=SoftTreeSupLoss --tree-supervision-weight=${weight}

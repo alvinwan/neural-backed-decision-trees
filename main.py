@@ -25,7 +25,7 @@ parser.add_argument('--batch-size', default=512, type=int,
 parser.add_argument('--epochs', '-e', default=200, type=int,
                     help='By default, lr schedule is scaled accordingly')
 parser.add_argument('--dataset', default='CIFAR10', choices=datasets)
-parser.add_argument('--model', default='ResNet18', choices=list(models.get_model_choices()))
+parser.add_argument('--arch', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 
@@ -111,7 +111,7 @@ Colors.cyan(f'Training with dataset {args.dataset} and {len(trainset.classes)} c
 
 # Model
 print('==> Building model..')
-model = getattr(models, args.model)
+model = getattr(models, args.arch)
 model_kwargs = {'num_classes': len(trainset.classes) }
 
 if args.pretrained:
