@@ -1,3 +1,6 @@
 include nbdt/templates/*.html
 include nbdt/wnids/*.txt
 include nbdt/hierarchies/*/*.json
+include requirements.txt
+include README.md
+include LICENSE

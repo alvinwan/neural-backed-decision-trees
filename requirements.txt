@@ -4,4 +4,3 @@ torchvision
 nltk
 scikit-learn
 networkx
-onnxruntime
