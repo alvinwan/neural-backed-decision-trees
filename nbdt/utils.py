@@ -35,7 +35,10 @@ DATASET_TO_CLASSES = {
 
 
 def maybe_install_wordnet():
-    if not nltk.data.find('corpora/wordnet'):
+    try:
+        nltk.data.find('corpora/wordnet')
+    except Exception as e:
+        print(e)
         nltk.download('wordnet')
 
 
