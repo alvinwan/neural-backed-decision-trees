@@ -57,7 +57,6 @@ parser.add_argument('--name', default='',
 parser.add_argument('--pretrained', action='store_true',
                     help='Download pretrained model. Not all models support this.')
 parser.add_argument('--eval', help='eval only', action='store_true')
-parser.add_argument('--onnx', help='export only', action='store_true')
 
 # options specific to this project and its dataloaders
 parser.add_argument('--loss', choices=loss.names, default='CrossEntropyLoss')
@@ -301,34 +300,6 @@ analyzer_kwargs = generate_kwargs(args, class_analysis,
     keys=analysis.keys,
     globals=globals())
 analyzer = class_analysis(**analyzer_kwargs)
-
-
-if args.onnx:
-    if not args.resume and not args.pretrained:
-        Colors.red(' * Warning: Model is not loaded from checkpoint. '
-        'Use --resume or --pretrained (if supported)')
-
-    fname = f"out/{checkpoint_fname}.onnx"
-    dummy_input = torch.randn(1, 3, 32, 32)
-    torch.onnx.export(
-        net, dummy_input, fname,
-        input_names=["x"], output_names=["outputs"])
-    print(f"=> Wrote ONNX export to {fname}")
-
-    outputs_torch = net(dummy_input)
-    outputs_torch = outputs_torch.detach().numpy()
-
-    ort_session = ort.InferenceSession(fname)
-    outputs_onnx = ort_session.run(None, {
-        'x': dummy_input.numpy()
-    })
-
-    if (outputs_torch == outputs_onnx).all():
-        Colors.green("=> ONNX export check succeeded: Outputs match.")
-    else:
-        Colors.red("=> ONNX export check failed: Outputs do not match.")
-
-    exit()
 
 
 if args.eval:

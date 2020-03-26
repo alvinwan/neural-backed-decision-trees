@@ -1,22 +1,22 @@
 from flask import Flask
 from nbdt.model import SoftNBDT
-from nbdt.models import wrn28_10_cifar10
+from nbdt.models import ResNet18
 from torchvision import transforms
 from nbdt.utils import DATASET_TO_CLASSES, load_image_from_path, maybe_install_wordnet
 
 
 maybe_install_wordnet()
-app = Flask(__name__)
+application = app = Flask(__name__)
 
 
 @app.route('/')
 def home():
     # load pretrained NBDT
-    model = wrn28_10_cifar10()
+    model = ResNet18()
     model = SoftNBDT(
       pretrained=True,
       dataset='CIFAR10',
-      arch='wrn28_10_cifar10',
+      arch='ResNet18',
       hierarchy='wordnet',
       model=model)
 
@@ -40,4 +40,4 @@ def home():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run()

@@ -141,3 +141,8 @@ dmypy.json
 .pyre/
 
 # End of https://www.gitignore.io/api/macos,python
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
