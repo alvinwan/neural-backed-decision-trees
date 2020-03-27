@@ -1,3 +1,9 @@
+"""Single-file example for serving an NBDT model.
+
+This functions as a simple single-endpoint API, using flask.
+"""
+
+
 from flask import Flask, flash, request, redirect, url_for
 from nbdt.model import SoftNBDT
 from nbdt.models import ResNet18
@@ -8,7 +14,7 @@ from PIL import Image
 import os
 
 maybe_install_wordnet()
-application = app = Flask(__name__)
+app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 
 
@@ -19,7 +25,7 @@ def inference(im):
     # load pretrained NBDT
     model = ResNet18()
     model = SoftNBDT(
-      # pretrained=True,
+      pretrained=True,
       dataset='CIFAR10',
       arch='ResNet18',
       hierarchy='wordnet',
@@ -38,6 +44,7 @@ def inference(im):
     outputs, decisions = model.forward_with_decisions(x)  # use `model(x)` to obtain just logits
     _, predicted = outputs.max(1)
     return {
+        'success': True,
         'predicted': [DATASET_TO_CLASSES['CIFAR10'][pred] for pred in predicted],
         'decisions': [[info['name'] for info in decision] for decision in decisions]
     }
@@ -57,6 +64,16 @@ image_urls = {
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
+    """
+    To use this endpoint. You may use ANY of the following:
+
+        1. POST a URL with name "url", or
+        2. call this page with a query param "url", or
+        3. POST a file with name "file" to this URL
+
+    Note that the ordering above is the order of priority. If a URL is posted,
+    the uploaded file and the query param will be ignored.
+    """
     if request.method == 'POST' or request.args.get('url', None):
         url = request.form.get('url', request.args.get('url', None))
         if url:
@@ -64,31 +81,30 @@ def upload_file():
             return inference(im)
         # check if the post request has the file part
         if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
+            return {
+                'success': False,
+                'message': 'No file part'
+            }
         file = request.files['file']
         # if user does not select file, browser also
         # submit an empty part without filename
         if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
+            return {
+                'sucess': False,
+                'message': 'No selected file'
+            }
         if file and allowed_file(file.filename):
             im = Image.open(file.stream)
             return inference(im)
-        return f'nope. Allowed file? ({file.filename}) Got a file? ({bool(file)})'
-    return f'''
-    <!doctype html>
-    <title>Upload new File OR specify URL</title>
-    <h1>Upload new File</h1>
-    <form method=post enctype=multipart/form-data>
-      <input type=input name=url placeholder=url>
-      <input type=file name=file>
-      <input type=submit value=Upload>
-    </form>
-    <a href="?url={image_urls['cat']}"><img src="{image_urls['cat']}"></a>
-    <a href="?url={image_urls['bear']}"><img src="{image_urls['bear']}"></a>
-    <a href="?url={image_urls['dog']}"><img src="{image_urls['dog']}"></a>
-    '''
+        return {
+            'success': False,
+            'message': f'nope. Allowed file? ({file.filename}) Got a file? ({bool(file)})'
+        }
+    return {
+        'success': False,
+        'message': 'You might be looking for the main page. Please see <a href="http://nbdt.alvinwan.com/demo">nbdt.alvinwan.com/demo</a>. Here are some sample URLs you can use:',
+        'image_urls': image_urls
+    }
 
 
 if __name__ == '__main__':
