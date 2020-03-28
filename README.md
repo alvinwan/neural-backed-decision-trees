@@ -2,9 +2,9 @@
 
 [Project Page](http://nbdt.alvinwan.com) &nbsp;//&nbsp; [Paper]() &nbsp;//&nbsp; [No-code Web Demo](http://nbdt.alvinwan.com/demo/) &nbsp;//&nbsp; [Colab Notebook](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb)
 
-Run decision trees that achieve state-of-the-art accuracy for explainable models on CIFAR10, CIFAR100, TinyImagenet200, and ImageNet. NBDTs achieve accuracies within 1% of the original neural network on CIFAR10, CIFAR100, and TinyImagenet200 with the recently state-of-the-art WideResNet; and within 2% of the original neural network on Imagenet, using recently state-of-the-art EfficientNet.
+Run decision trees that achieve state-of-the-art accuracy for explainable models on CIFAR10, CIFAR100, TinyImagenet200, and ImageNet. NBDTs achieve accuracies within 1% of the original neural network on CIFAR10, CIFAR100, and TinyImagenet200 with the recently state-of-the-art WideResNet; and within 1.5% of the original neural network on Imagenet, using recently state-of-the-art EfficientNet.
 
-<sub>**NBDT Accuracy per dataset**: CIFAR10 (97.57%), CIFAR100 (82.87%), TinyImagenet200 (66.66%), ImageNet (70.41%). [See more results](#results)</sub>
+<sub>**NBDT Accuracy per dataset**: CIFAR10 (97.57%), CIFAR100 (82.87%), TinyImagenet200 (66.66%), ImageNet (73.69%). [See more results](#results)</sub>
 
 **Table of Contents**
 
@@ -49,9 +49,9 @@ Like before, this outputs the class prediction and intermediate decisions. Altho
 Prediction: bear // Decisions: vertebrate, placental, ungulate, horse
 ```
 
-<img src="https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=307 align=left>
-<img src="https://images.pexels.com/photos/158109/kodiak-brown-bear-adult-portrait-wildlife-158109.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=262 align=left>
-<img src="https://images.pexels.com/photos/1490908/pexels-photo-1490908.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=262>
+<img src="https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=297 align=left>
+<img src="https://images.pexels.com/photos/158109/kodiak-brown-bear-adult-portrait-wildlife-158109.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=252 align=left>
+<img src="https://images.pexels.com/photos/1490908/pexels-photo-1490908.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=252>
 
 <sub>*Pictures are taken from [pexels.com](http://pexels.com), which are free to use per the [Pexels license](https://www.pexels.com/photo-license/).*</sub>
 
@@ -87,7 +87,7 @@ Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.m
 
 # Convert Neural Networks to Decision Trees
 
-<i>Don't want to download? Try on MNIST in a pre-filled [Google Colab Notebook]().</i>
+<!--<i>Don't want to download? Try on MNIST in a pre-filled [Google Colab Notebook]().</i>-->
 
 **To convert your neural network** into a neural-backed decision tree, perform the following 3 steps:
 
@@ -108,7 +108,7 @@ Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.m
 
 **Example integration with repository**: See [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models), which applies this 3-step integration to a popular image classification repository `pytorch-image-models`.
 
-**Example notebook with MNIST training**: Try the [Google Colab Notebook]() with example training for MNIST, applying this 3-step integration to a simple pipeline.
+<!--**Example notebook with MNIST training**: Try the [Google Colab Notebook]() with example training for MNIST, applying this 3-step integration to a simple pipeline.-->
 
 <details><summary><b>Example integration with a random neural network in 16 lines</b> <i>[click to expand]</i></summary>
 <div>
