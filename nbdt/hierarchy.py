@@ -194,7 +194,11 @@ def build_tree(G, root,
         node['force_text_on_left'] = True
 
     if include_leaf_images and is_leaf:
-        image = get_class_image_from_dataset(dataset, label)
+        try:
+            image = get_class_image_from_dataset(dataset, label)
+        except UserWarning as e:
+            print(e)
+            return node
         base64_encode = image_to_base64_encode(image, format="jpeg")
         image_href = f"data:image/jpeg;base64,{base64_encode.decode('utf-8')}"
         image_height, image_width = image.size
@@ -248,7 +252,7 @@ def image_to_base64_encode(image, format="jpeg"):
 
 
 def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
-        show_sublabels=False):
+        show_sublabels=False, height=750):
     with open(path_template) as f:
         html = f.read() \
         .replace(
@@ -265,7 +269,10 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
             str(show_sublabels).lower()) \
         .replace(
             "CONFIG_TITLE",
-            fname)
+            fname) \
+        .replace(
+            "CONFIG_VIS_HEIGHT",
+            str(height))
 
     os.makedirs('out', exist_ok=True)
     path_html = f'out/{fname}-{name}.html'
@@ -309,4 +316,5 @@ def generate_hierarchy_vis(args):
         str(parent / 'nbdt/templates/tree-template.html'), tree, 'tree', fname,
         zoom=args.vis_zoom,
         straight_lines=not args.vis_curved,
-        show_sublabels=args.vis_sublabels)
+        show_sublabels=args.vis_sublabels,
+        height=args.vis_height)

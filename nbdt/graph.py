@@ -62,6 +62,8 @@ def get_parser():
     parser.add_argument('--vis-image-resize-factor', type=float, default=1.,
         help='Factor to resize image size by. Default image size is provided '
              'by the original image. e.g., 32 for CIFAR10, 224 for Imagenet')
+    parser.add_argument('--vis-height', type=int, default=750,
+        help='Height of the outputted visualization')
     return parser
 
 
