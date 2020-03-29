@@ -148,6 +148,7 @@ function gradientFill(d) {
 }
 
 function gradientStroke(d) {
+  if (d.target && d.target.color_incident_edge) d = d.target;
   if (d.color == "blue-green") return "#0460b4";
   if (d.color == "blue") return "#1155cc";
   return "#666666"
@@ -155,16 +156,24 @@ function gradientStroke(d) {
 
 
 // arrow
-var arrow = svg.append("svg:defs").append("svg:marker")
-    .attr("id", "arrow")
-    .attr("viewBox", "0 -5 10 10")
-    .attr("markerWidth", 5)
-    .attr("markerHeight", 5)
-    .attr("orient", "auto")
-    .attr('fill', '#CCCCCC')
+function makeArrow(d) {
+  var fill = gradientStroke(d);
+  var id = "arrow" + fill.replace("#", "");
 
-arrow.append("svg:path")
-    .attr("d", "M0,-5L10,0L0,5")
+  var arrow = svg.append("svg:defs").append("svg:marker")
+      .attr("id", id)
+      .attr("viewBox", "0 -5 10 10")
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 5)
+      .attr("orient", "auto")
+      .style("fill", fill);
+
+  arrow.append("svg:path")
+      .attr("d", "M0,-5L10,0L0,5");
+
+  return "url(#" +  id +  ")";
+}
+
 // end custom elements
 
 root = treeData[0];
@@ -288,8 +297,6 @@ function update(source) {
           .attr("class", "link")
           .style("stroke", gradientStroke);
 
-    arrow.style("fill", "#666666")
-
     link.attr('x1', function(d) {
              return getTargetNodeCircumferencePoint(d.target, d.source, d.target.marker_start)[1];
         })
@@ -302,7 +309,7 @@ function update(source) {
         .attr("y2", function(d) {
              return getTargetNodeCircumferencePoint(d.source, d.target, d.target.marker_end)[0];
         })
-        .attr('marker-end', function(d) { return "url(#arrow)"; })
+        .attr('marker-end', makeArrow)
 
 
 

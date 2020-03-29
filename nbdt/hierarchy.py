@@ -160,16 +160,19 @@ def test_hierarchy(args):
 
 def build_tree(G, root,
         parent='null',
-        color='blue',
-        color_nodes=(),
+        color_info=(),
         force_labels_left=(),
         include_leaf_images=False,
         dataset=None,
         image_resize_factor=1):
+    """
+    :param color_info dict[str, dict]: mapping from node labels or IDs to color
+                                       information. This is by default just a
+                                       key called 'color'
+    """
     children = [
         build_tree(G, child, root,
-            color=color,
-            color_nodes=color_nodes,
+            color_info=color_info,
             force_labels_left=force_labels_left,
             include_leaf_images=include_leaf_images,
             dataset=dataset,
@@ -189,8 +192,11 @@ def build_tree(G, root,
         'children': children,
     }
 
-    if label in color_nodes or root in color_nodes:
-        node['color'] = color
+    if label in color_info:
+        node.update(color_info[label])
+
+    if root in color_info:
+        node.update(color_info[root])
 
     if label in force_labels_left:
         node['force_text_on_left'] = True
@@ -285,11 +291,13 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
     Colors.green('==> Wrote HTML to {}'.format(path_html))
 
 
-def get_color_nodes(G, color_leaves, color_path_to=None):
-    nodes = set()
+def get_color_info(G, color, color_leaves, color_path_to=None):
+    """Mapping from node to color information."""
+    nodes = {}
     leaves = list(get_leaves(G))
     if color_leaves:
-        nodes = nodes.union(leaves)
+        for leaf in leaves:
+            nodes[leaf] = {'color': color}
 
     root = get_root(G)
     target = None
@@ -301,10 +309,10 @@ def get_color_nodes(G, color_leaves, color_path_to=None):
 
     if target is not None:
         while target != root:
-            nodes.add(target)
+            nodes[target] = {'color': color, 'color_incident_edge': True}
             view = G.pred[target]
             target = list(view.keys())[0]
-        nodes.add(root)
+        nodes[root] = {'color': color}
     return nodes
 
 
@@ -324,14 +332,14 @@ def generate_hierarchy_vis(args):
         cls = getattr(data, args.dataset)
         dataset = cls(root='./data', train=False, download=False)
 
-    color_nodes = get_color_nodes(
+    color_info = get_color_info(
         G,
+        args.color,
         color_leaves=not args.vis_no_color_leaves,
         color_path_to=args.vis_color_path_to)
 
     tree = build_tree(G, root,
-        color=args.color,
-        color_nodes=color_nodes,
+        color_info=color_info,
         force_labels_left=args.vis_force_labels_left or [],
         dataset=dataset,
         include_leaf_images=args.vis_leaf_images,
