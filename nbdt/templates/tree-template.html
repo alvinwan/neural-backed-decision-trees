@@ -7,6 +7,7 @@
     <style>
 html {
   font-size: calc(16px * CONFIG_ZOOM);
+  background-color: CONFIG_BG_COLOR;
 }
 
 .node {
@@ -29,7 +30,6 @@ html {
 .node text.small {
   font-size:0.7em;
   font-family: 'Cormorant Garamond', serif;
-  color:#ccc;
 }
 
 .link {
@@ -231,7 +231,7 @@ function update(source) {
     .attr("y", function(d){ return this.parentNode.getBBox().y; })
     .attr("width", function(d){ return Math.max(this.parentNode.getBBox().width - 5, 0); })
     .attr("height", function(d) {return this.parentNode.getBBox().height; })
-    .style("fill", "rgba(255,255,255,0.8)");
+    .style("fill", "CONFIG_TEXT_RECT_COLOR");
 
   nodeEnter.append("svg:image")
     .attr("xlink:href", function(d) { return d.image ? d.image.href : '' })
@@ -244,7 +244,8 @@ function update(source) {
   nodeEnter.selectAll("text")
 	  .attr("x", function(d) { return textOnLeft(d) ? -13 : 13; })
     .attr("dx", function(d) { return textOnLeft(d) ? -dx + "px" : dx + "px"; })
-	  .attr("text-anchor", function(d) { return textOnLeft(d) ? "end" : "start"; });
+	  .attr("text-anchor", function(d) { return textOnLeft(d) ? "end" : "start"; })
+    .attr("fill", 'CONFIG_TEXT_COLOR');
 
   nodeEnter.append("circle")
 	  .attr("r", 1e-6)

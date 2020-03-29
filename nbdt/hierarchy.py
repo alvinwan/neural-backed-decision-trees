@@ -261,7 +261,7 @@ def image_to_base64_encode(image, format="jpeg"):
 
 
 def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
-        show_sublabels=False, height=750):
+        show_sublabels=False, height=750, dark=False):
     with open(path_template) as f:
         html = f.read() \
         .replace(
@@ -281,7 +281,16 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
             fname) \
         .replace(
             "CONFIG_VIS_HEIGHT",
-            str(height))
+            str(height)) \
+        .replace(
+            "CONFIG_BG_COLOR",
+            "#111111" if dark else "#FFFFFF") \
+        .replace(
+            "CONFIG_TEXT_COLOR",
+            '#FFFFFF' if dark else '#CCCCCC') \
+        .replace(
+            "CONFIG_TEXT_RECT_COLOR",
+            "rgba(17,17,17,0.8)" if dark else "rgba(255,255,255,0.8)")
 
     os.makedirs('out', exist_ok=True)
     path_html = f'out/{fname}-{name}.html'
@@ -358,4 +367,5 @@ def generate_hierarchy_vis(args):
         zoom=args.vis_zoom,
         straight_lines=not args.vis_curved,
         show_sublabels=args.vis_sublabels,
-        height=args.vis_height)
+        height=args.vis_height,
+        dark=args.vis_dark)

@@ -69,6 +69,7 @@ def get_parser():
              'by the original image. e.g., 32 for CIFAR10, 224 for Imagenet')
     parser.add_argument('--vis-height', type=int, default=750,
         help='Height of the outputted visualization')
+    parser.add_argument('--vis-dark', action='store_true', help='Dark mode')
     return parser
 
 
