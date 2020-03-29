@@ -325,6 +325,13 @@ def get_color_info(G, color, color_leaves, color_path_to=None):
     return nodes
 
 
+def generate_vis_fname(vis_color_path_to=None, **kwargs):
+    fname = generate_fname(**kwargs).replace('graph-', f'{kwargs["dataset"]}-', 1)
+    if vis_color_path_to is not None:
+        fname += '-' + vis_color_path_to
+    return fname
+
+
 
 def generate_hierarchy_vis(args):
     path = get_graph_path_from_args(**vars(args))
@@ -360,7 +367,7 @@ def generate_hierarchy_vis(args):
     else:
         print(f'Found just {num_roots} root.')
 
-    fname = generate_fname(**vars(args)).replace('graph-', f'{args.dataset}-', 1)
+    fname = generate_vis_fname(**vars(args))
     parent = Path(fwd()).parent
     generate_vis(
         str(parent / 'nbdt/templates/tree-template.html'), tree, 'tree', fname,
