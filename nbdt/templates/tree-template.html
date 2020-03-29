@@ -99,7 +99,7 @@ gradient.append("svg:stop")
     .attr("stop-opacity", 1);
 
 // gradient
-var gradient2 = svg.append("svg:defs")
+var gradientBlue = svg.append("svg:defs")
     .append("svg:linearGradient")
     .attr("id", "gradientBlue")
     .attr("x1", "0%")
@@ -109,15 +109,50 @@ var gradient2 = svg.append("svg:defs")
     .attr("spreadMethod", "pad");
 
 // Define the gradient colors
-gradient2.append("svg:stop")
+gradientBlue.append("svg:stop")
     .attr("offset", "0%")
     .attr("stop-color", "#dfe9fbff")
     .attr("stop-opacity", 1);
 
-gradient2.append("svg:stop")
+gradientBlue.append("svg:stop")
     .attr("offset", "100%")
     .attr("stop-color", "#6e9be7ff")
     .attr("stop-opacity", 1);
+
+// gradient
+var gradientBlueGreen = svg.append("svg:defs")
+    .append("svg:linearGradient")
+    .attr("id", "gradientBlueGreen")
+    .attr("x1", "0%")
+    .attr("y1", "0%")
+    .attr("x2", "100%")
+    .attr("y2", "100%")
+    .attr("spreadMethod", "pad");
+
+// Define the gradient colors
+gradientBlueGreen.append("svg:stop")
+    .attr("offset", "0%")
+    .attr("stop-color", "#00c760")
+    .attr("stop-opacity", 1);
+
+gradientBlueGreen.append("svg:stop")
+    .attr("offset", "100%")
+    .attr("stop-color", "#0460b4")
+    .attr("stop-opacity", 1);
+
+
+function gradientFill(d) {
+  if (d.color == "blue") return "url(#gradientBlue)";
+  if (d.color == "blue-green") return "url(#gradientBlueGreen)";
+  return "url(#gradientGray)";
+}
+
+function gradientStroke(d) {
+  if (d.color == "blue-green") return "#0460b4";
+  if (d.color == "blue") return "#1155cc";
+  return "#666666"
+}
+
 
 // arrow
 var arrow = svg.append("svg:defs").append("svg:marker")
@@ -206,10 +241,9 @@ function update(source) {
 	  .attr("r", 1e-6)
 	  .style("fill", function(d) {
       if (d._children) return "#fff";
-      if (d.color == "blue") return "url(#gradientBlue)";
-      return "url(#gradientGray)";
+      return gradientFill(d);
     })
-    .style("stroke", function(d) { return d.color == "blue" ? "#1155cc" : "#666666" });
+    .style("stroke", gradientStroke);
 
   // Transition nodes to their new position.
   var nodeUpdate = node.transition()
@@ -220,8 +254,7 @@ function update(source) {
 	  .attr("r", 10)
 	  .style("fill", function(d) {
       if (d._children) return "#fff";
-      if (d.color == "blue") return "url(#gradientBlue)";
-      return "url(#gradientGray)";
+      return gradientFill(d);
     });
 
   nodeUpdate.select("text")
@@ -253,7 +286,7 @@ function update(source) {
 
     link.enter().insert("line", "g")
           .attr("class", "link")
-          .style("stroke", function(d) { return d.color == "blue" ? "#1155cc" : "#666666" });
+          .style("stroke", gradientStroke);
 
     arrow.style("fill", "#666666")
 

@@ -53,8 +53,13 @@ def get_parser():
         help='Use curved lines for edges')
     parser.add_argument('--vis-sublabels', action='store_true',
         help='Show sublabels')
-    parser.add_argument('--vis-gray', action='store_true',
-        help='Color all nodes gray, instead of coloring leaves blue.')
+    parser.add_argument('--color', choices=('blue', 'blue-green'), default='blue',
+        help='Color to use, for colored flags. Note this takes NO effect if '
+        'nodes are not colored.')
+    parser.add_argument('--vis-no-color-leaves', action='store_true',
+        help='Do NOT highlight leaves with special color.')
+    parser.add_argument('--vis-color-path-to', type=str,
+        help='Vis all nodes on path from leaf to root, as blue. Pass leaf name.')
     parser.add_argument('--vis-force-labels-left', nargs='*',
         help='Labels to force text left of the node.')
     parser.add_argument('--vis-leaf-images', action='store_true',

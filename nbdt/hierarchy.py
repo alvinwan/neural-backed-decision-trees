@@ -3,7 +3,7 @@ from nbdt.graph import build_minimal_wordnet_graph, build_random_graph, \
     prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
     get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args, \
     augment_graph, get_depth, build_induced_graph, read_graph, get_leaves, \
-    get_roots, synset_to_wnid, wnid_to_name
+    get_roots, synset_to_wnid, wnid_to_name, get_root
 from nbdt import data
 from networkx.readwrite.json_graph import adjacency_data
 from pathlib import Path
@@ -160,20 +160,23 @@ def test_hierarchy(args):
 
 def build_tree(G, root,
         parent='null',
-        color_leaves_blue=True,
+        color='blue',
+        color_nodes=(),
         force_labels_left=(),
         include_leaf_images=False,
         dataset=None,
         image_resize_factor=1):
     children = [
         build_tree(G, child, root,
-            color_leaves_blue=color_leaves_blue,
+            color=color,
+            color_nodes=color_nodes,
             force_labels_left=force_labels_left,
             include_leaf_images=include_leaf_images,
             dataset=dataset,
             image_resize_factor=image_resize_factor)
         for child in G.succ[root]]
-    label = G.nodes[root].get('label', '')
+    _node = G.nodes[root]
+    label = _node.get('label', '')
     sublabel = root
 
     if root.startswith('f'):  # WARNING: hacky, ignores fake wnids -- this will have to be changed lol
@@ -186,13 +189,13 @@ def build_tree(G, root,
         'children': children,
     }
 
-    is_leaf = len(children) == 0
-    if is_leaf and color_leaves_blue:
-        node['color'] = 'blue'
+    if label in color_nodes or root in color_nodes:
+        node['color'] = color
 
     if label in force_labels_left:
         node['force_text_on_left'] = True
 
+    is_leaf = len(children) == 0
     if include_leaf_images and is_leaf:
         try:
             image = get_class_image_from_dataset(dataset, label)
@@ -282,6 +285,30 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
     Colors.green('==> Wrote HTML to {}'.format(path_html))
 
 
+def get_color_nodes(G, color_leaves, color_path_to=None):
+    nodes = set()
+    leaves = list(get_leaves(G))
+    if color_leaves:
+        nodes = nodes.union(leaves)
+
+    root = get_root(G)
+    target = None
+    for leaf in leaves:
+        node = G.nodes[leaf]
+        if node.get('label', '') == color_path_to or leaf == color_path_to:
+            target = leaf
+            break
+
+    if target is not None:
+        while target != root:
+            nodes.add(target)
+            view = G.pred[target]
+            target = list(view.keys())[0]
+        nodes.add(root)
+    return nodes
+
+
+
 def generate_hierarchy_vis(args):
     path = get_graph_path_from_args(**vars(args))
     print('==> Reading from {}'.format(path))
@@ -297,8 +324,14 @@ def generate_hierarchy_vis(args):
         cls = getattr(data, args.dataset)
         dataset = cls(root='./data', train=False, download=False)
 
+    color_nodes = get_color_nodes(
+        G,
+        color_leaves=not args.vis_no_color_leaves,
+        color_path_to=args.vis_color_path_to)
+
     tree = build_tree(G, root,
-        color_leaves_blue=not args.vis_gray,
+        color=args.color,
+        color_nodes=color_nodes,
         force_labels_left=args.vis_force_labels_left or [],
         dataset=dataset,
         include_leaf_images=args.vis_leaf_images,
