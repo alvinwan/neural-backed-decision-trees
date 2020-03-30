@@ -437,16 +437,24 @@ def build_induced_graph(wnids, checkpoint, model=None, linkage='ward',
     index_to_wnid = {}
 
     for index, pair in enumerate(map(tuple, children)):
-        parent = FakeSynset.create_from_offset(len(G.nodes))
-        G.add_node(parent.wnid)
-        index_to_wnid[index] = parent.wnid
-
+        child_wnids = []
+        child_synsets = []
         for child in pair:
             if child < num_classes:
                 child_wnid = wnids[child]
             else:
                 child_wnid = index_to_wnid[child - num_classes]
-            G.add_edge(parent.wnid, child_wnid)
+            child_wnids.append(child_wnid)
+            child_synsets.append(wnid_to_synset(child_wnid))
+
+        parent = get_wordnet_meaning(G, child_synsets)
+        parent_wnid = synset_to_wnid(parent)
+        G.add_node(parent_wnid)
+        set_node_label(G, parent)
+        index_to_wnid[index] = parent_wnid
+
+        for child_wnid in child_wnids:
+            G.add_edge(parent_wnid, child_wnid)
 
     assert len(list(get_roots(G))) == 1, list(get_roots(G))
     return G
@@ -570,14 +578,21 @@ def get_new_node(G):
 
     children = get_new_adjacency(G, nodes)
     synsets = [wnid_to_synset(wnid) for wnid in children]
+
+    candidate = get_wordnet_meaning(G, synsets)
+    is_fake = candidate.pos() == 'f'
+    return candidate, is_fake, children
+
+
+def get_wordnet_meaning(G, synsets):
     common_hypernyms = get_common_hypernyms(synsets)
 
     assert len(common_hypernyms) > 0, [synset.name() for synset in synsets]
 
     candidate = pick_unseen_hypernym(G, common_hypernyms)
     if candidate is None:
-        return FakeSynset.create_from_offset(len(G.nodes)), True, children
-    return candidate, False, children
+        return FakeSynset.create_from_offset(len(G.nodes))
+    return candidate
 
 
 def add_node_to_graph(G, candidate, children):
