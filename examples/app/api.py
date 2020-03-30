@@ -28,7 +28,6 @@ def inference(im):
       pretrained=True,
       dataset='CIFAR10',
       arch='ResNet18',
-      hierarchy='wordnet',
       model=model)
 
     # load + transform image
