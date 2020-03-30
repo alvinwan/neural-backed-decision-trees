@@ -154,6 +154,13 @@ function gradientStroke(d) {
   return "#666666"
 }
 
+function gradientFontColor(d) {
+  if (d.target && d.target.color_incident_edge) d = d.target;
+  if (d.color == "blue-green") return "#0460b4";
+  if (d.color == "blue") return "#1155cc";
+  return "CONFIG_TEXT_COLOR"
+}
+
 
 // arrow
 function makeArrow(d) {
@@ -245,7 +252,7 @@ function update(source) {
 	  .attr("x", function(d) { return textOnLeft(d) ? -13 : 13; })
     .attr("dx", function(d) { return textOnLeft(d) ? -dx + "px" : dx + "px"; })
 	  .attr("text-anchor", function(d) { return textOnLeft(d) ? "end" : "start"; })
-    .attr("fill", 'CONFIG_TEXT_COLOR');
+    .attr("fill", gradientFontColor);
 
   nodeEnter.append("circle")
 	  .attr("r", 1e-6)
