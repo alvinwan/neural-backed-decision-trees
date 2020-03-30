@@ -266,8 +266,9 @@ nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --arch=wrn28_10_cifar10 --vis-le
 nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --arch=wrn28_10_cifar10 --vis-color-nodes whole --vis-no-color-leaves --vis-force-labels-left motor_vehicle craft chordate vertebrate carnivore ungulate craft
 ```
 
-<img width="430" alt="CIFAR10-induced-wrn28_10_cifar10" src="https://user-images.githubusercontent.com/2068077/77514842-beffa080-6e34-11ea-952c-2b49f6a30891.png">
-<img width="430" alt="CIFAR10_ResNet10_Tree" src="https://user-images.githubusercontent.com/2068077/77405568-9e6e1280-6d70-11ea-96b3-4d31dbc331e6.png">
+<img width="275" alt="CIFAR10-induced-wrn28_10_cifar10" src="https://user-images.githubusercontent.com/2068077/77971875-bd0a6700-72a4-11ea-80e8-c1308fce6c74.jpg">
+<img width="275" alt="CIFAR10_ResNet10_Tree" src="https://user-images.githubusercontent.com/2068077/77971877-bed42a80-72a4-11ea-8019-e398a90829ff.jpg">
+<img width="275" src="https://user-images.githubusercontent.com/2068077/77971990-0a86d400-72a5-11ea-826b-c2ea7bbf3d80.jpg">
 
 </div>
 </details>
