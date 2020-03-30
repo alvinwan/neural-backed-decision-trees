@@ -12,7 +12,7 @@ def get_pretrained_model(
         state_dict = load_state_dict_from_key(
             [(arch, dataset)], model_urls, pretrained, progress, root,
             device=get_model_device(model))
-        state_dict = coerce_state_dict(state_dict, model.state_dict)
+        state_dict = coerce_state_dict(state_dict, model.state_dict())
         model.load_state_dict(state_dict)
     return model
 
@@ -26,7 +26,7 @@ def coerce_state_dict(state_dict, reference_state_dict):
             key.replace('module.', '', 1): value
             for key, value in state_dict.items()
         }
-    else if has_reference_module and not has_module:
+    elif has_reference_module and not has_module:
         state_dict = {
             'module.' + key: value
             for key, value in state_dict.items()
