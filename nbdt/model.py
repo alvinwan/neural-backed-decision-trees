@@ -87,7 +87,7 @@ class NBDT(nn.Module):
             self.load_state_dict(state_dict)
 
     def load_state_dict(self, state_dict, **kwargs):
-        state_dict = coerce_state_dict(state_dict)
+        state_dict = coerce_state_dict(state_dict, self.model.state_dict)
         return self.model.load_state_dict(state_dict, **kwargs)
 
     def state_dict(self):
