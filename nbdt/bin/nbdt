@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Run evaluation on a single image, using an NBDT"""
 
-from nbdt.model import SoftNBDT
+from nbdt.model import SoftNBDT, HardNBDT
 from pytorchcv.models.wrn_cifar import wrn28_10_cifar10
 from torchvision import transforms
 from nbdt.utils import DATASET_TO_CLASSES, load_image_from_path, maybe_install_wordnet
@@ -13,11 +13,10 @@ assert len(sys.argv) > 1, "Need to pass image URL or image path as argument"
 
 # load pretrained NBDT
 model = wrn28_10_cifar10()
-model = SoftNBDT(
+model = HardNBDT(
   pretrained=True,
   dataset='CIFAR10',
   arch='wrn28_10_cifar10',
-  hierarchy='wordnet',
   model=model)
 
 # load + transform image
@@ -35,5 +34,5 @@ outputs, decisions = model.forward_with_decisions(x)  # use `model(x)` to obtain
 _, predicted = outputs.max(1)
 cls = DATASET_TO_CLASSES['CIFAR10'][predicted[0]]
 print('Prediction:', cls, '// Decisions:', ', '.join([
-    info['name'] for info in decisions[0]
+    '{} ({:.2f}%)'.format(info['name'], info['prob'] * 100) for info in decisions[0]
 ][1:]))  # [1:] to skip the root

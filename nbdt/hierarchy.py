@@ -332,7 +332,6 @@ def generate_vis_fname(vis_color_path_to=None, **kwargs):
     return fname
 
 
-
 def generate_hierarchy_vis(args):
     path = get_graph_path_from_args(**vars(args))
     print('==> Reading from {}'.format(path))

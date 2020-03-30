@@ -1,5 +1,6 @@
 from torch.hub import load_state_dict_from_url
 from pathlib import Path
+import torch
 
 
 def get_pretrained_model(
@@ -8,23 +9,26 @@ def get_pretrained_model(
         progress=True,
         root='.cache/torch/checkpoints'):
     if pretrained:
-        state_dict = load_state_dict_from_arch_dataset(
-            arch, dataset, model_urls, pretrained, progress, root)
+        state_dict = load_state_dict_from_key(
+            [(arch, dataset)], model_urls, pretrained, progress, root,
+            device=model.device)
         model.load_state_dict(state_dict)
     return model
 
-def load_state_dict_from_arch_dataset(
-        arch, dataset, model_urls,
+def load_state_dict_from_key(
+        keys, model_urls,
         pretrained=False,
         progress=True,
-        root='.cache/torch/checkpoints'):
-    if (arch, dataset) not in model_urls:
+        root='.cache/torch/checkpoints',
+        device='cpu'):
+    valid_keys = [key for key in keys if key in model_urls]
+    if not valid_keys:
         raise UserWarning(
-            f'The architecture {arch} for dataset {dataset} does not have a'
-            ' pretrained model.'
+            f'None of the keys {keys} correspond to a pretrained model.'
         )
     return load_state_dict_from_url(
-        model_urls[(arch, dataset)],
+        model_urls[valid_keys[-1]],
         Path.home() / root,
         progress=progress,
-        check_hash=False)
+        check_hash=False,
+        map_location=torch.device(device))
