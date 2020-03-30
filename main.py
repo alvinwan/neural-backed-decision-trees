@@ -27,7 +27,6 @@ import torchvision.transforms as transforms
 
 import os
 import argparse
-import onnxruntime as ort
 import numpy as np
 
 from nbdt.utils import (

@@ -60,6 +60,8 @@ def get_parser():
         help='Do NOT highlight leaves with special color.')
     parser.add_argument('--vis-color-path-to', type=str,
         help='Vis all nodes on path from leaf to root, as blue. Pass leaf name.')
+    parser.add_argument('--vis-color-nodes', nargs='*',
+        help='Nodes to color. Nodes are identified by label')
     parser.add_argument('--vis-force-labels-left', nargs='*',
         help='Labels to force text left of the node.')
     parser.add_argument('--vis-leaf-images', action='store_true',

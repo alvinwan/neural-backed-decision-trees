@@ -34,7 +34,7 @@ nbdt https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compr
 This outputs both the class prediction and all the intermediate decisions, like below:
 
 ```
-Prediction: cat // Decisions: vertebrate, placental, carnivore, cat
+Prediction: cat // Decisions: animal (74.58%), chordate (70.94%), carnivore (59.91%), cat (63.51%)
 ```
 
 By default, this evaluation utility uses WideResNet pretrained on CIFAR10. You can also pass classes not seen in CIFAR10. Below, we pass a picture of a bear. This bear is also pictured below.
@@ -46,7 +46,7 @@ nbdt https://images.pexels.com/photos/1466592/pexels-photo-1466592.jpeg?auto=com
 Like before, this outputs the class prediction and intermediate decisions. Although the *Bear* class was not seen at train time, the model still correctly picks *Vertebrate* over *Instrumentality* (which is, in the CIFAR10 case, equivalent to *Vehicles*).
 
 ```
-Prediction: bear // Decisions: vertebrate, placental, ungulate, horse
+Prediction: dog // Decisions: animal (76.22%), chordate (72.04%), carnivore (66.53%), dog (60.23%)
 ```
 
 <img src="https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=300" width=297 align=left>
@@ -256,8 +256,9 @@ Open up `out/induced-wrn28_10_cifar10-tree.html` in your browser to view the d3 
 To generate figures from the paper, use a larger zoom and do not include sublabels. The checkpoints used to generate the induced hierarchy visualizations are included in this repository's hub of models.
 
 ```
-nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --arch=ResNet10
-nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --arch=wrn28_10_cifar10 --vis-leaf-images --vis-image-resize-factor=1.5
+nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --arch=ResNet10 --vis-force-labels-left conveyance vertebrate chordate vehicle motor_vehicle mammal placental
+nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --arch=wrn28_10_cifar10 --vis-leaf-images --vis-image-resize-factor=1.5 --vis-force-labels-left motor_vehicle craft chordate vertebrate carnivore ungulate craft
+nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --arch=wrn28_10_cifar10 --vis-color-nodes whole --vis-no-color-leaves --vis-force-labels-left motor_vehicle craft chordate vertebrate carnivore ungulate craft
 ```
 
 <img width="430" alt="CIFAR10-induced-wrn28_10_cifar10" src="https://user-images.githubusercontent.com/2068077/77514842-beffa080-6e34-11ea-952c-2b49f6a30891.png">

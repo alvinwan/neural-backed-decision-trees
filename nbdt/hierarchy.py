@@ -287,7 +287,7 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
             "#111111" if dark else "#FFFFFF") \
         .replace(
             "CONFIG_TEXT_COLOR",
-            '#FFFFFF' if dark else '#CCCCCC') \
+            '#FFFFFF' if dark else '#000000') \
         .replace(
             "CONFIG_TEXT_RECT_COLOR",
             "rgba(17,17,17,0.8)" if dark else "rgba(255,255,255,0.8)")
@@ -300,13 +300,17 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
     Colors.green('==> Wrote HTML to {}'.format(path_html))
 
 
-def get_color_info(G, color, color_leaves, color_path_to=None):
+def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=()):
     """Mapping from node to color information."""
     nodes = {}
     leaves = list(get_leaves(G))
     if color_leaves:
         for leaf in leaves:
             nodes[leaf] = {'color': color}
+
+    for (id, node) in G.nodes.items():
+        if node.get('label', '') in color_nodes or id in color_nodes:
+            nodes[id] = {'color': color}
 
     root = get_root(G)
     target = None
@@ -351,7 +355,8 @@ def generate_hierarchy_vis(args):
         G,
         args.color,
         color_leaves=not args.vis_no_color_leaves,
-        color_path_to=args.vis_color_path_to)
+        color_path_to=args.vis_color_path_to,
+        color_nodes=args.vis_color_nodes or ())
 
     tree = build_tree(G, root,
         color_info=color_info,
