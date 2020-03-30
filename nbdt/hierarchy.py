@@ -349,7 +349,7 @@ def generate_hierarchy_vis(args):
     dataset = None
     if args.dataset:
         cls = getattr(data, args.dataset)
-        dataset = cls(root='./data', train=False, download=False)
+        dataset = cls(root='./data', train=False, download=True)
 
     color_info = get_color_info(
         G,
