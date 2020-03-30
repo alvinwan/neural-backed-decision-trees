@@ -13,7 +13,7 @@ assert len(sys.argv) > 1, "Need to pass image URL or image path as argument"
 
 # load pretrained NBDT
 model = wrn28_10_cifar10()
-model = HardNBDT(
+model = SoftNBDT(
   pretrained=True,
   dataset='CIFAR10',
   arch='wrn28_10_cifar10',
@@ -34,5 +34,5 @@ outputs, decisions = model.forward_with_decisions(x)  # use `model(x)` to obtain
 _, predicted = outputs.max(1)
 cls = DATASET_TO_CLASSES['CIFAR10'][predicted[0]]
 print('Prediction:', cls, '// Decisions:', ', '.join([
-    '{} ({:.2f}%)'.format(info['name'], info['prob'] * 100) for info in decisions[0]
+    '{} ({:.2f}%)'.format(info['name'], info.get('prob', -1) * 100) for info in decisions[0]
 ][1:]))  # [1:] to skip the root
