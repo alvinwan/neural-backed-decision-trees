@@ -1,6 +1,6 @@
 import setuptools
 
-VERSION = '0.0.3'
+VERSION = '0.0.4'
 
 with open("requirements.txt", "r") as f:
     install_requires = f.readlines()
