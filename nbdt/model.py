@@ -10,7 +10,7 @@ from nbdt.utils import (
     dataset_to_default_path_graph,
     dataset_to_default_path_wnids,
     hierarchy_to_path_graph)
-from nbdt.models.utils import load_state_dict_from_key
+from nbdt.models.utils import load_state_dict_from_key, coerce_state_dict
 from nbdt.data.custom import dataset_to_dummy_classes
 from nbdt.analysis import SoftEmbeddedDecisionRules, HardEmbeddedDecisionRules
 
@@ -84,15 +84,10 @@ class NBDT(nn.Module):
             keys = [(arch, dataset), (arch, dataset, hierarchy)]
             state_dict = load_state_dict_from_key(
                 keys, model_urls, pretrained=True)
-            if 'net' in state_dict:
-                state_dict = state_dict['net']
             self.load_state_dict(state_dict)
 
     def load_state_dict(self, state_dict, **kwargs):
-        state_dict = {
-            key.replace('module.', '', 1): value
-            for key, value in state_dict.items()
-        }
+        state_dict = coerce_state_dict(state_dict)
         return self.model.load_state_dict(state_dict, **kwargs)
 
     def state_dict(self):

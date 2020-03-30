@@ -11,9 +11,22 @@ def get_pretrained_model(
     if pretrained:
         state_dict = load_state_dict_from_key(
             [(arch, dataset)], model_urls, pretrained, progress, root,
-            device=model.device)
+            device=get_model_device(model))
+        state_dict = coerce_state_dict(state_dict)
         model.load_state_dict(state_dict)
     return model
+
+def coerce_state_dict(state_dict):
+    if 'net' in state_dict:
+        state_dict = state_dict['net']
+    state_dict = {
+        key.replace('module.', '', 1): value
+        for key, value in state_dict.items()
+    }
+    return state_dict
+
+def get_model_device(model):
+    return next(model.parameters()).device
 
 def load_state_dict_from_key(
         keys, model_urls,
