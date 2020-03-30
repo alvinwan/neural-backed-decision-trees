@@ -7,6 +7,7 @@ from nbdt.loss import HardTreeSupLoss, SoftTreeSupLoss
 from nbdt.data.custom import Node, dataset_to_dummy_classes
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 import csv
 
@@ -173,7 +174,8 @@ class HardEmbeddedDecisionRules(Noop):
                 continue
             _, preds_sub = torch.max(outputs_sub, dim=1)
             preds_sub = list(map(int, preds_sub.cpu()))
-            wnid_to_pred_selector[node.wnid] = (preds_sub, selector)
+            probs_sub = F.softmax(outputs_sub, dim=1).detach().cpu()
+            wnid_to_pred_selector[node.wnid] = (preds_sub, probs_sub, selector)
 
         _, predicted = outputs.max(1)
 
@@ -209,21 +211,22 @@ class HardEmbeddedDecisionRules(Noop):
         decisions = []
         preds = []
         for index in range(n_samples):
-            decision = [{'node': node_root, 'name': 'root'}]
+            decision = [{'node': node_root, 'name': 'root', 'prob': 1}]
             wnid, node = wnid_root, node_root
             while node is not None:
                 if node.wnid not in wnid_to_pred_selector:
                     wnid = node = None
                     break
-                pred_sub, selector = wnid_to_pred_selector[node.wnid]
+                pred_sub, prob_sub, selector = wnid_to_pred_selector[node.wnid]
                 if not selector[index]:  # we took a wrong turn. wrong.
                     wnid = node = None
                     break
                 index_new = sum(selector[:index + 1]) - 1
                 index_child = pred_sub[index_new]
+                prob_child = float(prob_sub[index_new][index_child])
                 wnid = node.children[index_child]
                 node = self.wnid_to_node.get(wnid, None)
-                decision.append({'node': node, 'name': wnid_to_name(wnid)})
+                decision.append({'node': node, 'name': wnid_to_name(wnid), 'prob': prob_child})
             cls = self.wnid_to_class.get(wnid, None)
             pred = -1 if cls is None else self.classes.index(cls)
             preds.append(pred)

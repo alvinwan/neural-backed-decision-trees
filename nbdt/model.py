@@ -10,7 +10,7 @@ from nbdt.utils import (
     dataset_to_default_path_graph,
     dataset_to_default_path_wnids,
     hierarchy_to_path_graph)
-from nbdt.models.utils import load_state_dict_from_arch_dataset
+from nbdt.models.utils import load_state_dict_from_key
 from nbdt.data.custom import dataset_to_dummy_classes
 from nbdt.analysis import SoftEmbeddedDecisionRules, HardEmbeddedDecisionRules
 
@@ -18,6 +18,7 @@ from nbdt.analysis import SoftEmbeddedDecisionRules, HardEmbeddedDecisionRules
 model_urls = {
     ('ResNet18', 'CIFAR10'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR10-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth',
     ('wrn28_10_cifar10', 'CIFAR10'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR10-wrn28_10_cifar10-induced-wrn28_10_cifar10-SoftTreeSupLoss.pth',
+    ('wrn28_10_cifar10', 'CIFAR10', 'wordnet'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR10-wrn28_10_cifar10-wordnet-SoftTreeSupLoss.pth',
     ('ResNet18', 'CIFAR100'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR100-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth',
     ('wrn28_10_cifar100', 'CIFAR100'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR100-wrn28_10_cifar100-induced-wrn28_10_cifar100-SoftTreeSupLoss.pth',
     ('ResNet18', 'TinyImagenet200'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-TinyImagenet200-ResNet18-induced-ResNet18-SoftTreeSupLoss-tsw10.0.pth',
@@ -58,7 +59,7 @@ class NBDT(nn.Module):
             raise NotImplementedError('Model must be nn.Module')
 
         self.init(dataset, model, path_graph, path_wnids, classes,
-            arch=arch, pretrained=pretrained, **kwargs)
+            arch=arch, pretrained=pretrained, hierarchy=hierarchy, **kwargs)
 
     def init(self,
             dataset,
@@ -68,6 +69,7 @@ class NBDT(nn.Module):
             classes,
             arch=None,
             pretrained=False,
+            hierarchy=None,
             Rules=HardEmbeddedDecisionRules):
         """
         Extra init method makes clear which arguments are finally necessary for
@@ -79,13 +81,18 @@ class NBDT(nn.Module):
 
         if pretrained:
             assert arch is not None
-            state_dict = load_state_dict_from_arch_dataset(
-                arch, dataset, model_urls, pretrained=True)
+            keys = [(arch, dataset), (arch, dataset, hierarchy)]
+            state_dict = load_state_dict_from_key(
+                keys, model_urls, pretrained=True)
             if 'net' in state_dict:
                 state_dict = state_dict['net']
             self.load_state_dict(state_dict)
 
     def load_state_dict(self, state_dict, **kwargs):
+        state_dict = {
+            key.replace('module.', '', 1): value
+            for key, value in state_dict.items()
+        }
         return self.model.load_state_dict(state_dict, **kwargs)
 
     def state_dict(self):
