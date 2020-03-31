@@ -7,7 +7,7 @@ This functions as a simple single-endpoint API, using flask.
 from flask import Flask, flash, request, redirect, url_for, jsonify
 from flask_cors import CORS
 from nbdt.model import HardNBDT
-from nbdt.models import ResNet18
+from nbdt.models import wrn28_10_cifar10
 from torchvision import transforms
 from nbdt.utils import DATASET_TO_CLASSES, load_image_from_path, maybe_install_wordnet
 from werkzeug.utils import secure_filename
@@ -26,7 +26,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 def inference(im):
     # load pretrained NBDT
-    model = ResNet18()
+    model = wrn28_10_cifar10()
     model = HardNBDT(
       pretrained=True,
       dataset='CIFAR10',
