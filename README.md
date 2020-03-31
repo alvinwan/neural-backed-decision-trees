@@ -96,15 +96,20 @@ Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.m
 
 **To convert your neural network** into a neural-backed decision tree, perform the following 3 steps:
 
-1. **First**, if you haven't already, pip install the `nbdt` utility: `pip install nbdt`
-2. **Second, during training**, wrap your loss `criterion` with a custom NBDT loss. Below, we demonstrate the soft tree supervision loss on the CIFAR10 dataset. By default, we support `CIFAR10`, `CIFAR100`, `TinyImagenet200`, and `Imagenet1000`.
+1. **First**, if you haven't already, pip install the `nbdt` utility:
+
+  ```bash
+  pip install nbdt
+  ```
+
+2. **Second, train the original neural network with an NBDT loss**. All NBDT losses work by wrapping the original criterion. To demonstrate this, we wrap the original loss `criterion` with a soft tree supervision loss.
 
   ```python
   from nbdt.loss import SoftTreeSupLoss
   criterion = SoftTreeSupLoss(dataset='CIFAR10', criterion=criterion)  # `criterion` is your original loss function e.g., nn.CrossEntropyLoss
   ```
 
-3. **Third, during inference or validation**, wrap your `model` with a custom NBDT wrapper as shown below. This is only to run prediction as an NBDT during validation or inference time. Do not wrap your model like below, during training.
+3. **Third, perform inference or validate using an NBDT model**. All NBDT models work by wrapping the original model you trained in step 2. To demonstrate this, we wrap the `model` with a custom NBDT wrapper below. Note this model wrapper is *only* for inference and validation, *not* for train time.
 
   ```python
   from nbdt.model import SoftNBDT
@@ -121,6 +126,7 @@ Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.m
 You can also include arbitrary image classification neural networks not explicitly supported in this repository. For example, after installing [`pretrained-models.pytorch`](https://github.com/Cadene/pretrained-models.pytorch#quick-examples) using pip, you can instantiate and pass any pretrained model into our NBDT utility functions.
 
 ```python
+import torch.nn as nn
 from nbdt.model import SoftNBDT
 from nbdt.loss import SoftTreeSupLoss
 from nbdt.hierarchy import generate_hierarchy
@@ -132,7 +138,7 @@ model = pretrainedmodels.__dict__['fbresnet152'](num_classes=1000, pretrained='i
 generate_hierarchy(dataset='Imagenet1000', arch='fbresnet152', model=model)
 
 # 2. Fine-tune model with tree supervision loss
-criterion = ...
+criterion = nn.CrossEntropyLoss()
 criterion = SoftTreeSupLoss(dataset='Imagenet1000', hierarchy='induced-fbresnet152', criterion=criterion)
 
 # 3. Run inference using embedded decision rules
