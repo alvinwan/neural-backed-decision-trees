@@ -4,7 +4,8 @@ This functions as a simple single-endpoint API, using flask.
 """
 
 
-from flask import Flask, flash, request, redirect, url_for
+from flask import Flask, flash, request, redirect, url_for, jsonify
+from flask_cors import CORS
 from nbdt.model import HardNBDT
 from nbdt.models import ResNet18
 from torchvision import transforms
@@ -17,6 +18,8 @@ maybe_install_wordnet()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 
+CORS(app)
+
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
@@ -27,7 +30,7 @@ def inference(im):
     model = HardNBDT(
       pretrained=True,
       dataset='CIFAR10',
-      arch='ResNet18',
+      arch='wrn28_10_cifar10',
       model=model)
 
     # load + transform image
@@ -44,11 +47,11 @@ def inference(im):
     _, predicted = outputs.max(1)
     return {
         'success': True,
-        'predicted': [DATASET_TO_CLASSES['CIFAR10'][pred] for pred in predicted],
-        'decisions': [[{
+        'prediction': DATASET_TO_CLASSES['CIFAR10'][predicted[0]],
+        'decisions': [{
             'name': info['name'],
             'prob': info['prob']
-        } for info in decision] for decision in decisions]
+        } for info in decisions[0]]
     }
 
 
@@ -80,33 +83,33 @@ def upload_file():
         url = request.form.get('url', request.args.get('url', None))
         if url:
             im = load_image_from_path(url)
-            return inference(im)
+            return jsonify(inference(im))
         # check if the post request has the file part
         if 'file' not in request.files:
-            return {
+            return jsonify({
                 'success': False,
                 'message': 'No file part'
-            }
+            })
         file = request.files['file']
         # if user does not select file, browser also
         # submit an empty part without filename
         if file.filename == '':
-            return {
+            return jsonify({
                 'sucess': False,
                 'message': 'No selected file'
-            }
+            })
         if file and allowed_file(file.filename):
             im = Image.open(file.stream)
-            return inference(im)
-        return {
+            return jsonify(inference(im))
+        return jsonify({
             'success': False,
             'message': f'nope. Allowed file? ({file.filename}) Got a file? ({bool(file)})'
-        }
-    return {
+        })
+    return jsonify({
         'success': False,
         'message': 'You might be looking for the main page. Please see <a href="http://nbdt.alvinwan.com/demo">nbdt.alvinwan.com/demo</a>. Here are some sample URLs you can use:',
         'image_urls': image_urls
-    }
+    })
 
 
 if __name__ == '__main__':
