@@ -254,6 +254,8 @@ class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
         for index, prediction in enumerate(predicted):
             leaf = node.wnids[prediction]
             decision = leaf_to_path_nodes[leaf]
+            for justification in decision:
+                justification['prob'] = -1  # TODO(alvin): fill in prob
             decisions.append(decision)
         return outputs, decisions
 

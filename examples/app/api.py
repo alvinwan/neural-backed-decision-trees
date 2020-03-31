@@ -5,7 +5,7 @@ This functions as a simple single-endpoint API, using flask.
 
 
 from flask import Flask, flash, request, redirect, url_for
-from nbdt.model import SoftNBDT
+from nbdt.model import HardNBDT
 from nbdt.models import ResNet18
 from torchvision import transforms
 from nbdt.utils import DATASET_TO_CLASSES, load_image_from_path, maybe_install_wordnet
@@ -24,7 +24,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 def inference(im):
     # load pretrained NBDT
     model = ResNet18()
-    model = SoftNBDT(
+    model = HardNBDT(
       pretrained=True,
       dataset='CIFAR10',
       arch='ResNet18',
@@ -45,7 +45,10 @@ def inference(im):
     return {
         'success': True,
         'predicted': [DATASET_TO_CLASSES['CIFAR10'][pred] for pred in predicted],
-        'decisions': [[info['name'] for info in decision] for decision in decisions]
+        'decisions': [[{
+            'name': info['name'],
+            'prob': info['prob']
+        } for info in decision] for decision in decisions]
     }
 
 
