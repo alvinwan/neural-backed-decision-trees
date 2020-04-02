@@ -115,20 +115,25 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         outputs_sub = cls.get_node_logits(outputs, node)
         return selector, outputs_sub, targets_sub
 
-    def traverse_tree(self, wnid_to_outputs, n_samples):
+    @classmethod
+    def traverse_tree(cls, wnid_to_outputs, nodes, wnid_to_class, classes):
         """Convert node outputs to final prediction.
 
         Note that the prediction output for this function can NOT be trained
         on. The outputs have been detached from the computation graph.
         """
         # move all to CPU, detach from computation graph
+        example_output = wnid_to_outputs[nodes[0].wnid]
+        n_samples = int(example_output['logits'].size(0))
+
         for wnid in tuple(wnid_to_outputs.keys()):
             outputs = wnid_to_outputs[wnid]
             outputs['preds'] = list(map(int, outputs['preds'].cpu()))
             outputs['probs'] = outputs['probs'].detach().cpu()
 
-        wnid_root = get_root(self.G)
-        node_root = self.wnid_to_node[wnid_root]
+        wnid_to_node = {node.wnid: node for node in nodes}
+        wnid_root = get_root(nodes[0].G)
+        node_root = wnid_to_node[wnid_root]
 
         decisions = []
         preds = []
@@ -143,13 +148,20 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
                 index_child = outputs['preds'][index]
                 prob_child = float(outputs['probs'][index][index_child])
                 wnid = node.children[index_child]
-                node = self.wnid_to_node.get(wnid, None)
+                node = wnid_to_node.get(wnid, None)
                 decision.append({'node': node, 'name': wnid_to_name(wnid), 'prob': prob_child})
-            cls = self.wnid_to_class.get(wnid, None)
-            pred = -1 if cls is None else self.classes.index(cls)
+            cls = wnid_to_class.get(wnid, None)
+            pred = -1 if cls is None else classes.index(cls)
             preds.append(pred)
             decisions.append(decision)
         return torch.Tensor(preds).long(), decisions
+
+    @classmethod
+    def inference(cls, nodes, outputs, classes, wnid_to_class):
+        wnid_to_outputs = cls.get_all_node_outputs(outputs, nodes)
+        predicted, decisions = cls.traverse_tree(
+            wnid_to_outputs, nodes, wnid_to_class, classes)
+        return predicted, decisions
 
     def predicted_to_logits(self, predicted):
         """Convert predicted classes to one-hot logits."""
@@ -158,14 +170,11 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         return self.I[predicted]
 
     def forward_with_decisions(self, outputs):
-        wnid_to_outputs = self.get_all_node_outputs(outputs, self.nodes)
-
-        n_samples = outputs.size(0)
-        predicted, decisions = self.traverse_tree(wnid_to_outputs, n_samples)
-
-        outputs = self.predicted_to_logits(predicted)
-        outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
-        return outputs, decisions
+        predicted, decisions = self.inference(
+            self.nodes, outputs, self.classes, self.wnid_to_class)
+        logits = self.predicted_to_logits(predicted)
+        logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
+        return logits, decisions
 
     def forward(self, outputs):
         outputs, _ = self.forward_with_decisions(outputs)
@@ -225,9 +234,9 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         return outputs, decisions
 
     def forward(self, outputs):
-        outputs = self.inference(self.nodes, outputs, self.num_classes)
-        outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
-        return outputs
+        logits = self.inference(self.nodes, outputs, self.num_classes)
+        logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
+        return logits
 
 
 ##########
