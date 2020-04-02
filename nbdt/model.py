@@ -93,6 +93,9 @@ class EmbeddedDecisionRules(nn.Module):
             }
         return wnid_to_outputs
 
+    def forward_nodes(self, outputs):
+        return self.get_all_node_outputs(outputs, self.nodes)
+
 
 class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
 
@@ -162,7 +165,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         return self.I[predicted]
 
     def forward_with_decisions(self, outputs):
-        wnid_to_outputs = self.get_all_node_outputs(outputs, self.nodes)
+        wnid_to_outputs = self.forward_nodes(outputs)
         predicted, decisions = self.traverse_tree(
             wnid_to_outputs, self.nodes, self.wnid_to_class, self.classes)
         logits = self.predicted_to_logits(predicted)
@@ -229,7 +232,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         return outputs, decisions
 
     def forward(self, outputs):
-        wnid_to_outputs = self.get_all_node_outputs(outputs, self.nodes)
+        wnid_to_outputs = self.forward_nodes(outputs)
         logits = self.traverse_tree(wnid_to_outputs, self.nodes)
         logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return logits
