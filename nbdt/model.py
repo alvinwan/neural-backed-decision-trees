@@ -11,8 +11,12 @@ from nbdt.utils import (
     dataset_to_default_path_wnids,
     hierarchy_to_path_graph)
 from nbdt.models.utils import load_state_dict_from_key, coerce_state_dict
-from nbdt.data.custom import dataset_to_dummy_classes
-from nbdt.analysis import SoftEmbeddedDecisionRules, HardEmbeddedDecisionRules
+from nbdt.data.custom import Node, dataset_to_dummy_classes
+from nbdt.graph import get_root, get_wnids, synset_to_name, wnid_to_name
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 
 model_urls = {
@@ -24,6 +28,181 @@ model_urls = {
     ('ResNet18', 'TinyImagenet200'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-TinyImagenet200-ResNet18-induced-ResNet18-SoftTreeSupLoss-tsw10.0.pth',
     ('wrn28_10', 'TinyImagenet200'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-TinyImagenet200-wrn28_10-induced-wrn28_10-SoftTreeSupLoss-tsw10.0.pth',
 }
+
+
+#########
+# RULES #
+#########
+
+
+class HardEmbeddedDecisionRules(nn.Module):
+
+    def __init__(self,
+            dataset,
+            path_graph=None,
+            path_wnids=None,
+            classes=(),
+            weighted_average=False):
+
+        if not path_graph:
+            path_graph = dataset_to_default_path_graph(dataset)
+        if not path_wnids:
+            path_wnids = dataset_to_default_path_wnids(dataset)
+        if not classes:
+            classes = dataset_to_dummy_classes(dataset)
+        super().__init__()
+        assert all([dataset, path_graph, path_wnids, classes])
+
+        self.classes = classes
+        self.nodes = Node.get_nodes(path_graph, path_wnids, classes)
+        self.G = self.nodes[0].G
+        self.wnid_to_node = {node.wnid: node for node in self.nodes}
+
+        self.wnids = get_wnids(path_wnids)
+        self.wnid_to_class = {wnid: cls for wnid, cls in zip(self.wnids, self.classes)}
+
+        self.weighted_average = weighted_average
+        self.correct = 0
+        self.total = 0
+
+        self.I = torch.eye(len(classes))
+
+    @classmethod
+    def inference(cls, node, outputs, targets, weighted_average=False):
+        _outputs = outputs
+        targets_sub = targets
+        selector = [True] * outputs.size(0)
+
+        if targets:
+            classes = [node.old_to_new_classes[int(t)] for t in targets]
+            selector = [bool(cls) for cls in classes]
+            targets_sub = [cls[0] for cls in classes if cls] if targets else None
+
+            _outputs = outputs[selector]
+            if _outputs.size(0) == 0:
+                return selector, _outputs[:, :node.num_classes], targets_sub
+
+        outputs_sub = cls.get_output_sub(_outputs, node, weighted_average)
+        return selector, outputs_sub, targets_sub
+
+    def forward_with_decisions(self, outputs):
+        from nbdt.model import HardNBDT
+        wnid_to_pred_selector = {}
+        for node in self.nodes:
+            selector, outputs_sub, _ = HardNBDT.inference(
+                node, outputs, (), self.weighted_average)
+            if not any(selector):
+                continue
+            _, preds_sub = torch.max(outputs_sub, dim=1)
+            preds_sub = list(map(int, preds_sub.cpu()))
+            probs_sub = F.softmax(outputs_sub, dim=1).detach().cpu()
+            wnid_to_pred_selector[node.wnid] = (preds_sub, probs_sub, selector)
+
+        _, predicted = outputs.max(1)
+
+        n_samples = outputs.size(0)
+        n_classes = outputs.size(1)
+        predicted, decisions = self.traverse_tree(
+            predicted, wnid_to_pred_selector, n_samples)
+
+        if self.I.device != outputs.device:
+            self.I = self.I.to(outputs.device)
+
+        outputs = self.I[predicted]
+        outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
+        return outputs, decisions
+
+    def forward(self, outputs):
+        outputs, _ = self.forward_with_decisions(outputs)
+        return outputs
+
+    def traverse_tree(self, _, wnid_to_pred_selector, n_samples):
+        wnid_root = get_root(self.G)
+        node_root = self.wnid_to_node[wnid_root]
+        decisions = []
+        preds = []
+        for index in range(n_samples):
+            decision = [{'node': node_root, 'name': 'root', 'prob': 1}]
+            wnid, node = wnid_root, node_root
+            while node is not None:
+                if node.wnid not in wnid_to_pred_selector:
+                    wnid = node = None
+                    break
+                pred_sub, prob_sub, selector = wnid_to_pred_selector[node.wnid]
+                if not selector[index]:  # we took a wrong turn. wrong.
+                    wnid = node = None
+                    break
+                index_new = sum(selector[:index + 1]) - 1
+                index_child = pred_sub[index_new]
+                prob_child = float(prob_sub[index_new][index_child])
+                wnid = node.children[index_child]
+                node = self.wnid_to_node.get(wnid, None)
+                decision.append({'node': node, 'name': wnid_to_name(wnid), 'prob': prob_child})
+            cls = self.wnid_to_class.get(wnid, None)
+            pred = -1 if cls is None else self.classes.index(cls)
+            preds.append(pred)
+            decisions.append(decision)
+        return torch.Tensor(preds).long(), decisions
+
+
+class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
+
+    @classmethod
+    def inference(cls, nodes, outputs, num_classes, weighted_average=False):
+        """
+        In theory, the loop over children below could be replaced with just a
+        few lines:
+
+            for index_child in range(len(node.children)):
+                old_indexes = node.new_to_old_classes[index_child]
+                class_probs[:,old_indexes] *= output[:,index_child][:,None]
+
+        However, we collect all indices first, so that only one tensor operation
+        is run.
+        """
+        class_probs = torch.ones((outputs.size(0), num_classes)).to(outputs.device)
+        for node in nodes:
+            output = cls.get_output_sub(outputs, node, weighted_average)
+            output = F.softmax(output, dim=1)
+
+            old_indices, new_indices = [], []
+            for index_child in range(len(node.children)):
+                old = node.new_to_old_classes[index_child]
+                old_indices.extend(old)
+                new_indices.extend([index_child] * len(old))
+
+            assert len(set(old_indices)) == len(old_indices), (
+                'All old indices must be unique in order for this operation '
+                'to be correct.'
+            )
+            class_probs[:,old_indices] *= output[:,new_indices]
+        return class_probs
+
+    def forward_with_decisions(self, outputs):
+        outputs = self.forward(outputs)
+        _, predicted = outputs.max(1)
+
+        decisions = []
+        node = self.nodes[0]
+        leaf_to_path_nodes = Node.get_leaf_to_path(self.nodes)
+        for index, prediction in enumerate(predicted):
+            leaf = node.wnids[prediction]
+            decision = leaf_to_path_nodes[leaf]
+            for justification in decision:
+                justification['prob'] = -1  # TODO(alvin): fill in prob
+            decisions.append(decision)
+        return outputs, decisions
+
+    def forward(self, x):
+        outputs = self.inference(
+            self.nodes, outputs, self.num_classes, self.weighted_average)
+        outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
+        return outputs
+
+
+##########
+# MODELS #
+##########
 
 
 class NBDT(nn.Module):
@@ -132,24 +311,6 @@ class HardNBDT(NBDT):
         })
         super().__init__(*args, **kwargs)
 
-    @classmethod
-    def inference(cls, node, outputs, targets, weighted_average=False):
-        _outputs = outputs
-        targets_sub = targets
-        selector = [True] * outputs.size(0)
-
-        if targets:
-            classes = [node.old_to_new_classes[int(t)] for t in targets]
-            selector = [bool(cls) for cls in classes]
-            targets_sub = [cls[0] for cls in classes if cls] if targets else None
-
-            _outputs = outputs[selector]
-            if _outputs.size(0) == 0:
-                return selector, _outputs[:, :node.num_classes], targets_sub
-
-        outputs_sub = cls.get_output_sub(_outputs, node, weighted_average)
-        return selector, outputs_sub, targets_sub
-
 
 class SoftNBDT(NBDT):
 
@@ -158,34 +319,3 @@ class SoftNBDT(NBDT):
             'Rules': SoftEmbeddedDecisionRules
         })
         super().__init__(*args, **kwargs)
-
-    @classmethod
-    def inference(cls, nodes, outputs, num_classes, weighted_average=False):
-        """
-        In theory, the loop over children below could be replaced with just a
-        few lines:
-
-            for index_child in range(len(node.children)):
-                old_indexes = node.new_to_old_classes[index_child]
-                class_probs[:,old_indexes] *= output[:,index_child][:,None]
-
-        However, we collect all indices first, so that only one tensor operation
-        is run.
-        """
-        class_probs = torch.ones((outputs.size(0), num_classes)).to(outputs.device)
-        for node in nodes:
-            output = cls.get_output_sub(outputs, node, weighted_average)
-            output = F.softmax(output, dim=1)
-
-            old_indices, new_indices = [], []
-            for index_child in range(len(node.children)):
-                old = node.new_to_old_classes[index_child]
-                old_indices.extend(old)
-                new_indices.extend([index_child] * len(old))
-
-            assert len(set(old_indices)) == len(old_indices), (
-                'All old indices must be unique in order for this operation '
-                'to be correct.'
-            )
-            class_probs[:,old_indices] *= output[:,new_indices]
-        return class_probs

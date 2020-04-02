@@ -1,14 +1,9 @@
-from nbdt.graph import get_root, get_wnids, synset_to_name, wnid_to_name
-from nbdt.utils import (
-    set_np_printoptions, dataset_to_default_path_graph,
-    dataset_to_default_path_wnids
+from nbdt.utils import set_np_printoptions
+from nbdt.model import (
+    SoftEmbeddedDecisionRules as SoftRules,
+    HardEmbeddedDecisionRules as HardRules
 )
-from nbdt.data.custom import Node, dataset_to_dummy_classes
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
-import csv
 
 
 __all__ = names = (
@@ -135,103 +130,18 @@ class HardEmbeddedDecisionRules(Noop):
 
     name = 'NBDT-Hard'
 
-    def __init__(self,
-            dataset,
-            path_graph=None,
-            path_wnids=None,
-            classes=(),
-            weighted_average=False):
-
-        if not path_graph:
-            path_graph = dataset_to_default_path_graph(dataset)
-        if not path_wnids:
-            path_wnids = dataset_to_default_path_wnids(dataset)
-        if not classes:
-            classes = dataset_to_dummy_classes(dataset)
-        super().__init__(classes)
-        assert all([dataset, path_graph, path_wnids, classes])
-
-        self.nodes = Node.get_nodes(path_graph, path_wnids, classes)
-        self.G = self.nodes[0].G
-        self.wnid_to_node = {node.wnid: node for node in self.nodes}
-
-        self.wnids = get_wnids(path_wnids)
-        self.wnid_to_class = {wnid: cls for wnid, cls in zip(self.wnids, self.classes)}
-
-        self.weighted_average = weighted_average
-        self.correct = 0
-        self.total = 0
-
-        self.I = torch.eye(len(classes))
-
-    def forward_with_decisions(self, outputs):
-        from nbdt.model import HardNBDT
-        wnid_to_pred_selector = {}
-        for node in self.nodes:
-            selector, outputs_sub, _ = HardNBDT.inference(
-                node, outputs, (), self.weighted_average)
-            if not any(selector):
-                continue
-            _, preds_sub = torch.max(outputs_sub, dim=1)
-            preds_sub = list(map(int, preds_sub.cpu()))
-            probs_sub = F.softmax(outputs_sub, dim=1).detach().cpu()
-            wnid_to_pred_selector[node.wnid] = (preds_sub, probs_sub, selector)
-
-        _, predicted = outputs.max(1)
-
-        n_samples = outputs.size(0)
-        n_classes = outputs.size(1)
-        predicted, decisions = self.traverse_tree(
-            predicted, wnid_to_pred_selector, n_samples)
-
-        if self.I.device != outputs.device:
-            self.I = self.I.to(outputs.device)
-
-        outputs = self.I[predicted]
-        outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
-        return outputs, decisions
-
-    def forward(self, outputs):
-        outputs, _ = self.forward_with_decisions(outputs)
-        return outputs
+    def __init__(self, *args, Rules=HardRules, **kwargs):
+        self.rules = Rules(*args, **kwargs)
 
     def update_batch(self, outputs, targets):
         super().update_batch(outputs, targets)
-        predicted = self.forward(outputs).max(1)[1].to(targets.device)
+        predicted = self.rules.forward(outputs).max(1)[1].to(targets.device)
 
         n_samples = outputs.size(0)
         self.total += n_samples
         self.correct += (predicted == targets).sum().item()
         accuracy = round(self.correct / float(self.total), 4) * 100
         return f'{self.name}: {accuracy}%'
-
-    def traverse_tree(self, _, wnid_to_pred_selector, n_samples):
-        wnid_root = get_root(self.G)
-        node_root = self.wnid_to_node[wnid_root]
-        decisions = []
-        preds = []
-        for index in range(n_samples):
-            decision = [{'node': node_root, 'name': 'root', 'prob': 1}]
-            wnid, node = wnid_root, node_root
-            while node is not None:
-                if node.wnid not in wnid_to_pred_selector:
-                    wnid = node = None
-                    break
-                pred_sub, prob_sub, selector = wnid_to_pred_selector[node.wnid]
-                if not selector[index]:  # we took a wrong turn. wrong.
-                    wnid = node = None
-                    break
-                index_new = sum(selector[:index + 1]) - 1
-                index_child = pred_sub[index_new]
-                prob_child = float(prob_sub[index_new][index_child])
-                wnid = node.children[index_child]
-                node = self.wnid_to_node.get(wnid, None)
-                decision.append({'node': node, 'name': wnid_to_name(wnid), 'prob': prob_child})
-            cls = self.wnid_to_class.get(wnid, None)
-            pred = -1 if cls is None else self.classes.index(cls)
-            preds.append(pred)
-            decisions.append(decision)
-        return torch.Tensor(preds).long(), decisions
 
     def end_test(self, epoch):
         super().end_test(epoch)
@@ -244,24 +154,5 @@ class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
 
     name = 'NBDT-Soft'
 
-    def forward_with_decisions(self, outputs):
-        outputs = self.forward(outputs)
-        _, predicted = outputs.max(1)
-
-        decisions = []
-        node = self.nodes[0]
-        leaf_to_path_nodes = Node.get_leaf_to_path(self.nodes)
-        for index, prediction in enumerate(predicted):
-            leaf = node.wnids[prediction]
-            decision = leaf_to_path_nodes[leaf]
-            for justification in decision:
-                justification['prob'] = -1  # TODO(alvin): fill in prob
-            decisions.append(decision)
-        return outputs, decisions
-
-    def forward(self, outputs):
-        from nbdt.model import SoftNBDT
-        outputs = SoftNBDT.inference(
-            self.nodes, outputs, self.num_classes, self.weighted_average)
-        outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
-        return outputs
+    def __init__(self, *args, Rules=None, **kwargs):
+        super().__init__(*args, Rules=SoftRules, **kwargs)
