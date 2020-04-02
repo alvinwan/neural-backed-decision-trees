@@ -6,7 +6,7 @@ from collections import defaultdict
 from nbdt.utils import DATASET_TO_NUM_CLASSES, DATASETS
 from collections import defaultdict
 from nbdt.graph import get_wnids, read_graph, get_leaves, get_non_leaves, \
-    get_leaf_weights, FakeSynset, get_leaf_to_path, wnid_to_synset, wnid_to_name
+    FakeSynset, get_leaf_to_path, wnid_to_synset, wnid_to_name
 from . import imagenet
 import torch.nn as nn
 import random
@@ -67,12 +67,6 @@ class Node:
         self.leaves = list(self.get_leaves())
         self.num_leaves = len(self.leaves)
 
-        # I'm sure leaf_weights and output_weights could be recursive/share
-        # computation and be more efficient.... buuuuut this is only run once
-        # ANYways
-        self.leaf_weights = get_leaf_weights(self.G, self.wnid)
-        self.new_to_leaf_weights = self.get_new_to_leaf_weights()
-
         self._probabilities = None
         self._class_weights = None
 
@@ -93,22 +87,6 @@ class Node:
 
     def is_root(self):
         return len(self.get_parents()) == 0
-
-    def move_leaf_weights_to(self, device):
-        for new_index in self.new_to_leaf_weights:
-            self.new_to_leaf_weights[new_index] = self.new_to_leaf_weights[new_index].to(device)
-
-    def get_new_to_leaf_weights(self):
-        new_to_leaf_weights = {}
-        for new_index, child in enumerate(self.get_children()):
-            leaf_weights = [0] * self.num_original_classes
-            for leaf, weight in self.leaf_weights.items():
-                old_index = self.wnid_to_class_index(leaf)
-                leaf_weights[old_index] = weight
-            assert abs(sum(leaf_weights) - 1) < 1e-3, \
-                'Leaf weights do not sum to 1.'
-            new_to_leaf_weights[new_index] = torch.Tensor(leaf_weights)
-        return new_to_leaf_weights
 
     def build_class_mappings(self):
         old_to_new = defaultdict(lambda: [])

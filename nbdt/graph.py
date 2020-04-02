@@ -241,25 +241,6 @@ def get_leaf_to_path(G):
     return leaf_to_path
 
 
-def get_leaf_weights(G, node, weight=1):
-    """
-    This is rather specific to our needs. Basically, a node with k children
-    splits 'weight' 1/k to each child. This continutes recursively until the
-    leaves. A tree with L different leaves may not distribute 1/L weight to
-    each class.
-    """
-    if is_leaf(G, node):
-        return {node: weight}
-    num_children = len(G.succ[node])
-    weight_per_child = weight / float(num_children)
-
-    weights = {}
-    for child in G.succ[node]:
-        for wnid, weight in get_leaf_weights(G, child, weight_per_child).items():
-            weights[wnid] = weights.get(wnid, 0) + weight
-    return weights
-
-
 def set_node_label(G, synset):
     nx.set_node_attributes(G, {
         synset_to_wnid(synset): synset_to_name(synset)

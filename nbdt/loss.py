@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from collections import defaultdict
 from nbdt.data.custom import Node, dataset_to_dummy_classes
-from nbdt.model import HardNBDT, SoftNBDT
+from nbdt.model import HardEmbeddedDecisionRules, SoftEmbeddedDecisionRules
 from nbdt.utils import (
     Colors, dataset_to_default_path_graph, dataset_to_default_path_wnids,
     hierarchy_to_path_graph
@@ -12,7 +12,7 @@ from nbdt.utils import (
 __all__ = names = ('HardTreeSupLoss', 'SoftTreeSupLoss', 'CrossEntropyLoss')
 keys = (
     'path_graph', 'path_wnids', 'max_leaves_supervised',
-    'min_leaves_supervised', 'weighted_average', 'tree_supervision_weight',
+    'min_leaves_supervised', 'tree_supervision_weight',
     'classes', 'dataset', 'criterion'
 )
 
@@ -61,7 +61,6 @@ class TreeSupLoss(nn.Module):
     accepts_max_leaves_supervised = True
     accepts_min_leaves_supervised = True
     accepts_tree_supervision_weight = True
-    accepts_weighted_average = True
     accepts_classes = lambda trainset, **kwargs: trainset.classes
 
     def __init__(self,
@@ -93,8 +92,7 @@ class TreeSupLoss(nn.Module):
             classes,
             max_leaves_supervised=-1,
             min_leaves_supervised=-1,
-            tree_supervision_weight=1.,
-            weighted_average=False):
+            tree_supervision_weight=1.):
         """
         Extra init method makes clear which arguments are finally necessary for
         this class to function. The constructor for this class may generate
@@ -106,7 +104,6 @@ class TreeSupLoss(nn.Module):
         self.max_leaves_supervised = max_leaves_supervised
         self.min_leaves_supervised = min_leaves_supervised
         self.tree_supervision_weight = tree_supervision_weight
-        self.weighted_average = weighted_average
         self.criterion = criterion
 
     @staticmethod
@@ -171,8 +168,8 @@ class HardTreeSupLoss(TreeSupLoss):
                     node.num_leaves < self.min_leaves_supervised:
                 continue
 
-            _, outputs_sub, targets_sub = HardNBDT.inference(
-                node, outputs, targets_ints, self.weighted_average)
+            _, outputs_sub, targets_sub = HardEmbeddedDecisionRules.inference(
+                node, outputs, targets_ints)
 
             key = node.num_classes
             assert outputs_sub.size(0) == len(targets_sub)
@@ -197,7 +194,7 @@ class SoftTreeSupLoss(HardTreeSupLoss):
         self.assert_output_not_nbdt(outputs)
 
         loss = self.criterion(outputs, targets)
-        bayesian_outputs = SoftNBDT.inference(
-            self.nodes, outputs, self.num_classes, self.weighted_average)
+        bayesian_outputs = SoftEmbeddedDecisionRules.inference(
+            self.nodes, outputs, self.num_classes)
         loss += self.criterion(bayesian_outputs, targets) * self.tree_supervision_weight
         return loss

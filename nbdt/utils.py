@@ -243,7 +243,7 @@ def generate_fname(dataset, arch, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
         include_classes=(), num_samples=0, max_leaves_supervised=-1,
         min_leaves_supervised=-1, tree_supervision_weight=0.5,
-        weighted_average=False, fine_tune=False, loss='CrossEntropyLoss',
+        fine_tune=False, loss='CrossEntropyLoss',
         **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
@@ -272,6 +272,4 @@ def generate_fname(dataset, arch, path_graph, wnid=None, name='',
             fname += f'-mnls{min_leaves_supervised}'
         if tree_supervision_weight is not None and tree_supervision_weight != 1:
             fname += f'-tsw{tree_supervision_weight}'
-        if weighted_average:
-            fname += '-weighted'
     return fname

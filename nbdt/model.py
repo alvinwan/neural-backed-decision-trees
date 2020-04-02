@@ -41,8 +41,7 @@ class EmbeddedDecisionRules(nn.Module):
             dataset,
             path_graph=None,
             path_wnids=None,
-            classes=(),
-            weighted_average=False):
+            classes=()):
 
         if not path_graph:
             path_graph = dataset_to_default_path_graph(dataset)
@@ -63,32 +62,23 @@ class EmbeddedDecisionRules(nn.Module):
         self.wnids = get_wnids(path_wnids)
         self.wnid_to_class = {wnid: cls for wnid, cls in zip(self.wnids, self.classes)}
 
-        self.weighted_average = weighted_average
         self.correct = 0
         self.total = 0
 
         self.I = torch.eye(len(classes))
 
     @staticmethod
-    def get_output_sub(_outputs, node, weighted_average=False):
-        if weighted_average:
-            node.move_leaf_weights_to(_outputs.device)
-
-        weights = [
-            node.new_to_leaf_weights[new_label] if weighted_average else 1
-            for new_label in range(node.num_classes)
-        ]
+    def get_output_sub(_outputs, node):
         return torch.stack([
-            (_outputs * weight).T
-            [node.new_to_old_classes[new_label]].mean(dim=0)
-            for new_label, weight in zip(range(node.num_classes), weights)
+            _outputs.T[node.new_to_old_classes[new_label]].mean(dim=0)
+            for new_label in zip(range(node.num_classes))
         ]).T
 
 
 class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
 
     @classmethod
-    def inference(cls, node, outputs, targets, weighted_average=False):
+    def inference(cls, node, outputs, targets):
         _outputs = outputs
         targets_sub = targets
         selector = [True] * outputs.size(0)
@@ -102,15 +92,13 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
             if _outputs.size(0) == 0:
                 return selector, _outputs[:, :node.num_classes], targets_sub
 
-        outputs_sub = cls.get_output_sub(_outputs, node, weighted_average)
+        outputs_sub = cls.get_output_sub(_outputs, node)
         return selector, outputs_sub, targets_sub
 
     def forward_with_decisions(self, outputs):
-        from nbdt.model import HardNBDT
         wnid_to_pred_selector = {}
         for node in self.nodes:
-            selector, outputs_sub, _ = self.inference(
-                node, outputs, (), self.weighted_average)
+            selector, outputs_sub, _ = self.inference(node, outputs, ())
             if not any(selector):
                 continue
             _, preds_sub = torch.max(outputs_sub, dim=1)
@@ -168,7 +156,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
 class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
 
     @classmethod
-    def inference(cls, nodes, outputs, num_classes, weighted_average=False):
+    def inference(cls, nodes, outputs, num_classes):
         """
         In theory, the loop over children below could be replaced with just a
         few lines:
@@ -182,7 +170,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         """
         class_probs = torch.ones((outputs.size(0), num_classes)).to(outputs.device)
         for node in nodes:
-            output = cls.get_output_sub(outputs, node, weighted_average)
+            output = cls.get_output_sub(outputs, node)
             output = F.softmax(output, dim=1)
 
             old_indices, new_indices = [], []
@@ -214,8 +202,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         return outputs, decisions
 
     def forward(self, outputs):
-        outputs = self.inference(
-            self.nodes, outputs, self.num_classes, self.weighted_average)
+        outputs = self.inference(self.nodes, outputs, self.num_classes)
         outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return outputs
 

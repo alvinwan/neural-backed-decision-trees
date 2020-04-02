@@ -9,7 +9,7 @@ import numpy as np
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules')
-keys = ('path_graph', 'path_wnids', 'weighted_average', 'classes', 'dataset')
+keys = ('path_graph', 'path_wnids', 'classes', 'dataset')
 
 
 def add_arguments(parser):
@@ -126,7 +126,6 @@ class HardEmbeddedDecisionRules(Noop):
     accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
     accepts_path_graph = True
     accepts_path_wnids = True
-    accepts_weighted_average = True
 
     name = 'NBDT-Hard'
 
