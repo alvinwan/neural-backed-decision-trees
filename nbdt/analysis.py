@@ -3,7 +3,6 @@ from nbdt.utils import (
     set_np_printoptions, dataset_to_default_path_graph,
     dataset_to_default_path_wnids
 )
-from nbdt.loss import HardTreeSupLoss, SoftTreeSupLoss
 from nbdt.data.custom import Node, dataset_to_dummy_classes
 import torch
 import torch.nn as nn
@@ -166,9 +165,10 @@ class HardEmbeddedDecisionRules(Noop):
         self.I = torch.eye(len(classes))
 
     def forward_with_decisions(self, outputs):
+        from nbdt.model import HardNBDT
         wnid_to_pred_selector = {}
         for node in self.nodes:
-            selector, outputs_sub, _ = HardTreeSupLoss.inference(
+            selector, outputs_sub, _ = HardNBDT.inference(
                 node, outputs, (), self.weighted_average)
             if not any(selector):
                 continue
@@ -260,7 +260,8 @@ class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
         return outputs, decisions
 
     def forward(self, outputs):
-        outputs = SoftTreeSupLoss.inference(
+        from nbdt.model import SoftNBDT
+        outputs = SoftNBDT.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)
         outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return outputs

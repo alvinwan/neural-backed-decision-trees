@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from collections import defaultdict
 from nbdt.data.custom import Node, dataset_to_dummy_classes
+from nbdt.model import HardNBDT, SoftNBDT
 from nbdt.utils import (
     Colors, dataset_to_default_path_graph, dataset_to_default_path_wnids,
     hierarchy_to_path_graph
@@ -170,7 +171,7 @@ class HardTreeSupLoss(TreeSupLoss):
                     node.num_leaves < self.min_leaves_supervised:
                 continue
 
-            _, outputs_sub, targets_sub = HardTreeSupLoss.inference(
+            _, outputs_sub, targets_sub = HardNBDT.inference(
                 node, outputs, targets_ints, self.weighted_average)
 
             key = node.num_classes
@@ -189,39 +190,6 @@ class HardTreeSupLoss(TreeSupLoss):
             loss += self.criterion(outputs_sub, targets_sub) * fraction
         return loss
 
-    @classmethod
-    def inference(cls, node, outputs, targets, weighted_average=False):
-        _outputs = outputs
-        targets_sub = targets
-        selector = [True] * outputs.size(0)
-
-        if targets:
-            classes = [node.old_to_new_classes[int(t)] for t in targets]
-            selector = [bool(cls) for cls in classes]
-            targets_sub = [cls[0] for cls in classes if cls] if targets else None
-
-            _outputs = outputs[selector]
-            if _outputs.size(0) == 0:
-                return selector, _outputs[:, :node.num_classes], targets_sub
-
-        outputs_sub = cls.get_output_sub(_outputs, node, weighted_average)
-        return selector, outputs_sub, targets_sub
-
-    @staticmethod
-    def get_output_sub(_outputs, node, weighted_average=False):
-        if weighted_average:
-            node.move_leaf_weights_to(_outputs.device)
-
-        weights = [
-            node.new_to_leaf_weights[new_label] if weighted_average else 1
-            for new_label in range(node.num_classes)
-        ]
-        return torch.stack([
-            (_outputs * weight).T
-            [node.new_to_old_classes[new_label]].mean(dim=0)
-            for new_label, weight in zip(range(node.num_classes), weights)
-        ]).T
-
 
 class SoftTreeSupLoss(HardTreeSupLoss):
 
@@ -229,38 +197,7 @@ class SoftTreeSupLoss(HardTreeSupLoss):
         self.assert_output_not_nbdt(outputs)
 
         loss = self.criterion(outputs, targets)
-        bayesian_outputs = SoftTreeSupLoss.inference(
+        bayesian_outputs = SoftNBDT.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)
         loss += self.criterion(bayesian_outputs, targets) * self.tree_supervision_weight
         return loss
-
-    @classmethod
-    def inference(cls, nodes, outputs, num_classes, weighted_average=False):
-        """
-        In theory, the loop over children below could be replaced with just a
-        few lines:
-
-            for index_child in range(len(node.children)):
-                old_indexes = node.new_to_old_classes[index_child]
-                class_probs[:,old_indexes] *= output[:,index_child][:,None]
-
-        However, we collect all indices first, so that only one tensor operation
-        is run.
-        """
-        class_probs = torch.ones((outputs.size(0), num_classes)).to(outputs.device)
-        for node in nodes:
-            output = cls.get_output_sub(outputs, node, weighted_average)
-            output = F.softmax(output, dim=1)
-
-            old_indices, new_indices = [], []
-            for index_child in range(len(node.children)):
-                old = node.new_to_old_classes[index_child]
-                old_indices.extend(old)
-                new_indices.extend([index_child] * len(old))
-
-            assert len(set(old_indices)) == len(old_indices), (
-                'All old indices must be unique in order for this operation '
-                'to be correct.'
-            )
-            class_probs[:,old_indices] *= output[:,new_indices]
-        return class_probs
