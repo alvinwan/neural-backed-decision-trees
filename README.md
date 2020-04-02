@@ -443,12 +443,12 @@ Without any modifications to `main.py`, you can use any image classification dat
 If you find this work useful for your research, please cite our [paper](http://nbdt.alvinwan.com/paper/):
 
 ```
-@article{wan2020nbdt,
-   title={NBDT: Neural-Backed Decision Trees},
-   author={Alvin Wan and Lisa Dunlap and Daniel Ho and Jihan Yin and Scott Lee and Henry Jin and Suzanne Petryk and Sarah Adel Bargal and Joseph E. Gonzalez},
-   year={2020},
-   eprint={},
-   archivePrefix={arXiv},
-   primaryClass={cs.CV}
+@misc{nbdt,
+    title={NBDT: Neural-Backed Decision Trees},
+    author={Alvin Wan and Lisa Dunlap and Daniel Ho and Jihan Yin and Scott Lee and Henry Jin and Suzanne Petryk and Sarah Adel Bargal and Joseph E. Gonzalez},
+    year={2020},
+    eprint={2004.00221},
+    archivePrefix={arXiv},
+    primaryClass={cs.CV}
 }
 ```
