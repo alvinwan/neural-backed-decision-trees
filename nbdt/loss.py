@@ -178,6 +178,6 @@ class SoftTreeSupLoss(TreeSupLoss):
         self.assert_output_not_nbdt(outputs)
 
         loss = self.criterion(outputs, targets)
-        bayesian_outputs = self.rules(self.nodes, outputs, self.num_classes)
+        bayesian_outputs = self.rules(outputs)
         loss += self.criterion(bayesian_outputs, targets) * self.tree_supervision_weight
         return loss
