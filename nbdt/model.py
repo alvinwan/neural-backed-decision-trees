@@ -35,7 +35,7 @@ model_urls = {
 #########
 
 
-class HardEmbeddedDecisionRules(nn.Module):
+class EmbeddedDecisionRules(nn.Module):
 
     def __init__(self,
             dataset,
@@ -54,6 +54,8 @@ class HardEmbeddedDecisionRules(nn.Module):
         assert all([dataset, path_graph, path_wnids, classes])
 
         self.classes = classes
+        self.num_classes = len(classes)
+
         self.nodes = Node.get_nodes(path_graph, path_wnids, classes)
         self.G = self.nodes[0].G
         self.wnid_to_node = {node.wnid: node for node in self.nodes}
@@ -66,6 +68,24 @@ class HardEmbeddedDecisionRules(nn.Module):
         self.total = 0
 
         self.I = torch.eye(len(classes))
+
+    @staticmethod
+    def get_output_sub(_outputs, node, weighted_average=False):
+        if weighted_average:
+            node.move_leaf_weights_to(_outputs.device)
+
+        weights = [
+            node.new_to_leaf_weights[new_label] if weighted_average else 1
+            for new_label in range(node.num_classes)
+        ]
+        return torch.stack([
+            (_outputs * weight).T
+            [node.new_to_old_classes[new_label]].mean(dim=0)
+            for new_label, weight in zip(range(node.num_classes), weights)
+        ]).T
+
+
+class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
 
     @classmethod
     def inference(cls, node, outputs, targets, weighted_average=False):
@@ -89,7 +109,7 @@ class HardEmbeddedDecisionRules(nn.Module):
         from nbdt.model import HardNBDT
         wnid_to_pred_selector = {}
         for node in self.nodes:
-            selector, outputs_sub, _ = HardNBDT.inference(
+            selector, outputs_sub, _ = self.inference(
                 node, outputs, (), self.weighted_average)
             if not any(selector):
                 continue
@@ -145,7 +165,7 @@ class HardEmbeddedDecisionRules(nn.Module):
         return torch.Tensor(preds).long(), decisions
 
 
-class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
+class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
 
     @classmethod
     def inference(cls, nodes, outputs, num_classes, weighted_average=False):
@@ -193,7 +213,7 @@ class SoftEmbeddedDecisionRules(HardEmbeddedDecisionRules):
             decisions.append(decision)
         return outputs, decisions
 
-    def forward(self, x):
+    def forward(self, outputs):
         outputs = self.inference(
             self.nodes, outputs, self.num_classes, self.weighted_average)
         outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
@@ -282,25 +302,6 @@ class NBDT(nn.Module):
         x = self.model(x)
         x, decisions = self.rules.forward_with_decisions(x)
         return x, decisions
-
-    ########
-    # NBDT #
-    ########
-
-    @staticmethod
-    def get_output_sub(_outputs, node, weighted_average=False):
-        if weighted_average:
-            node.move_leaf_weights_to(_outputs.device)
-
-        weights = [
-            node.new_to_leaf_weights[new_label] if weighted_average else 1
-            for new_label in range(node.num_classes)
-        ]
-        return torch.stack([
-            (_outputs * weight).T
-            [node.new_to_old_classes[new_label]].mean(dim=0)
-            for new_label, weight in zip(range(node.num_classes), weights)
-        ]).T
 
 
 class HardNBDT(NBDT):
