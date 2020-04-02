@@ -58,6 +58,7 @@ class TreeSupLoss(nn.Module):
             path_wnids=None,
             classes=None,
             hierarchy=None,
+            Rules=HardEmbeddedDecisionRules,
             **kwargs):
         super().__init__()
 
@@ -70,7 +71,8 @@ class TreeSupLoss(nn.Module):
         if dataset and not classes:
             classes = dataset_to_dummy_classes(dataset)
 
-        self.init(dataset, criterion, path_graph, path_wnids, classes, **kwargs)
+        self.init(dataset, criterion, path_graph, path_wnids, classes,
+            Rules=Rules, **kwargs)
 
     def init(self,
             dataset,
@@ -78,6 +80,7 @@ class TreeSupLoss(nn.Module):
             path_graph,
             path_wnids,
             classes,
+            Rules,
             tree_supervision_weight=1.):
         """
         Extra init method makes clear which arguments are finally necessary for
@@ -87,6 +90,7 @@ class TreeSupLoss(nn.Module):
         self.dataset = dataset
         self.num_classes = len(classes)
         self.nodes = Node.get_nodes(path_graph, path_wnids, classes)
+        self.rules = Rules(dataset, path_graph, path_wnids, classes)
         self.tree_supervision_weight = tree_supervision_weight
         self.criterion = criterion
 
@@ -165,13 +169,15 @@ class HardTreeSupLoss(TreeSupLoss):
         return loss
 
 
-class SoftTreeSupLoss(HardTreeSupLoss):
+class SoftTreeSupLoss(TreeSupLoss):
+
+    def __init__(self, *args, Rules=None, **kwargs):
+        super().__init__(*args, Rules=SoftEmbeddedDecisionRules, **kwargs)
 
     def forward(self, outputs, targets):
         self.assert_output_not_nbdt(outputs)
 
         loss = self.criterion(outputs, targets)
-        bayesian_outputs = SoftEmbeddedDecisionRules.inference(
-            self.nodes, outputs, self.num_classes)
+        bayesian_outputs = self.rules(self.nodes, outputs, self.num_classes)
         loss += self.criterion(bayesian_outputs, targets) * self.tree_supervision_weight
         return loss

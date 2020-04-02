@@ -53,7 +53,6 @@ class EmbeddedDecisionRules(nn.Module):
         assert all([dataset, path_graph, path_wnids, classes])
 
         self.classes = classes
-        self.num_classes = len(classes)
 
         self.nodes = Node.get_nodes(path_graph, path_wnids, classes)
         self.G = self.nodes[0].G
@@ -123,8 +122,8 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         on. The outputs have been detached from the computation graph.
         """
         # move all to CPU, detach from computation graph
-        example_output = wnid_to_outputs[nodes[0].wnid]
-        n_samples = int(example_output['logits'].size(0))
+        example = wnid_to_outputs[nodes[0].wnid]
+        n_samples = int(example['logits'].size(0))
 
         for wnid in tuple(wnid_to_outputs.keys()):
             outputs = wnid_to_outputs[wnid]
@@ -156,13 +155,6 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
             decisions.append(decision)
         return torch.Tensor(preds).long(), decisions
 
-    @classmethod
-    def inference(cls, nodes, outputs, classes, wnid_to_class):
-        wnid_to_outputs = cls.get_all_node_outputs(outputs, nodes)
-        predicted, decisions = cls.traverse_tree(
-            wnid_to_outputs, nodes, wnid_to_class, classes)
-        return predicted, decisions
-
     def predicted_to_logits(self, predicted):
         """Convert predicted classes to one-hot logits."""
         if self.I.device != predicted.device:
@@ -170,8 +162,9 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         return self.I[predicted]
 
     def forward_with_decisions(self, outputs):
-        predicted, decisions = self.inference(
-            self.nodes, outputs, self.classes, self.wnid_to_class)
+        wnid_to_outputs = self.get_all_node_outputs(outputs, self.nodes)
+        predicted, decisions = self.traverse_tree(
+            wnid_to_outputs, self.nodes, self.wnid_to_class, self.classes)
         logits = self.predicted_to_logits(predicted)
         logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return logits, decisions
@@ -184,9 +177,8 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
 class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
 
     @classmethod
-    def inference(cls, nodes, outputs, num_classes):
-        """Run soft embedded decision rules.
-
+    def traverse_tree(cls, wnid_to_outputs, nodes):
+        """
         In theory, the loop over children below could be replaced with just a
         few lines:
 
@@ -199,8 +191,11 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         ordering is determined by the original ordering of the provided logits.
         (I think. Need to check nbdt.data.custom.Node)
         """
-        class_probs = torch.ones((outputs.size(0), num_classes)).to(outputs.device)
-        wnid_to_outputs = cls.get_all_node_outputs(outputs, nodes)
+        example = wnid_to_outputs[nodes[0].wnid]
+        num_samples = example['logits'].size(0)
+        num_classes = len(nodes[0].original_classes)
+        device = example['logits'].device
+        class_probs = torch.ones((num_samples, num_classes)).to(device)
 
         for node in nodes:
             outputs = wnid_to_outputs[node.wnid]
@@ -234,7 +229,8 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         return outputs, decisions
 
     def forward(self, outputs):
-        logits = self.inference(self.nodes, outputs, self.num_classes)
+        wnid_to_outputs = self.get_all_node_outputs(outputs, self.nodes)
+        logits = self.traverse_tree(wnid_to_outputs, self.nodes)
         logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return logits
 
@@ -314,7 +310,7 @@ class NBDT(nn.Module):
 
     def forward(self, x):
         x = self.model(x)
-        x = self.rules.forward(x)
+        x = self.rules(x)
         return x
 
     def forward_with_decisions(self, x):
