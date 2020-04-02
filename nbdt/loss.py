@@ -144,8 +144,9 @@ class HardTreeSupLoss(TreeSupLoss):
         targets_subs = defaultdict(lambda: [])
         targets_ints = [int(target) for target in targets.cpu().long()]
         for node in self.nodes:
-            _, outputs_sub, targets_sub = HardEmbeddedDecisionRules.inference(
-                node, outputs, targets_ints)
+            _, outputs_sub, targets_sub = \
+                HardEmbeddedDecisionRules.get_node_output_filtered(
+                    node, outputs, targets_ints)
 
             key = node.num_classes
             assert outputs_sub.size(0) == len(targets_sub)
