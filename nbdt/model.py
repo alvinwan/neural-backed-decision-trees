@@ -68,9 +68,13 @@ class EmbeddedDecisionRules(nn.Module):
         self.I = torch.eye(len(classes))
 
     @staticmethod
-    def get_output_sub(_outputs, node):
+    def get_node_output(outputs, node):
+        """Get output for a particular node
+
+        This `outputs` above are the output of the neural network.
+        """
         return torch.stack([
-            _outputs.T[node.new_to_old_classes[new_label]].mean(dim=0)
+            outputs.T[node.new_to_old_classes[new_label]].mean(dim=0)
             for new_label in zip(range(node.num_classes))
         ]).T
 
@@ -78,71 +82,55 @@ class EmbeddedDecisionRules(nn.Module):
 class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
 
     @classmethod
-    def inference(cls, node, outputs, targets):
-        _outputs = outputs
-        targets_sub = targets
-        selector = [True] * outputs.size(0)
+    def get_node_output_filtered(cls, node, outputs, targets):
+        """'Smarter' inference for a hard node.
 
-        if targets:
-            classes = [node.old_to_new_classes[int(t)] for t in targets]
-            selector = [bool(cls) for cls in classes]
-            targets_sub = [cls[0] for cls in classes if cls] if targets else None
+        If you have targets for the node, you can selectively perform inference,
+        only for nodes where the label of a sample is well-defined.
+        """
+        classes = [node.old_to_new_classes[int(t)] for t in targets]
+        selector = [bool(cls) for cls in classes]
+        targets_sub = [cls[0] for cls in classes if cls]
 
-            _outputs = outputs[selector]
-            if _outputs.size(0) == 0:
-                return selector, _outputs[:, :node.num_classes], targets_sub
+        outputs = outputs[selector]
+        if outputs.size(0) == 0:
+            return selector, outputs[:, :node.num_classes], targets_sub
 
-        outputs_sub = cls.get_output_sub(_outputs, node)
+        outputs_sub = cls.get_node_output(outputs, node)
         return selector, outputs_sub, targets_sub
 
-    def forward_with_decisions(self, outputs):
-        wnid_to_pred_selector = {}
-        for node in self.nodes:
-            selector, outputs_sub, _ = self.inference(node, outputs, ())
-            if not any(selector):
-                continue
+    @classmethod
+    def inference(cls, outputs, nodes):
+        """Run hard embedded decision rules.
+
+        Returns the output for *every single node.
+        """
+        wnid_to_pred_prob = {}
+        for node in nodes:
+            outputs_sub = cls.get_node_output(outputs, node)
             _, preds_sub = torch.max(outputs_sub, dim=1)
             preds_sub = list(map(int, preds_sub.cpu()))
             probs_sub = F.softmax(outputs_sub, dim=1).detach().cpu()
-            wnid_to_pred_selector[node.wnid] = (preds_sub, probs_sub, selector)
+            wnid_to_pred_prob[node.wnid] = (preds_sub, probs_sub)
+        return wnid_to_pred_prob
 
-        _, predicted = outputs.max(1)
-
-        n_samples = outputs.size(0)
-        n_classes = outputs.size(1)
-        predicted, decisions = self.traverse_tree(
-            predicted, wnid_to_pred_selector, n_samples)
-
-        if self.I.device != outputs.device:
-            self.I = self.I.to(outputs.device)
-
-        outputs = self.I[predicted]
-        outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
-        return outputs, decisions
-
-    def forward(self, outputs):
-        outputs, _ = self.forward_with_decisions(outputs)
-        return outputs
-
-    def traverse_tree(self, _, wnid_to_pred_selector, n_samples):
+    def traverse_tree(self, wnid_to_pred_prob, n_samples):
+        """Convert node outputs to final prediction"""
         wnid_root = get_root(self.G)
         node_root = self.wnid_to_node[wnid_root]
+
         decisions = []
         preds = []
         for index in range(n_samples):
             decision = [{'node': node_root, 'name': 'root', 'prob': 1}]
             wnid, node = wnid_root, node_root
             while node is not None:
-                if node.wnid not in wnid_to_pred_selector:
+                if node.wnid not in wnid_to_pred_prob:
                     wnid = node = None
                     break
-                pred_sub, prob_sub, selector = wnid_to_pred_selector[node.wnid]
-                if not selector[index]:  # we took a wrong turn. wrong.
-                    wnid = node = None
-                    break
-                index_new = sum(selector[:index + 1]) - 1
-                index_child = pred_sub[index_new]
-                prob_child = float(prob_sub[index_new][index_child])
+                pred_sub, prob_sub = wnid_to_pred_prob[node.wnid]
+                index_child = pred_sub[index]
+                prob_child = float(prob_sub[index][index_child])
                 wnid = node.children[index_child]
                 node = self.wnid_to_node.get(wnid, None)
                 decision.append({'node': node, 'name': wnid_to_name(wnid), 'prob': prob_child})
@@ -152,12 +140,33 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
             decisions.append(decision)
         return torch.Tensor(preds).long(), decisions
 
+    def predicted_to_logits(self, predicted):
+        """Convert predicted classes to one-hot logits."""
+        if self.I.device != predicted.device:
+            self.I = self.I.to(predicted.device)
+        return self.I[predicted]
+
+    def forward_with_decisions(self, outputs):
+        wnid_to_pred_prob = self.inference(outputs, self.nodes)
+
+        n_samples = outputs.size(0)
+        predicted, decisions = self.traverse_tree(wnid_to_pred_prob, n_samples)
+
+        outputs = self.predicted_to_logits(predicted)
+        outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
+        return outputs, decisions
+
+    def forward(self, outputs):
+        outputs, _ = self.forward_with_decisions(outputs)
+        return outputs
+
 
 class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
 
     @classmethod
     def inference(cls, nodes, outputs, num_classes):
-        """
+        """Run soft embedded decision rules.
+
         In theory, the loop over children below could be replaced with just a
         few lines:
 
@@ -166,11 +175,13 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
                 class_probs[:,old_indexes] *= output[:,index_child][:,None]
 
         However, we collect all indices first, so that only one tensor operation
-        is run.
+        is run. The output is a single distribution over all leaves. The
+        ordering is determined by the original ordering of the provided logits.
+        (I think. Need to check nbdt.data.custom.Node)
         """
         class_probs = torch.ones((outputs.size(0), num_classes)).to(outputs.device)
         for node in nodes:
-            output = cls.get_output_sub(outputs, node)
+            output = cls.get_node_output(outputs, node)
             output = F.softmax(output, dim=1)
 
             old_indices, new_indices = [], []
