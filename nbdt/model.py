@@ -68,7 +68,7 @@ class EmbeddedDecisionRules(nn.Module):
         self.I = torch.eye(len(classes))
 
     @staticmethod
-    def get_node_output(outputs, node):
+    def get_node_logits(outputs, node):
         """Get output for a particular node
 
         This `outputs` above are the output of the neural network.
@@ -78,11 +78,27 @@ class EmbeddedDecisionRules(nn.Module):
             for new_label in zip(range(node.num_classes))
         ]).T
 
+    @classmethod
+    def get_all_node_outputs(cls, outputs, nodes):
+        """Run hard embedded decision rules.
+
+        Returns the output for *every single node.
+        """
+        wnid_to_outputs = {}
+        for node in nodes:
+            node_logits = cls.get_node_logits(outputs, node)
+            wnid_to_outputs[node.wnid] = {
+                'preds': torch.max(node_logits, dim=1)[1],
+                'probs': F.softmax(node_logits, dim=1),
+                'logits': node_logits
+            }
+        return wnid_to_outputs
+
 
 class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
 
     @classmethod
-    def get_node_output_filtered(cls, node, outputs, targets):
+    def get_node_logits_filtered(cls, node, outputs, targets):
         """'Smarter' inference for a hard node.
 
         If you have targets for the node, you can selectively perform inference,
@@ -96,26 +112,21 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         if outputs.size(0) == 0:
             return selector, outputs[:, :node.num_classes], targets_sub
 
-        outputs_sub = cls.get_node_output(outputs, node)
+        outputs_sub = cls.get_node_logits(outputs, node)
         return selector, outputs_sub, targets_sub
 
-    @classmethod
-    def inference(cls, outputs, nodes):
-        """Run hard embedded decision rules.
+    def traverse_tree(self, wnid_to_outputs, n_samples):
+        """Convert node outputs to final prediction.
 
-        Returns the output for *every single node.
+        Note that the prediction output for this function can NOT be trained
+        on. The outputs have been detached from the computation graph.
         """
-        wnid_to_pred_prob = {}
-        for node in nodes:
-            outputs_sub = cls.get_node_output(outputs, node)
-            _, preds_sub = torch.max(outputs_sub, dim=1)
-            preds_sub = list(map(int, preds_sub.cpu()))
-            probs_sub = F.softmax(outputs_sub, dim=1).detach().cpu()
-            wnid_to_pred_prob[node.wnid] = (preds_sub, probs_sub)
-        return wnid_to_pred_prob
+        # move all to CPU, detach from computation graph
+        for wnid in tuple(wnid_to_outputs.keys()):
+            outputs = wnid_to_outputs[wnid]
+            outputs['preds'] = list(map(int, outputs['preds'].cpu()))
+            outputs['probs'] = outputs['probs'].detach().cpu()
 
-    def traverse_tree(self, wnid_to_pred_prob, n_samples):
-        """Convert node outputs to final prediction"""
         wnid_root = get_root(self.G)
         node_root = self.wnid_to_node[wnid_root]
 
@@ -125,12 +136,12 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
             decision = [{'node': node_root, 'name': 'root', 'prob': 1}]
             wnid, node = wnid_root, node_root
             while node is not None:
-                if node.wnid not in wnid_to_pred_prob:
+                if node.wnid not in wnid_to_outputs:
                     wnid = node = None
                     break
-                pred_sub, prob_sub = wnid_to_pred_prob[node.wnid]
-                index_child = pred_sub[index]
-                prob_child = float(prob_sub[index][index_child])
+                outputs = wnid_to_outputs[node.wnid]
+                index_child = outputs['preds'][index]
+                prob_child = float(outputs['probs'][index][index_child])
                 wnid = node.children[index_child]
                 node = self.wnid_to_node.get(wnid, None)
                 decision.append({'node': node, 'name': wnid_to_name(wnid), 'prob': prob_child})
@@ -147,10 +158,10 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         return self.I[predicted]
 
     def forward_with_decisions(self, outputs):
-        wnid_to_pred_prob = self.inference(outputs, self.nodes)
+        wnid_to_outputs = self.get_all_node_outputs(outputs, self.nodes)
 
         n_samples = outputs.size(0)
-        predicted, decisions = self.traverse_tree(wnid_to_pred_prob, n_samples)
+        predicted, decisions = self.traverse_tree(wnid_to_outputs, n_samples)
 
         outputs = self.predicted_to_logits(predicted)
         outputs._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
@@ -180,9 +191,10 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         (I think. Need to check nbdt.data.custom.Node)
         """
         class_probs = torch.ones((outputs.size(0), num_classes)).to(outputs.device)
+        wnid_to_outputs = cls.get_all_node_outputs(outputs, nodes)
+
         for node in nodes:
-            output = cls.get_node_output(outputs, node)
-            output = F.softmax(output, dim=1)
+            outputs = wnid_to_outputs[node.wnid]
 
             old_indices, new_indices = [], []
             for index_child in range(len(node.children)):
@@ -194,7 +206,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
                 'All old indices must be unique in order for this operation '
                 'to be correct.'
             )
-            class_probs[:,old_indices] *= output[:,new_indices]
+            class_probs[:,old_indices] *= outputs['probs'][:,new_indices]
         return class_probs
 
     def forward_with_decisions(self, outputs):

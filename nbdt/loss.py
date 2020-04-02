@@ -145,7 +145,7 @@ class HardTreeSupLoss(TreeSupLoss):
         targets_ints = [int(target) for target in targets.cpu().long()]
         for node in self.nodes:
             _, outputs_sub, targets_sub = \
-                HardEmbeddedDecisionRules.get_node_output_filtered(
+                HardEmbeddedDecisionRules.get_node_logits_filtered(
                     node, outputs, targets_ints)
 
             key = node.num_classes
