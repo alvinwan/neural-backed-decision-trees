@@ -11,8 +11,7 @@ from nbdt.utils import (
 
 __all__ = names = ('HardTreeSupLoss', 'SoftTreeSupLoss', 'CrossEntropyLoss')
 keys = (
-    'path_graph', 'path_wnids', 'max_leaves_supervised',
-    'min_leaves_supervised', 'tree_supervision_weight',
+    'path_graph', 'path_wnids', 'tree_supervision_weight',
     'classes', 'dataset', 'criterion'
 )
 
@@ -22,15 +21,6 @@ def add_arguments(parser):
                         'generate --path-graph. --path-graph takes precedence.')
     parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
     parser.add_argument('--path-wnids', help='Path to wnids.txt file.')
-    parser.add_argument('--max-leaves-supervised', type=int, default=-1,
-                        help='Maximum number of leaves a node can have to '
-                        'contribute loss, in tree-supervised training.')
-    parser.add_argument('--min-leaves-supervised', type=int, default=-1,
-                        help='Minimum number of leaves a node must have to '
-                        'contribute loss, in tree-supervised training.')
-    parser.add_argument('--weighted-average', action='store_true',
-                        help='Use weighted average instead of average, for cluster '
-                        'centers.')
     parser.add_argument('--tree-supervision-weight', type=float, default=1,
                         help='Weight assigned to tree supervision losses')
 
@@ -58,8 +48,6 @@ class TreeSupLoss(nn.Module):
     accepts_path_graph = True
     accepts_path_wnids = True
     accepts_classes = True
-    accepts_max_leaves_supervised = True
-    accepts_min_leaves_supervised = True
     accepts_tree_supervision_weight = True
     accepts_classes = lambda trainset, **kwargs: trainset.classes
 
@@ -90,8 +78,6 @@ class TreeSupLoss(nn.Module):
             path_graph,
             path_wnids,
             classes,
-            max_leaves_supervised=-1,
-            min_leaves_supervised=-1,
             tree_supervision_weight=1.):
         """
         Extra init method makes clear which arguments are finally necessary for
@@ -101,8 +87,6 @@ class TreeSupLoss(nn.Module):
         self.dataset = dataset
         self.num_classes = len(classes)
         self.nodes = Node.get_nodes(path_graph, path_wnids, classes)
-        self.max_leaves_supervised = max_leaves_supervised
-        self.min_leaves_supervised = min_leaves_supervised
         self.tree_supervision_weight = tree_supervision_weight
         self.criterion = criterion
 
@@ -160,14 +144,6 @@ class HardTreeSupLoss(TreeSupLoss):
         targets_subs = defaultdict(lambda: [])
         targets_ints = [int(target) for target in targets.cpu().long()]
         for node in self.nodes:
-            if self.max_leaves_supervised > 0 and \
-                    node.num_leaves > self.max_leaves_supervised:
-                continue
-
-            if self.min_leaves_supervised > 0 and \
-                    node.num_leaves < self.min_leaves_supervised:
-                continue
-
             _, outputs_sub, targets_sub = HardEmbeddedDecisionRules.inference(
                 node, outputs, targets_ints)
 

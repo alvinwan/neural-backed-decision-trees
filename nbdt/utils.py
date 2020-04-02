@@ -241,8 +241,7 @@ def set_np_printoptions():
 
 def generate_fname(dataset, arch, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
-        include_classes=(), num_samples=0, max_leaves_supervised=-1,
-        min_leaves_supervised=-1, tree_supervision_weight=0.5,
+        include_classes=(), num_samples=0, tree_supervision_weight=0.5,
         fine_tune=False, loss='CrossEntropyLoss',
         **kwargs):
     fname = 'ckpt'
@@ -266,10 +265,6 @@ def generate_fname(dataset, arch, path_graph, wnid=None, name='',
         fname += f'-samples{num_samples}'
     if loss != 'CrossEntropyLoss':
         fname += f'-{loss}'
-        if max_leaves_supervised > 0:
-            fname += f'-mxls{max_leaves_supervised}'
-        if min_leaves_supervised > 0:
-            fname += f'-mnls{min_leaves_supervised}'
         if tree_supervision_weight is not None and tree_supervision_weight != 1:
             fname += f'-tsw{tree_supervision_weight}'
     return fname
