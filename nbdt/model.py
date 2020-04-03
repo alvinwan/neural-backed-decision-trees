@@ -74,7 +74,7 @@ class EmbeddedDecisionRules(nn.Module):
         """
         return torch.stack([
             outputs.T[node.new_to_old_classes[new_label]].mean(dim=0)
-            for new_label in zip(range(node.num_classes))
+            for new_label in range(node.num_classes)
         ]).T
 
     @classmethod
