@@ -438,6 +438,14 @@ Without any modifications to `main.py`, you can use any image classification dat
 > ```
 > , where `YourData` is your dataset name. If a provided class name from `YourData.classes` does not exist in the WordNet corpus, the script will generate a fake wnid. This does not affect training but subsequent analysis scripts will be unable to provide WordNet-imputed node meanings.
 
+## Tests
+
+To run tests, use the following command
+
+```
+pytest nbdt tests
+```
+
 # Citation
 
 If you find this work useful for your research, please cite our [paper](http://nbdt.alvinwan.com/paper/):
