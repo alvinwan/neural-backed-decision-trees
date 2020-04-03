@@ -311,8 +311,8 @@ class NBDT(nn.Module):
         state_dict = coerce_state_dict(state_dict, self.model.state_dict())
         return self.model.load_state_dict(state_dict, **kwargs)
 
-    def state_dict(self):
-        return self.model.state_dict()
+    def state_dict(self, *args, **kwargs):
+        return self.model.state_dict(*args, **kwargs)
 
     def forward(self, x):
         x = self.model(x)
