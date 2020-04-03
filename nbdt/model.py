@@ -86,11 +86,13 @@ class EmbeddedDecisionRules(nn.Module):
         wnid_to_outputs = {}
         for node in nodes:
             node_logits = cls.get_node_logits(outputs, node)
-            wnid_to_outputs[node.wnid] = {
-                'logits': node_logits,
-                'preds': torch.max(node_logits, dim=1)[1],
-                'probs': F.softmax(node_logits, dim=1)
-            }
+            node_outputs = {'logits': node_logits}
+
+            if len(node_logits.size()) > 1:
+                node_outputs['preds'] = torch.max(node_logits, dim=1)[1]
+                node_outputs['probs'] = F.softmax(node_logits, dim=1)
+
+            wnid_to_outputs[node.wnid] = node_outputs
         return wnid_to_outputs
 
     def forward_nodes(self, outputs):
