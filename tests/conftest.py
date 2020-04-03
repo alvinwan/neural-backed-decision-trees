@@ -8,6 +8,11 @@ collect_ignore = ["setup.py", "main.py"]
 
 
 @pytest.fixture
+def label_cifar10():
+    return torch.randint(10, (1,))
+
+
+@pytest.fixture
 def input_cifar10():
     return torch.randn(1, 3, 32, 32)
 

@@ -287,6 +287,7 @@ class NBDT(nn.Module):
             arch=None,
             pretrained=False,
             hierarchy=None,
+            eval=True,
             Rules=HardEmbeddedDecisionRules):
         """
         Extra init method makes clear which arguments are finally necessary for
@@ -302,7 +303,9 @@ class NBDT(nn.Module):
             state_dict = load_state_dict_from_key(
                 keys, model_urls, pretrained=True)
             self.load_state_dict(state_dict)
-        self.eval()
+
+        if eval:
+            self.eval()
 
     def load_state_dict(self, state_dict, **kwargs):
         state_dict = coerce_state_dict(state_dict, self.model.state_dict())
