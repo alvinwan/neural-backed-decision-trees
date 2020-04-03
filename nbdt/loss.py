@@ -109,7 +109,7 @@ class TreeSupLoss(nn.Module):
         >>> model = models.resnet18()
         >>> y = model(x)
         >>> TreeSupLoss.assert_output_not_nbdt(y)  # all good!
-        >>> model = NBDT('CIFAR10', model)
+        >>> model = NBDT('CIFAR10', model, arch='ResNet18')
         >>> y = model(x)
         >>> TreeSupLoss.assert_output_not_nbdt(y)  #doctest: +ELLIPSIS
         Traceback (most recent call last):
