@@ -140,12 +140,12 @@ if args.pretrained:
         net = model(pretrained=True, dataset=args.dataset, **model_kwargs)
     except TypeError as e:  # likely because `dataset` not allowed arg
         print(e)
-
-    try:
-        net = model(pretrained=True, **model_kwargs)
-    except Exception as e:
-        Colors.red(f'Fatal error: {e}')
-        exit()
+        
+        try:
+            net = model(pretrained=True, **model_kwargs)
+        except Exception as e:
+            Colors.red(f'Fatal error: {e}')
+            exit()
 else:
     net = model(**model_kwargs)
 
