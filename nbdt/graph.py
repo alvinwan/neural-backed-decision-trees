@@ -468,12 +468,12 @@ def get_centers_from_model(model, num_classes, dataset):
             dataset=dataset)
     except TypeError as e:
         print(f'Ignoring TypeError. Retrying without `dataset` kwarg: {e}')
-    try:
-        net = getattr(models, model)(
-            pretrained=True,
-            num_classes=num_classes)
-    except TypeError as e:
-        print(e)
+        try:
+            net = getattr(models, model)(
+                pretrained=True,
+                num_classes=num_classes)
+        except TypeError as e:
+            print(e)
     assert net is not None, f'Could not find pretrained model {model}'
     fc = get_centers_from_state_dict(net.state_dict())
     assert fc is not None, (
@@ -568,11 +568,8 @@ def get_new_node(G):
 
 
 def get_wordnet_meaning(G, synsets):
-    common_hypernyms = get_common_hypernyms(synsets)
-
-    assert len(common_hypernyms) > 0, [synset.name() for synset in synsets]
-
-    candidate = pick_unseen_hypernym(G, common_hypernyms)
+    hypernyms = get_common_hypernyms(synsets)
+    candidate = pick_unseen_hypernym(G, hypernyms) if hypernyms else None
     if candidate is None:
         return FakeSynset.create_from_offset(len(G.nodes))
     return candidate
@@ -601,6 +598,8 @@ def get_new_adjacency(G, nodes):
 
 
 def get_common_hypernyms(synsets):
+    if any(synset.pos() == 'f' for synset in synsets):
+        return set()
     common_hypernyms = set(synsets[0].common_hypernyms(synsets[1]))
     for synset in synsets[2:]:
         common_hypernyms &= set(synsets[0].common_hypernyms(synset))
@@ -612,6 +611,8 @@ def deepest_synset(synsets):
 
 
 def pick_unseen_hypernym(G, common_hypernyms):
+    assert len(common_hypernyms) > 0
+
     candidate = deepest_synset(common_hypernyms)
     wnid = synset_to_wnid(candidate)
 
