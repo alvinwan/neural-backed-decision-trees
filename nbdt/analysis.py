@@ -120,7 +120,7 @@ class IgnoredSamples(Noop):
         print("Ignored Samples: {}".format(self.ignored))
 
 
-class EmbeddedDecisionRules(Noop):
+class DecisionRules(Noop):
     """Generic support for evaluating embedded decision rules."""
 
     accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
@@ -148,13 +148,13 @@ class EmbeddedDecisionRules(Noop):
         print(f'{self.name} Accuracy: {accuracy}%, {self.correct}/{self.total}')
 
 
-class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
+class HardEmbeddedDecisionRules(DecisionRules):
     """Evaluation is hard."""
 
     name = 'NBDT-Hard'
 
 
-class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
+class SoftEmbeddedDecisionRules(DecisionRules):
     """Evaluation is soft."""
 
     name = 'NBDT-Soft'
