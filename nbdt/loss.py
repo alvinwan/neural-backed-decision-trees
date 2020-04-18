@@ -190,8 +190,7 @@ class SoftSegTreeSupLoss(SoftTreeSupLoss):
 
         loss = self.criterion(outputs, targets)
         coerced_outputs = coerce_tensor(outputs)
-        bayesian_outputs = SoftTreeSupLoss.inference(
-            self.nodes, coerced_outputs, self.num_classes, self.weighted_average)
+        bayesian_outputs = self.rules(coerced_outputs)
         bayesian_outputs = uncoerce_tensor(bayesian_outputs, outputs.shape)
         loss += self.criterion(bayesian_outputs, targets) * self.tree_supervision_weight
         return loss
