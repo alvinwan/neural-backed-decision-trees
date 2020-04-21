@@ -106,7 +106,7 @@ class PascalContext(BaseDataset):
     NUM_CLASS = 59
     def __init__(self, root='./data', split='train',
                  mode=None, transform=None, target_transform=None, **kwargs):
-        super(ContextSegmentation, self).__init__(
+        super(PascalContext, self).__init__(
             root, split, mode, transform, target_transform, **kwargs)
         from detail import Detail
         #from detail import mask
