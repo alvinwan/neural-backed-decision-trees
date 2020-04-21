@@ -19,12 +19,15 @@ import nltk
 
 # tree-generation consntants
 METHODS = ('wordnet', 'random', 'induced')
-DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200', 'Imagenet1000')
+DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200', 'Imagenet1000',
+    'Cityscapes', 'PascalContext')
 DATASET_TO_NUM_CLASSES = {
     'CIFAR10': 10,
     'CIFAR100': 100,
     'TinyImagenet200': 200,
-    'Imagenet1000': 1000
+    'Imagenet1000': 1000,
+    'Cityscapes': 19,
+    'PascalContext': 59,
 }
 DATASET_TO_CLASSES = {
     'CIFAR10': [
