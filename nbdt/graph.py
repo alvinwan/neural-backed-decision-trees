@@ -384,7 +384,8 @@ def read_graph(path):
 MODEL_FC_KEYS = (
     'fc.weight', 'linear.weight', 'module.linear.weight',
     'module.net.linear.weight', 'output.weight', 'module.output.weight',
-    'output.fc.weight', 'module.output.fc.weight', 'classifier.weight')
+    'output.fc.weight', 'module.output.fc.weight', 'classifier.weight',
+    'model.last_layer.3.weight')
 
 
 def build_induced_graph(wnids, checkpoint, model=None, linkage='ward',
@@ -487,7 +488,7 @@ def get_centers_from_state_dict(state_dict):
     fc = None
     for key in MODEL_FC_KEYS:
         if key in state_dict:
-            fc = state_dict[key]
+            fc = state_dict[key].squeeze()
             break
     if fc is not None:
         return fc.detach()
