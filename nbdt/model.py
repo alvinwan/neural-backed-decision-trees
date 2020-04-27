@@ -131,6 +131,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         # move all to CPU, detach from computation graph
         example = wnid_to_outputs[nodes[0].wnid]
         n_samples = int(example['logits'].size(0))
+        device = example['logits'].device
 
         for wnid in tuple(wnid_to_outputs.keys()):
             outputs = wnid_to_outputs[wnid]
@@ -160,7 +161,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
             pred = -1 if cls is None else classes.index(cls)
             preds.append(pred)
             decisions.append(decision)
-        return torch.Tensor(preds).long(), decisions
+        return torch.Tensor(preds).long().to(device), decisions
 
     def predicted_to_logits(self, predicted):
         """Convert predicted classes to one-hot logits."""
