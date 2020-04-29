@@ -27,7 +27,7 @@ dataset_kwargs = generate_kwargs(args, dataset,
     name=f'Dataset {args.dataset}',
     keys=data.custom.keys,
     globals=globals())
-if args.dataset != 'Cityscapes' and args.dataset != 'PascalContext':
+if args.dataset not in ['Cityscapes', 'PascalContext', 'LookIntoPerson']:
     dataset_kwargs['download'] = True
 
 dataset = dataset(**dataset_kwargs, root='./data', download=True)

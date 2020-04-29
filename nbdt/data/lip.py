@@ -151,7 +151,7 @@ class BaseDataset(data.Dataset):
 
 class LookIntoPerson(BaseDataset):
     def __init__(self, 
-                 root='./data', 
+                 root='./data/', 
                  list_path='LookIntoPerson/trainList.txt', 
                  num_samples=None, 
                  num_classes=20,
@@ -180,7 +180,7 @@ class LookIntoPerson(BaseDataset):
 
         self.multi_scale = multi_scale
         self.flip = flip
-        self.img_list = [line.strip().split() for line in open(root+list_path)]
+        self.img_list = [line.strip().split() for line in open(os.path.join(root,list_path))]
 
         self.files = self.read_files()
         if num_samples:
