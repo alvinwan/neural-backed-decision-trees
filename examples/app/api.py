@@ -82,7 +82,14 @@ def upload_file():
     if request.method == 'POST' or request.args.get('url', None):
         url = request.form.get('url', request.args.get('url', None))
         if url:
-            im = load_image_from_path(url)
+            try:
+                im = load_image_from_path(url)
+            except OSError as e:
+                return jsonify({
+                    "message":  "Make sure you're passing in a path to an "
+                                "image and not to a webpage. Here was the "
+                               f" exact error: {e}",
+                    "success": False})
             return jsonify(inference(im))
         # check if the post request has the file part
         if 'file' not in request.files:
