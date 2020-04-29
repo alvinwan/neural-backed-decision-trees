@@ -44,11 +44,16 @@ failures = []
 
 hardcoded_mapping = {
     'aquarium_fish': wn.synsets('fingerling', pos=wn.NOUN)[0],
+    'background': wn.synsets('background', pos=wn.NOUN)[1],
     'beaver': wn.synsets('beaver', pos=wn.NOUN)[-1],
     'castle': wn.synsets('castle', pos=wn.NOUN)[1],
     'diningtable': wn.synsets('dining_table', pos=wn.NOUN)[0],
     'flatfish': wn.synsets('flatfish', pos=wn.NOUN)[1],
+    'glove': wn.synsets('glove', pos=wn.NOUN)[1],
     'leopard': wn.synsets('leopard', pos=wn.NOUN)[1],
+    'left-arm': wn.synsets('arm', pos=wn.NOUN)[0],
+    'left-leg': wn.synsets('leg', pos=wn.NOUN)[0],
+    'left-shoe': wn.synsets('shoe', pos=wn.NOUN)[0],
     'lobster': wn.synsets('lobster', pos=wn.NOUN)[1],
     'maple_tree': wn.synsets('maple', pos=wn.NOUN)[1],
     'otter': wn.synsets('otter', pos=wn.NOUN)[1],
@@ -65,6 +70,7 @@ hardcoded_mapping = {
     'traffic_sign': wn.synsets('street_sign', pos=wn.NOUN)[0],
     'turtle': wn.synsets('turtle', pos=wn.NOUN)[1],
     'tvmonitor': wn.synsets('tv_monitor', pos=wn.NOUN)[0],
+    'upper-clothes': wn.synsets('top', pos=wn.NOUN)[9],
     'whale': wn.synsets('whale', pos=wn.NOUN)[1],
 }
 
