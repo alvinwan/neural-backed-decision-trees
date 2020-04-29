@@ -13,7 +13,7 @@ import os
 maybe_install_wordnet()
 
 datasets = ('CIFAR10', 'CIFAR100', 'Cityscapes') + data.imagenet.names + \
-    data.custom.names + data.pascal_context.names
+    data.custom.names + data.pascal_context.names + data.lip.names
 
 
 parser = argparse.ArgumentParser()
