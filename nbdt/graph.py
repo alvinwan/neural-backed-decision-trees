@@ -30,6 +30,8 @@ def get_parser():
         help='Allows each leaf multiple paths to the root.')
     parser.add_argument('--no-prune', action='store_true', help='Do not prune.')
     parser.add_argument('--fname', type=str,
+        help='Override all settings and just provide graph name')
+    parser.add_argument('--path', type=str,
         help='Override all settings and just provide a path to a graph')
     parser.add_argument('--method', choices=METHODS,
         help='structure_released.xml apparently is missing many CIFAR100 classes. '
@@ -76,9 +78,11 @@ def get_parser():
 
 
 def generate_fname(method, seed=0, branching_factor=2, extra=0,
-                   no_prune=False, fname='', multi_path=False,
+                   no_prune=False, fname='', path='', multi_path=False,
                    induced_linkage='ward', induced_affinity='euclidean',
                    checkpoint=None, arch=None, **kwargs):
+    if path:
+        return Path(path).stem
     if fname:
         return fname
 
@@ -136,9 +140,11 @@ def get_wnids(path_wnids):
 
 def get_graph_path_from_args(
         dataset, method, seed=0, branching_factor=2, extra=0,
-        no_prune=False, fname='', multi_path=False,
+        no_prune=False, fname='', path='', multi_path=False,
         induced_linkage='ward', induced_affinity='euclidean',
         checkpoint=None, arch=None, **kwargs):
+    if path:
+        return path
     fname = generate_fname(
         method=method,
         seed=seed,

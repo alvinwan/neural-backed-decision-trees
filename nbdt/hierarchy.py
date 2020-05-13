@@ -36,7 +36,7 @@ def assert_all_wnids_in_graph(G, wnids):
 
 def generate_hierarchy(
         dataset, method, seed=0, branching_factor=2, extra=0,
-        no_prune=False, fname='', single_path=False,
+        no_prune=False, fname='', path='', single_path=False,
         induced_linkage='ward', induced_affinity='euclidean',
         checkpoint=None, arch=None, model=None, **kwargs):
     wnids = get_wnids_from_dataset(dataset)
@@ -78,6 +78,7 @@ def generate_hierarchy(
         extra=extra,
         no_prune=no_prune,
         fname=fname,
+        path=path,
         single_path=single_path,
         induced_linkage=induced_linkage,
         induced_affinity=induced_affinity,
