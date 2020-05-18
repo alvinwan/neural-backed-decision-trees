@@ -165,7 +165,8 @@ def build_tree(G, root,
         force_labels_left=(),
         include_leaf_images=False,
         dataset=None,
-        image_resize_factor=1):
+        image_resize_factor=1,
+        include_fake_sublabels=False):
     """
     :param color_info dict[str, dict]: mapping from node labels or IDs to color
                                        information. This is by default just a
@@ -177,13 +178,14 @@ def build_tree(G, root,
             force_labels_left=force_labels_left,
             include_leaf_images=include_leaf_images,
             dataset=dataset,
-            image_resize_factor=image_resize_factor)
+            image_resize_factor=image_resize_factor,
+            include_fake_sublabels=include_fake_sublabels)
         for child in G.succ[root]]
     _node = G.nodes[root]
     label = _node.get('label', '')
     sublabel = root
 
-    if root.startswith('f'):  # WARNING: hacky, ignores fake wnids -- this will have to be changed lol
+    if root.startswith('f') and not include_fake_sublabels:  # WARNING: hacky, ignores fake wnids -- this will have to be changed lol
         sublabel = ''
 
     node = {
@@ -364,7 +366,8 @@ def generate_hierarchy_vis(args):
         force_labels_left=args.vis_force_labels_left or [],
         dataset=dataset,
         include_leaf_images=args.vis_leaf_images,
-        image_resize_factor=args.vis_image_resize_factor)
+        image_resize_factor=args.vis_image_resize_factor,
+        include_fake_sublabels=args.vis_fake_sublabels)
     graph = build_graph(G)
 
     if num_roots > 1:

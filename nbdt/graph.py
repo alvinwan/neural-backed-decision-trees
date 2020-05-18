@@ -55,6 +55,8 @@ def get_parser():
         help='Use curved lines for edges')
     parser.add_argument('--vis-sublabels', action='store_true',
         help='Show sublabels')
+    parser.add_argument('--vis-fake-sublabels', action='store_true',
+        help='Show fake sublabels')
     parser.add_argument('--color', choices=('blue', 'blue-green'), default='blue',
         help='Color to use, for colored flags. Note this takes NO effect if '
         'nodes are not colored.')
