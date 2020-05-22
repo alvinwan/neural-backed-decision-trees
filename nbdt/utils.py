@@ -20,7 +20,7 @@ import nltk
 # tree-generation consntants
 METHODS = ('wordnet', 'random', 'induced')
 DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200', 'Imagenet1000',
-    'Cityscapes', 'PascalContext', 'LookIntoPerson')
+    'Cityscapes', 'PascalContext', 'LookIntoPerson', 'ADE20K')
 DATASET_TO_NUM_CLASSES = {
     'CIFAR10': 10,
     'CIFAR100': 100,
@@ -29,6 +29,7 @@ DATASET_TO_NUM_CLASSES = {
     'Cityscapes': 19,
     'PascalContext': 59,
     'LookIntoPerson': 20,
+    'ADE20K': 150,
 }
 DATASET_TO_CLASSES = {
     'CIFAR10': [

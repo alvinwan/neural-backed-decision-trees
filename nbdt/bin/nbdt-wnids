@@ -13,7 +13,8 @@ import os
 maybe_install_wordnet()
 
 datasets = ('CIFAR10', 'CIFAR100', 'Cityscapes') + data.imagenet.names + \
-    data.custom.names + data.pascal_context.names + data.lip.names
+    data.custom.names + data.pascal_context.names + data.lip.names + \
+    data.ade20k.names
 
 
 parser = argparse.ArgumentParser()
@@ -27,7 +28,7 @@ dataset_kwargs = generate_kwargs(args, dataset,
     name=f'Dataset {args.dataset}',
     keys=data.custom.keys,
     globals=globals())
-if args.dataset not in ['Cityscapes', 'PascalContext', 'LookIntoPerson']:
+if args.dataset not in ['Cityscapes', 'PascalContext', 'LookIntoPerson', 'ADE20K']:
     dataset_kwargs['download'] = True
 
 dataset = dataset(**dataset_kwargs, root='./data', download=True)
@@ -45,18 +46,33 @@ failures = []
 hardcoded_mapping = {
     'aquarium_fish': wn.synsets('fingerling', pos=wn.NOUN)[0],
     'background': wn.synsets('background', pos=wn.NOUN)[1],
+    'barrel': wn.synsets('barrel', pos=wn.NOUN)[1],
     'beaver': wn.synsets('beaver', pos=wn.NOUN)[-1],
+    'booth': wn.synsets('booth', pos=wn.NOUN)[1],
+    'blind': wn.synsets('blind', pos=wn.NOUN)[2],
+    'bulletin_board': wn.synsets('bulletin_board', pos=wn.NOUN)[1],
+    'case': wn.synsets('case', pos=wn.NOUN)[-1], 
     'castle': wn.synsets('castle', pos=wn.NOUN)[1],
+    'column': wn.synsets('column', pos=wn.NOUN)[5],
     'diningtable': wn.synsets('dining_table', pos=wn.NOUN)[0],
+    'earth': wn.synsets('earth', pos=wn.NOUN)[1],
+    'escalator': wn.synsets('escalator', pos=wn.NOUN)[1],
     'flatfish': wn.synsets('flatfish', pos=wn.NOUN)[1],
+    'food': wn.synsets('food', pos=wn.NOUN)[1],
     'glove': wn.synsets('glove', pos=wn.NOUN)[1],
+    'grandstand': wn.synsets('grandstand', pos=wn.NOUN)[1],
+    'land': wn.synsets('land', pos=wn.NOUN)[1],
     'leopard': wn.synsets('leopard', pos=wn.NOUN)[1],
     'left-arm': wn.synsets('arm', pos=wn.NOUN)[0],
     'left-leg': wn.synsets('leg', pos=wn.NOUN)[0],
     'left-shoe': wn.synsets('shoe', pos=wn.NOUN)[0],
     'lobster': wn.synsets('lobster', pos=wn.NOUN)[1],
     'maple_tree': wn.synsets('maple', pos=wn.NOUN)[1],
+    'microwave': wn.synsets('microwave', pos=wn.NOUN)[1],
+    'monitor': wn.synsets('monitor', pos=wn.NOUN)[3],
     'otter': wn.synsets('otter', pos=wn.NOUN)[1],
+    'ottoman': wn.synsets('ottoman', pos=wn.NOUN)[2],
+    'plant': wn.synsets('plant', pos=wn.NOUN)[1],
     'plate': wn.synsets('plate', pos=wn.NOUN)[3],
     'pottedplant': wn.synsets('plant', pos=wn.NOUN)[1],
     'raccoon': wn.synsets('raccoon', pos=wn.NOUN)[1],
@@ -65,12 +81,15 @@ hardcoded_mapping = {
     'shrew': wn.synsets('shrew', pos=wn.NOUN)[1],
     'sign': wn.synsets('sign', pos=wn.NOUN)[1],
     'skunk': wn.synsets('skunk', pos=wn.NOUN)[1],
+    'step': wn.synsets('step', pos=wn.NOUN)[3],
     'table': wn.synsets('table', pos=wn.NOUN)[1],
     'tiger': wn.synsets('tiger', pos=wn.NOUN)[1],
+    'toilet': wn.synsets('toilet', pos=wn.NOUN)[1],
     'traffic_sign': wn.synsets('street_sign', pos=wn.NOUN)[0],
     'turtle': wn.synsets('turtle', pos=wn.NOUN)[1],
     'tvmonitor': wn.synsets('tv_monitor', pos=wn.NOUN)[0],
     'upper-clothes': wn.synsets('top', pos=wn.NOUN)[9],
+    'washer': wn.synsets('washer', pos=wn.NOUN)[2],
     'whale': wn.synsets('whale', pos=wn.NOUN)[1],
 }
 
