@@ -219,7 +219,14 @@ function update(source) {
 
   nodeEnter.append("text")
     .text(function(d) { return d.label; })
-    .attr("dy", function(d) { return show_sublabels ? "-0.2em" : "0.3em"});
+    .attr("dy", function(d) { return show_sublabels ? "-0.2em" : "0.3em"})
+    .call(setBB);
+
+  function setBB(selection) {
+    selection.each(function(d) {
+      d.bbox = this.getBBox();
+    })
+  }
 
   nodeEnter.append("text")
     .attr("class", "small")
@@ -230,13 +237,14 @@ function update(source) {
     if (d.force_text_on_left) return true;
     children = d.children || d._children;
     if (!children) return false;
-    return children.length % 2 != 0;
+    return children.length > 0;
   }
 
   nodeEnter.insert("rect", "text")
-    .attr("x", function(d, i){ return textOnLeft(d) ? this.parentNode.getBBox().x - this.parentNode.getBBox().width + 2 : this.parentNode.getBBox().x + 32 })
-    .attr("y", function(d){ return this.parentNode.getBBox().y; })
-    .attr("width", function(d){ return Math.max(this.parentNode.getBBox().width - 5, 0); })
+    // .attr("x", function(d, i){ return textOnLeft(d) ? this.parentNode.getBBox().x - this.parentNode.getBBox().width : this.parentNode.getBBox().x })
+    // .attr("y", function(d){ return this.parentNode.getBBox().y; })
+    .attr("x", function(d) { d.bbox.x })
+    .attr("width", function(d){ return this.parentNode.getBBox().width; })
     .attr("height", function(d) {return this.parentNode.getBBox().height; })
     .style("fill", "CONFIG_TEXT_RECT_COLOR");
 
