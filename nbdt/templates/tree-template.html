@@ -217,6 +217,21 @@ function update(source) {
           d.padding = 20 * CONFIG_ZOOM;  // enabled by getTargetNodeCircumferencePoint
     })
 
+  nodeEnter.append("svg:image")
+    .attr("xlink:href", function(d) { return d.image ? d.image.href : '' })
+    .attr("x", function(d) { return this.parentNode.getBBox().width + 40; })
+    .attr("y", function(d) { return d.image ? -d.image.height / 2 : 0; })
+    .attr("height", function(d) { return d.image ? d.image.height : 0 })
+    .attr("width", function(d) { return d.image ? d.image.width : 0 });
+
+  nodeEnter.append("circle")
+	  .attr("r", 1e-6)
+	  .style("fill", function(d) {
+      if (d._children) return "#fff";
+      return gradientFill(d);
+    })
+    .style("stroke", gradientStroke);
+
   nodeEnter.append("text")
     .text(function(d) { return d.label; })
     .attr("dy", function(d) { return show_sublabels ? "-0.2em" : "0.3em"})
@@ -240,35 +255,25 @@ function update(source) {
     return children.length > 0;
   }
 
-  nodeEnter.insert("rect", "text")
-    // .attr("x", function(d, i){ return textOnLeft(d) ? this.parentNode.getBBox().x - this.parentNode.getBBox().width : this.parentNode.getBBox().x })
-    // .attr("y", function(d){ return this.parentNode.getBBox().y; })
-    .attr("x", function(d) { d.bbox.x })
-    .attr("width", function(d){ return this.parentNode.getBBox().width; })
-    .attr("height", function(d) {return this.parentNode.getBBox().height; })
-    .style("fill", "CONFIG_TEXT_RECT_COLOR");
-
-  nodeEnter.append("svg:image")
-    .attr("xlink:href", function(d) { return d.image ? d.image.href : '' })
-    .attr("x", function(d) { return this.parentNode.getBBox().width + 40; })
-    .attr("y", function(d) { return d.image ? -d.image.height / 2 : 0; })
-    .attr("height", function(d) { return d.image ? d.image.height : 0 })
-    .attr("width", function(d) { return d.image ? d.image.width : 0 });
-
   dx = 5 * Math.pow(2.5, 2);
+  x = 13;
   nodeEnter.selectAll("text")
-	  .attr("x", function(d) { return textOnLeft(d) ? -13 : 13; })
+	  .attr("x", function(d) { return textOnLeft(d) ? -x : x; })
     .attr("dx", function(d) { return textOnLeft(d) ? -dx + "px" : dx + "px"; })
 	  .attr("text-anchor", function(d) { return textOnLeft(d) ? "end" : "start"; })
     .attr("fill", gradientFontColor);
 
-  nodeEnter.append("circle")
-	  .attr("r", 1e-6)
-	  .style("fill", function(d) {
-      if (d._children) return "#fff";
-      return gradientFill(d);
+  nodeEnter.insert("rect", "text")
+    .attr("x", function(d, i){
+        if (textOnLeft(d)) {
+          return d.bbox.x - dx - (x / 2) - d.bbox.width;
+        }
+        return d.bbox.x + dx + (x / 2);
     })
-    .style("stroke", gradientStroke);
+    .attr("y", function(d) { return d.bbox.y })
+    .attr("width", function(d){ return d.bbox.width; })
+    .attr("height", function(d) {return d.bbox.height; })
+    .style("fill", "CONFIG_TEXT_RECT_COLOR");
 
   // Transition nodes to their new position.
   var nodeUpdate = node.transition()
