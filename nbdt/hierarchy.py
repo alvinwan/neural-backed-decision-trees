@@ -347,7 +347,9 @@ def generate_hierarchy_vis(args):
 
     roots = list(get_roots(G))
     num_roots = len(roots)
-    root = next(get_roots(G))
+    root = args.vis_root or next(get_roots(G))
+
+    assert root in G, f'Node {root} is not a valid node. Nodes: {G.nodes}'
 
     dataset = None
     if args.dataset:
