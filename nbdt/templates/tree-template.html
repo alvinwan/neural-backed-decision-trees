@@ -177,6 +177,7 @@ function update(source) {
   // Enter any new nodes at the parent's previous position.
   var nodeEnter = node.enter().append("g")
 	  .attr("class", "node")
+    .attr("id", function(d) { return d.id })
 	  .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
 	  .on("click", click)
     .attr("d", function(d) {
@@ -472,6 +473,15 @@ function click(d) {
 	d._children = null;
   }
   update(d);
+}
+
+window.onload = function() {
+  setTimeout(function() {
+    var hide = CONFIG_HIDE;
+    for (var i = 0; i < hide.length; i++) {
+        document.getElementById(hide[i]).dispatchEvent(new Event('click'))
+    }
+  }, 1000);
 }
 
 // function saveImage() {
