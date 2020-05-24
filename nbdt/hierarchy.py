@@ -295,9 +295,12 @@ def image_to_base64_encode(image, format="jpeg"):
 
 def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
         show_sublabels=False, height=750, dark=False, margin_top=20,
-        above_dy=350, y_node_sep=160, hide=[]):
+        above_dy=350, y_node_sep=160, hide=[], _print=False):
     with open(path_template) as f:
         html = f.read() \
+        .replace(
+            "CONFIG_PRINT",
+            str(_print).lower()) \
         .replace(
             "CONFIG_HIDE",
             str(hide)) \

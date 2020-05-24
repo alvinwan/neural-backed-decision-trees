@@ -481,6 +481,11 @@ window.onload = function() {
     for (var i = 0; i < hide.length; i++) {
         document.getElementById(hide[i]).dispatchEvent(new Event('click'))
     }
+
+    if (CONFIG_PRINT) {
+      setTimeout(print, 1000);
+    }
+
   }, 1000);
 }
 
