@@ -225,10 +225,17 @@ def build_tree(G, root,
             'height': image_height *  image_resize_factor
         }
 
-    if root in color_info and not color_info[root]['color'].startswith('#'):  # TODO(tmp)
+    node_to_href = {}
+    for i in (32, 33, 35, 36):
+        node_to_href[f'f000000{i}'] = {
+            'position': 'above',
+            'href': f'/Users/alvinwan/Documents/nbdt/vis/output/cityscapes/vis_seg_hrnet_w18_small_v1_512x1024_tsw10/gradcamwhole_last_layer.3_f000000{i}_crop400/image-0-pixel_i-487-pixel_j-1076.jpg'
+        }
+
+    if root in node_to_href and node_to_href[root]['position'] == 'above':
         image_width = image_height = 150
         node['above'] = {
-            'href': '/Users/alvinwan/Documents/nbdt/vis/output/cityscapes/vis_seg_hrnet_w18_small_v1_512x1024_tsw10/gradcamwhole_last_layer.3_f00000032_crop400/image-0-pixel_i-487-pixel_j-1076.jpg',
+            'href': node_to_href[root]['href'],
             'w': image_width * image_resize_factor,
             'h': image_height * image_resize_factor
         }
