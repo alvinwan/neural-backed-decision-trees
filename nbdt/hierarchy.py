@@ -225,7 +225,7 @@ def build_tree(G, root,
             'height': image_height *  image_resize_factor
         }
 
-    if root in color_info:  # TODO(tmp)
+    if root in color_info and not color_info[root]['color'].startswith('#'):  # TODO(tmp)
         image_width = image_height = 150
         node['above'] = {
             'href': '/Users/alvinwan/Documents/nbdt/vis/output/cityscapes/vis_seg_hrnet_w18_small_v1_512x1024_tsw10/gradcamwhole_last_layer.3_f00000032_crop400/image-0-pixel_i-487-pixel_j-1076.jpg',
@@ -340,6 +340,9 @@ def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=()):
             break
 
     if target is not None:
+        for node in G.nodes:
+            nodes[node] = {'color': '#cccccc', 'color_incident_edge': True}
+
         while target != root:
             nodes[target] = {'color': color, 'color_incident_edge': True}
             view = G.pred[target]

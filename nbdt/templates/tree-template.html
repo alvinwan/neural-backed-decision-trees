@@ -144,21 +144,21 @@ gradientBlueGreen.append("svg:stop")
 function gradientFill(d) {
   if (d.color == "blue") return "url(#gradientBlue)";
   if (d.color == "blue-green") return "url(#gradientBlueGreen)";
-  return "url(#gradientGray)";
+  return d.color || "url(#gradientGray)";
 }
 
 function gradientStroke(d) {
   if (d.target && d.target.color_incident_edge) d = d.target;
   if (d.color == "blue-green") return "#0460b4";
   if (d.color == "blue") return "#1155cc";
-  return "#666666"
+  return d.color || "#666666"
 }
 
 function gradientFontColor(d) {
   if (d.target && d.target.color_incident_edge) d = d.target;
   if (d.color == "blue-green") return "#0460b4";
   if (d.color == "blue") return "#1155cc";
-  return "CONFIG_TEXT_COLOR"
+  return d.color || "CONFIG_TEXT_COLOR"
 }
 
 
