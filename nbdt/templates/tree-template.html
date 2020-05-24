@@ -4,40 +4,6 @@
     <meta charset="utf-8">
     <title>CONFIG_TITLE</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond&display=swap" rel="stylesheet">
-    <style>
-html {
-  font-size: calc(16px * CONFIG_ZOOM);
-  background-color: CONFIG_BG_COLOR;
-}
-
-.node {
-	cursor: pointer;
-}
-
-.node circle {
-  fill: rgb(102,102,102);
-  stroke: #666666;
-  stroke-width: 0.12em;
-  r: 0.6em;
-}
-
-.node text {
-  font-size:0.9em;
-  font-family: 'Cormorant Garamond', serif;
-  font-weight:bold;
-}
-
-.node text.small {
-  font-size:0.7em;
-  font-family: 'Cormorant Garamond', serif;
-}
-
-.link {
-  fill: none;
-  stroke: #ccc;
-  stroke-width: 0.07em;
-}
-    </style>
   </head>
   <body>
 
@@ -73,6 +39,8 @@ var diagonal = d3.svg.diagonal()
 var svg = d3.select("body").append("svg")
 	.attr("width", width + margin.right + margin.left)
 	.attr("height", height + margin.top + margin.bottom)
+  .style("background-color", "CONFIG_BG_COLOR")
+  .style("font-size", 16 * CONFIG_ZOOM)
   .append("g")
 	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
@@ -231,6 +199,8 @@ function update(source) {
       if (d._children) return "#fff";
       return gradientFill(d);
     })
+    .style("cursor", "pointer")
+    .style("stroke-width", "0.12em")
     .style("stroke", gradientStroke);
 
   nodeEnter.append("text")
@@ -311,13 +281,21 @@ function update(source) {
     .call(setBBGenerator('bbox_above'))
 
   nodeEnter.append("text", "text.above")
-    .attr("class", "above")
+    .attr("class", "above small")
     .attr("x", 0)
     .attr("y", function(d) { return d.above ? - (above_dy - d.above.h - above_padding * 6 - em2px(1)) : y1 })
     .text(function(d) { return d.above ? d.above.sublabel || '' : ''; })
     .attr("text-anchor", "middle")
-    .attr("class", "small")
     .call(setBBGenerator('bbox_above_small'))
+
+  nodeEnter.selectAll("text")
+    .style("font-size", "0.9em")
+    .style("font-family", "Cormorant Garamond")
+    .style("font-weight", "bold")
+
+  nodeEnter.selectAll("text.small")
+    .style("font-size", "0.7em")
+    .style("font-family", "Cormorant Garamond")
 
   /**
    * End saliency vis
@@ -363,7 +341,7 @@ function update(source) {
 	  .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
 
   nodeUpdate.select("circle")
-	  .attr("r", 10)
+	  .attr("r", "0.6em")
 	  .style("fill", function(d) {
       if (d._children) return "#fff";
       return gradientFill(d);
@@ -417,6 +395,7 @@ function update(source) {
 
     link.enter().insert("line", "g")
           .attr("class", "link")
+          .style("stroke-width", 2)
           .style("stroke", gradientStroke);
 
     link.attr('x1', function(d) {
@@ -455,6 +434,7 @@ function update(source) {
     // Enter any new links at the parent's previous position.
     link.enter().insert("path", "g")
   	  .attr("class", "link")
+      .style("stroke-width", 2)
   	  .attr("d", function(d) {
     		var o = {x: source.x0, y: source.y0};
     		return diagonal({source: o, target: o});
