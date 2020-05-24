@@ -226,16 +226,24 @@ def build_tree(G, root,
         }
 
     node_to_href = {}
-    for i in (32, 33, 35, 36):
+    for i, label, sublabel in zip(
+            (32, 33, 35, 36),
+            ('Is car', 'Not sidewalk', 'Not building, vegetation', 'Not road'),
+            ('Looks for headlights, wheels, windows', '', '', '')
+        ):
         node_to_href[f'f000000{i}'] = {
             'position': 'above',
-            'href': f'/Users/alvinwan/Documents/nbdt/vis/output/cityscapes/vis_seg_hrnet_w18_small_v1_512x1024_tsw10/gradcamwhole_last_layer.3_f000000{i}_crop400/image-0-pixel_i-487-pixel_j-1076.jpg'
+            'href': f'/Users/alvinwan/Documents/nbdt/vis/output/cityscapes/vis_seg_hrnet_w18_small_v1_512x1024_tsw10/gradcamwhole_last_layer.3_f000000{i}_crop400/image-0-pixel_i-487-pixel_j-1076.jpg',
+            'label': label,
+            'sublabel': sublabel
         }
 
     if root in node_to_href and node_to_href[root]['position'] == 'above':
         image_width = image_height = 150
         node['above'] = {
             'href': node_to_href[root]['href'],
+            'label': node_to_href[root]['label'],
+            'sublabel': node_to_href[root]['sublabel'],
             'w': image_width * image_resize_factor,
             'h': image_height * image_resize_factor
         }
@@ -313,7 +321,7 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
             '#FFFFFF' if dark else '#000000') \
         .replace(
             "CONFIG_TEXT_RECT_COLOR",
-            "rgba(17,17,17,0.8)" if dark else "rgba(255,255,255,0.8)") \
+            "rgba(17,17,17,0.8)" if dark else "rgba(255,255,255,0.9)") \
         .replace(
             "CONFIG_MARGIN_TOP",
             str(margin_top))
