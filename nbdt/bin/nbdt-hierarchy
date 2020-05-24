@@ -13,7 +13,7 @@ def main():
 
     if not args.path:
         generate_hierarchy(**vars(args))
-    test_hierarchy(args)
+        test_hierarchy(args)
     generate_hierarchy_vis(args)
 
 
