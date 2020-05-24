@@ -43,6 +43,7 @@ html {
 
 <!-- load the d3.js library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.16.0/d3.min.js" integrity="sha256-Xb6SSzhH3wEPC4Vy3W70Lqh9Y3Du/3KxPqI2JHQSpTw=" crossorigin="anonymous"></script> -->
 
 <script>
 
@@ -199,7 +200,7 @@ function update(source) {
 	  links = tree.links(nodes);
 
   // Normalize for fixed-depth.
-  nodes.forEach(function(d) { d.y = d.depth * 180; });
+  nodes.forEach(function(d) { d.y = d.depth * CONFIG_Y_NODE_SEP; });
 
   // Update the nodes…
   var node = svg.selectAll("g.node")
@@ -215,7 +216,7 @@ function update(source) {
           d.marker_end = 7 * CONFIG_ZOOM;
           d.marker_start = 0 * CONFIG_ZOOM;
           d.padding = 20 * CONFIG_ZOOM;  // enabled by getTargetNodeCircumferencePoint
-    })
+    });
 
   nodeEnter.append("svg:image")
     .attr("xlink:href", function(d) { return d.image ? d.image.href : '' })
@@ -248,18 +249,17 @@ function update(source) {
 
   nodeEnter.append("text")
     .attr("class", "small")
-    .attr("dy", "1.2em")
+    .attr("dy", function(d) { return d.label ? "0.8em" : "0.25em"; })
     .text(function(d) { return show_sublabels ? d.sublabel : ""; })
     .call(setBBGenerator('bbox_small'))
 
   function textOnLeft(d) {
     if (d.force_text_on_left) return true;
-    children = d.children || d._children;
-    if (!children) return false;
-    return children.length > 0;
+    if (!d.children) return false;  // if effectively a leaf
+    return true;
   }
 
-  dx = 5 * Math.pow(2.5, 2);
+  dx = 2 * Math.pow(2.5, 2);
   x = 13;
   nodeEnter.selectAll("text")
 	  .attr("x", function(d) { return textOnLeft(d) ? -x : x; })
@@ -271,7 +271,7 @@ function update(source) {
    * Saliency vis for each node
    **/
 
-  above_dy = 300;
+  above_dy = CONFIG_ABOVE_DY;
   above_padding = 5;
 
   nodeEnter.insert("rect", "circle")
@@ -298,6 +298,7 @@ function update(source) {
     .attr("y1", y1)
     .attr("x2", 0)
     .attr("y2", function(d) { return d.above ? - (above_dy - d.above.h - above_padding * 2) : y1 })
+    .style("stroke-width", 2)
     .style("stroke", gradientStroke);
 
   // Text for saliency popup
@@ -372,6 +373,13 @@ function update(source) {
 	  .style("fill-opacity", 1);
 
   nodeUpdate.select("text.small")
+    .text(function(d) {
+        if (d._children) return d.alt;
+        return show_sublabels ? d.sublabel : "";
+    })
+    .attr("x", function(d) { return textOnLeft(d) ? -x : x; })
+    .attr("dx", function(d) { return textOnLeft(d) ? -dx + "px" : dx + "px"; })
+	  .attr("text-anchor", function(d) { return textOnLeft(d) ? "end" : "start"; })
 	  .style("fill-opacity", 1);
 
   nodeUpdate.select("rect")

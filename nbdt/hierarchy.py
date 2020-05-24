@@ -198,6 +198,7 @@ def build_tree(G, root,
         'label': label,
         'parent': parent,
         'children': children,
+        'alt': ', '.join(map(wnid_to_name, get_leaves(G, root=root)))
     }
 
     if label in color_info:
@@ -292,9 +293,16 @@ def image_to_base64_encode(image, format="jpeg"):
 
 
 def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
-        show_sublabels=False, height=750, dark=False, margin_top=20):
+        show_sublabels=False, height=750, dark=False, margin_top=20,
+        above_dy=350, y_node_sep=160):
     with open(path_template) as f:
         html = f.read() \
+        .replace(
+            "CONFIG_Y_NODE_SEP",
+            str(y_node_sep)) \
+        .replace(
+            "CONFIG_ABOVE_DY",
+            str(above_dy)) \
         .replace(
             "CONFIG_TREE_DATA",
             json.dumps([data])) \
