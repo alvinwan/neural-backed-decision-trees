@@ -77,6 +77,7 @@ def get_parser():
         help='Height of the outputted visualization')
     parser.add_argument('--vis-dark', action='store_true', help='Dark mode')
     parser.add_argument('--vis-root', type=str, help='Which node is root')
+    parser.add_argument('--vis-margin-top', type=int, default=20)
     return parser
 
 

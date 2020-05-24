@@ -55,7 +55,7 @@ var treeData = CONFIG_TREE_DATA;
 // copy-pasta'ed the code in this file from https://bl.ocks.org/d3noob/8375092
 
 // ************** Generate the tree diagram	 *****************
-var margin = {top: 20, right: 120, bottom: 20, left: 140},
+var margin = {top: CONFIG_MARGIN_TOP, right: 120, bottom: 20, left: 140},
 	  width = 3000 - margin.right - margin.left,
 	  height = CONFIG_VIS_HEIGHT - margin.top - margin.bottom;
 
@@ -275,6 +275,43 @@ function update(source) {
     .attr("height", function(d) {return d.bbox.height; })
     .style("fill", "CONFIG_TEXT_RECT_COLOR");
 
+  /**
+   * Saliency vis for each node
+   **/
+
+  above_dy = 300;
+  above_padding = 5;
+
+  nodeEnter.insert("rect", "circle")
+    .attr("x", function(d) { return d.above ? -d.above.w / 2 : 0 })
+    .attr("y", -above_dy)
+    .attr("width", function(d) { return d.above ? d.above.w : 0 })
+    .attr("height", function(d) { return d.above ? d.above.h : 0 })
+    .style("fill", function(d) { return gradientStroke(d); });
+
+  nodeEnter.append("svg:image", "circle")
+    .attr("xlink:href", function(d) { return d.above ? d.above.href : '' })
+    .attr("x", function(d) { return d.above ? -(d.above.w / 2 - above_padding) : 0})
+    .attr("y", -(above_dy - above_padding))
+    .attr("height", function(d) { return d.above ? (d.above.h - above_padding * 2) : 0 })
+    .attr("width", function(d) { return d.above ? (d.above.w - above_padding * 2) : 0 });
+
+  function em2px(em) {
+    return em * parseFloat(getComputedStyle(document.querySelector('html')).fontSize);
+  }
+
+  var y1 = - (em2px(CONFIG_ZOOM * 0.6) + above_padding);
+  nodeEnter.append("line", "svg:image")
+    .attr("x1", 0)
+    .attr("y1", y1)
+    .attr("x2", 0)
+    .attr("y2", function(d) { return d.above ? - (above_dy - d.above.h - above_padding * 2) : y1 })
+    .style("stroke", gradientStroke);
+
+  /**
+   * End saliency vis
+   **/
+
   // Transition nodes to their new position.
   var nodeUpdate = node.transition()
 	  .duration(duration)
@@ -293,6 +330,12 @@ function update(source) {
   nodeUpdate.select("text.small")
 	  .style("fill-opacity", 1);
 
+  nodeUpdate.select("rect")
+    .style("opacity", 1);
+
+  nodeUpdate.select("image")
+    .style("opacity", 1);
+
   // Transition exiting nodes to the parent's new position.
   var nodeExit = node.exit().transition()
 	  .duration(duration)
@@ -308,10 +351,16 @@ function update(source) {
   nodeExit.select("text.small")
 	  .style("fill-opacity", 1e-6);
 
+  nodeExit.select("rect")
+    .style("opacity", 1e-6);
+
+  nodeExit.select("image")
+    .style("opacity", 1e-6);
+
   if (straight_lines) {
 
     // Update the links…
-    var link = svg.selectAll("line")
+    var link = svg.selectAll("line.link")
   	  .data(links, function(d) { return d.target.id; });
 
     link.enter().insert("line", "g")

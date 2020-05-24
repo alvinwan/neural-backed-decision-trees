@@ -166,7 +166,8 @@ def build_tree(G, root,
         include_leaf_images=False,
         dataset=None,
         image_resize_factor=1,
-        include_fake_sublabels=False):
+        include_fake_sublabels=False,
+        include_fake_labels=False):
     """
     :param color_info dict[str, dict]: mapping from node labels or IDs to color
                                        information. This is by default just a
@@ -179,11 +180,15 @@ def build_tree(G, root,
             include_leaf_images=include_leaf_images,
             dataset=dataset,
             image_resize_factor=image_resize_factor,
-            include_fake_sublabels=include_fake_sublabels)
+            include_fake_sublabels=include_fake_sublabels,
+            include_fake_labels=include_fake_labels)
         for child in G.succ[root]]
     _node = G.nodes[root]
     label = _node.get('label', '')
     sublabel = root
+
+    if root.startswith('f') and not include_fake_labels:
+        label = ''
 
     if root.startswith('f') and not include_fake_sublabels:  # WARNING: hacky, ignores fake wnids -- this will have to be changed lol
         sublabel = ''
@@ -218,6 +223,14 @@ def build_tree(G, root,
             'href': image_href,
             'width': image_width * image_resize_factor,
             'height': image_height *  image_resize_factor
+        }
+
+    if root in color_info:  # TODO(tmp)
+        image_width = image_height = 150
+        node['above'] = {
+            'href': '/Users/alvinwan/Documents/nbdt/vis/output/cityscapes/vis_seg_hrnet_w18_small_v1_512x1024_tsw10/gradcamwhole_last_layer.3_f00000032_crop400/image-0-pixel_i-487-pixel_j-1076.jpg',
+            'w': image_width * image_resize_factor,
+            'h': image_height * image_resize_factor
         }
     return node
 
@@ -264,7 +277,7 @@ def image_to_base64_encode(image, format="jpeg"):
 
 
 def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
-        show_sublabels=False, height=750, dark=False):
+        show_sublabels=False, height=750, dark=False, margin_top=20):
     with open(path_template) as f:
         html = f.read() \
         .replace(
@@ -293,7 +306,10 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
             '#FFFFFF' if dark else '#000000') \
         .replace(
             "CONFIG_TEXT_RECT_COLOR",
-            "rgba(17,17,17,0.8)" if dark else "rgba(255,255,255,0.8)")
+            "rgba(17,17,17,0.8)" if dark else "rgba(255,255,255,0.8)") \
+        .replace(
+            "CONFIG_MARGIN_TOP",
+            str(margin_top))
 
     os.makedirs('out', exist_ok=True)
     path_html = f'out/{fname}-{name}.html'
@@ -385,4 +401,5 @@ def generate_hierarchy_vis(args):
         straight_lines=not args.vis_curved,
         show_sublabels=args.vis_sublabels,
         height=args.vis_height,
-        dark=args.vis_dark)
+        dark=args.vis_dark,
+        margin_top=args.vis_margin_top)
