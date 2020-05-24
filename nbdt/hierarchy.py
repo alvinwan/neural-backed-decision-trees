@@ -293,7 +293,7 @@ def image_to_base64_encode(image, format="jpeg"):
     return base64.b64encode(buffered.getvalue())
 
 
-def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
+def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
         show_sublabels=False, height=750, dark=False, margin_top=20,
         above_dy=350, y_node_sep=160, hide=[], _print=False):
     with open(path_template) as f:
@@ -342,7 +342,7 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
             str(margin_top))
 
     os.makedirs('out', exist_ok=True)
-    path_html = f'out/{fname}-{name}.html'
+    path_html = f'out/{fname}.html'
     with open(path_html, 'w') as f:
         f.write(html)
 
@@ -381,8 +381,10 @@ def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=()):
     return nodes
 
 
-def generate_vis_fname(vis_color_path_to=None, **kwargs):
-    fname = generate_fname(**kwargs).replace('graph-', f'{kwargs["dataset"]}-', 1)
+def generate_vis_fname(vis_color_path_to=None, vis_out_fname=None, **kwargs):
+    fname = vis_out_fname
+    if fname is None:
+        fname = generate_fname(**kwargs).replace('graph-', f'{kwargs["dataset"]}-', 1)
     if vis_color_path_to is not None:
         fname += '-' + vis_color_path_to
     return fname
@@ -439,7 +441,7 @@ def generate_hierarchy_vis(args):
     fname = generate_vis_fname(**vars(args))
     parent = Path(fwd()).parent
     generate_vis(
-        str(parent / 'nbdt/templates/tree-template.html'), tree, 'tree', fname,
+        str(parent / 'nbdt/templates/tree-template.html'), tree, fname,
         zoom=args.vis_zoom,
         straight_lines=not args.vis_curved,
         show_sublabels=args.vis_sublabels,
