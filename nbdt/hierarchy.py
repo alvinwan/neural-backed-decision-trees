@@ -12,6 +12,7 @@ import json
 import torchvision
 import base64
 from io import BytesIO
+from collections import defaultdict
 
 
 ############
@@ -159,6 +160,23 @@ def test_hierarchy(args):
 #######
 
 
+def set_dot_notation(node, key, value):
+    """
+    >>> a = {}
+    >>> set_dot_notation(a, 'above.href', 'hello')
+    >>> a['above']['href']
+    'hello'
+    """
+    curr = last = node
+    key_part = key
+    if '.' in key:
+        for key_part in key.split('.'):
+            last = curr
+            curr[key_part] = node.get(key_part, {})
+            curr = curr[key_part]
+    last[key_part] = value
+
+
 def build_tree(G, root,
         parent='null',
         color_info=(),
@@ -167,7 +185,8 @@ def build_tree(G, root,
         dataset=None,
         image_resize_factor=1,
         include_fake_sublabels=False,
-        include_fake_labels=False):
+        include_fake_labels=False,
+        node_to_conf={}):
     """
     :param color_info dict[str, dict]: mapping from node labels or IDs to color
                                        information. This is by default just a
@@ -181,7 +200,8 @@ def build_tree(G, root,
             dataset=dataset,
             image_resize_factor=image_resize_factor,
             include_fake_sublabels=include_fake_sublabels,
-            include_fake_labels=include_fake_labels)
+            include_fake_labels=include_fake_labels,
+            node_to_conf=node_to_conf)
         for child in G.succ[root]]
     _node = G.nodes[root]
     label = _node.get('label', '')
@@ -227,28 +247,8 @@ def build_tree(G, root,
             'height': image_height *  image_resize_factor
         }
 
-    node_to_href = {}
-    for i, label, sublabel in zip(
-            (32, 33, 35, 36),
-            ('Is car', 'Not sidewalk', 'Not building, vegetation', 'Not road'),
-            ('Looks for headlights, wheels, windows', '', '', '')
-        ):
-        node_to_href[f'f000000{i}'] = {
-            'position': 'above',
-            'href': f'/Users/alvinwan/Documents/nbdt/vis/output/cityscapes/vis_seg_hrnet_w18_small_v1_512x1024_tsw10/gradcamwhole_last_layer.3_f000000{i}_crop400/image-0-pixel_i-487-pixel_j-1076.jpg',
-            'label': label,
-            'sublabel': sublabel
-        }
-
-    if root in node_to_href and node_to_href[root]['position'] == 'above':
-        image_width = image_height = 150
-        node['above'] = {
-            'href': node_to_href[root]['href'],
-            'label': node_to_href[root]['label'],
-            'sublabel': node_to_href[root]['sublabel'],
-            'w': image_width * image_resize_factor,
-            'h': image_height * image_resize_factor
-        }
+    for key, value in node_to_conf[root].items():
+        set_dot_notation(node, key, value)
     return node
 
 
@@ -388,6 +388,13 @@ def generate_vis_fname(vis_color_path_to=None, **kwargs):
     return fname
 
 
+def generate_node_conf(node_conf):
+    node_to_conf = defaultdict(lambda: {})
+    for node, key, value in node_conf:
+        node_to_conf[node][key] = value
+    return node_to_conf
+
+
 def generate_hierarchy_vis(args):
     path = get_graph_path_from_args(**vars(args))
     print('==> Reading from {}'.format(path))
@@ -401,7 +408,7 @@ def generate_hierarchy_vis(args):
     assert root in G, f'Node {root} is not a valid node. Nodes: {G.nodes}'
 
     dataset = None
-    if args.dataset:
+    if args.dataset and args.vis_leaf_images:
         cls = getattr(data, args.dataset)
         dataset = cls(root='./data', train=False, download=True)
 
@@ -412,13 +419,16 @@ def generate_hierarchy_vis(args):
         color_path_to=args.vis_color_path_to,
         color_nodes=args.vis_color_nodes or ())
 
+    node_to_conf = generate_node_conf(args.vis_node_conf)
+
     tree = build_tree(G, root,
         color_info=color_info,
         force_labels_left=args.vis_force_labels_left or [],
         dataset=dataset,
         include_leaf_images=args.vis_leaf_images,
         image_resize_factor=args.vis_image_resize_factor,
-        include_fake_sublabels=args.vis_fake_sublabels)
+        include_fake_sublabels=args.vis_fake_sublabels,
+        node_to_conf=node_to_conf)
     graph = build_graph(G)
 
     if num_roots > 1:

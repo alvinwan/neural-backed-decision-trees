@@ -79,6 +79,8 @@ def get_parser():
     parser.add_argument('--vis-root', type=str, help='Which node is root')
     parser.add_argument('--vis-margin-top', type=int, default=20)
     parser.add_argument('--vis-hide', nargs='*', help='IDs of nodes to hide')
+    parser.add_argument('--vis-node-conf', nargs=3, action='append',
+        help='Key-value pairs to add: <node> <key> <value>')
     return parser
 
 
