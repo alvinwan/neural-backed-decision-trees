@@ -349,6 +349,9 @@ function update(source) {
     });
 
   nodeUpdate.select("text")
+    .attr("x", function(d) { return textOnLeft(d) ? -x : x; })
+    .attr("dx", function(d) { return textOnLeft(d) ? -dx + "px" : dx + "px"; })
+    .attr("text-anchor", function(d) { return textOnLeft(d) ? "end" : "start"; })
 	  .style("fill-opacity", 1);
 
   nodeUpdate.select("text.small")
