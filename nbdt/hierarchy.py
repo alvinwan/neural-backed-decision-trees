@@ -295,9 +295,13 @@ def image_to_base64_encode(image, format="jpeg"):
 
 def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
         show_sublabels=False, height=750, dark=False, margin_top=20,
-        above_dy=325, y_node_sep=150, hide=[], _print=False, out_dir='.'):
+        above_dy=325, y_node_sep=150, hide=[], _print=False, out_dir='.',
+        scale=1):
     with open(path_template) as f:
         html = f.read() \
+        .replace(
+            "CONFIG_SCALE",
+            str(scale)) \
         .replace(
             "CONFIG_PRINT",
             str(_print).lower()) \
@@ -452,4 +456,5 @@ def generate_hierarchy_vis(args):
         dark=args.vis_dark,
         margin_top=args.vis_margin_top,
         hide=args.vis_hide or [],
-        above_dy=args.vis_above_dy)
+        above_dy=args.vis_above_dy,
+        scale=args.vis_scale)

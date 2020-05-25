@@ -52,7 +52,10 @@ def get_parser():
         help='(induced hierarchy) Metric used for computing similarity')
     parser.add_argument('--vis-out-fname', type=str,
         help='Base filename for vis output file')
-    parser.add_argument('--vis-zoom', type=float, default=1.0)
+    parser.add_argument('--vis-zoom', type=float, default=1.0,
+        help='How large individual elements are, relative to the whole screen')
+    parser.add_argument('--vis-scale', type=float, default=1.0,
+        help='Initial scale for the svg. Like scaling an image.')
     parser.add_argument('--vis-curved', action='store_true',
         help='Use curved lines for edges')
     parser.add_argument('--vis-sublabels', action='store_true',

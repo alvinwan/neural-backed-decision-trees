@@ -24,7 +24,12 @@ var treeData = CONFIG_TREE_DATA;
 // copy-pasta'ed the code in this file from https://bl.ocks.org/d3noob/8375092
 
 // ************** Generate the tree diagram	 *****************
-var margin = {top: CONFIG_MARGIN_TOP, right: 120, bottom: 20, left: 250},
+var margin = {
+        top: CONFIG_MARGIN_TOP * CONFIG_SCALE,
+        right: 120 * CONFIG_SCALE,
+        bottom: 20 * CONFIG_SCALE,
+        left: 250 * CONFIG_SCALE
+    },
 	  width = 3000 - margin.right - margin.left,
 	  height = CONFIG_VIS_HEIGHT - margin.top - margin.bottom;
 
@@ -32,8 +37,8 @@ var i = 0,
 	duration = 750,
 	root;
 
-var tree = d3.layout.tree()
-	.size([height, width]);
+var tree = d3.layout.tree().size([height, width]);
+var zoom = d3.behavior.zoom().translate([margin.left, margin.top]).scale(CONFIG_SCALE);
 
 var diagonal = d3.svg.diagonal()
 	.projection(function(d) { return [d.y, d.x]; });
@@ -43,8 +48,9 @@ var svg = d3.select("main").append("svg")
 	.attr("height", height + margin.top + margin.bottom)
   .style("background-color", "CONFIG_BG_COLOR")
   .style("font-size", 15 * CONFIG_ZOOM)
-  .append("g")
-	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  .call(zoom.on("zoom", d3.zooming))
+    .append("g")
+  	.attr("transform", "translate(" + margin.left + "," + margin.top + ")scale(" + CONFIG_SCALE + "," + CONFIG_SCALE +")");
 
 // define custom reusable elements
 
