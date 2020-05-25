@@ -6,6 +6,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond&display=swap" rel="stylesheet">
   </head>
   <body>
+    <main>
+    </main>
 
 <!-- load the d3.js library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
@@ -36,7 +38,7 @@ var tree = d3.layout.tree()
 var diagonal = d3.svg.diagonal()
 	.projection(function(d) { return [d.y, d.x]; });
 
-var svg = d3.select("body").append("svg")
+var svg = d3.select("main").append("svg")
 	.attr("width", width + margin.right + margin.left)
 	.attr("height", height + margin.top + margin.bottom)
   .style("background-color", "CONFIG_BG_COLOR")
@@ -541,6 +543,5 @@ window.onload = function() {
 // }
 
 </script>
-
   </body>
 </html>
