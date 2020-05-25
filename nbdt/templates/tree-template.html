@@ -246,7 +246,11 @@ function update(source) {
   above_padding = 5;
 
   nodeEnter.insert("rect", "circle")
-    .attr("x", function(d) { return d.above ? -d.above.w / 2 : 0 })
+    .attr("x", function(d) {
+        if (d.above && !d.above.w) d.above.w = 150;
+        if (d.above && !d.above.h) d.above.h = 150;
+        return d.above ? -d.above.w / 2 : 0
+    })
     .attr("y", -above_dy)
     .attr("width", function(d) { return d.above ? d.above.w : 0 })
     .attr("height", function(d) { return d.above ? d.above.h : 0 })
