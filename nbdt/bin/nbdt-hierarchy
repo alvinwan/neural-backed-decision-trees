@@ -6,12 +6,12 @@ from nbdt.utils import maybe_install_wordnet
 
 
 def main():
-    maybe_install_wordnet()
 
     parser = get_parser()
     args = parser.parse_args()
 
     if not args.path:
+        maybe_install_wordnet()
         generate_hierarchy(**vars(args))
         test_hierarchy(args)
     generate_hierarchy_vis(args)
