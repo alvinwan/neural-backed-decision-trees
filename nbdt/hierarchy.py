@@ -295,7 +295,7 @@ def image_to_base64_encode(image, format="jpeg"):
 
 def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
         show_sublabels=False, height=750, dark=False, margin_top=20,
-        above_dy=350, y_node_sep=160, hide=[], _print=False, out_dir='.'):
+        above_dy=325, y_node_sep=150, hide=[], _print=False, out_dir='.'):
     with open(path_template) as f:
         html = f.read() \
         .replace(
@@ -336,7 +336,7 @@ def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
             '#FFFFFF' if dark else '#000000') \
         .replace(
             "CONFIG_TEXT_RECT_COLOR",
-            "rgba(17,17,17,0.8)" if dark else "rgba(255,255,255,0.9)") \
+            "rgba(17,17,17,0.8)" if dark else "rgba(255,255,255,1)") \
         .replace(
             "CONFIG_MARGIN_TOP",
             str(margin_top))
@@ -371,10 +371,10 @@ def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=()):
 
     if target is not None:
         for node in G.nodes:
-            nodes[node] = {'color': '#cccccc', 'color_incident_edge': True}
+            nodes[node] = {'color': '#cccccc', 'color_incident_edge': True, 'highlighted': False}
 
         while target != root:
-            nodes[target] = {'color': color, 'color_incident_edge': True}
+            nodes[target] = {'color': color, 'color_incident_edge': True, 'highlighted': True}
             view = G.pred[target]
             target = list(view.keys())[0]
         nodes[root] = {'color': color}
@@ -451,4 +451,5 @@ def generate_hierarchy_vis(args):
         height=args.vis_height,
         dark=args.vis_dark,
         margin_top=args.vis_margin_top,
-        hide=args.vis_hide or [])
+        hide=args.vis_hide or [],
+        above_dy=args.vis_above_dy)

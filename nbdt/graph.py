@@ -83,6 +83,8 @@ def get_parser():
     parser.add_argument('--vis-hide', nargs='*', help='IDs of nodes to hide')
     parser.add_argument('--vis-node-conf', nargs=3, action='append',
         help='Key-value pairs to add: <node> <key> <value>')
+    parser.add_argument('--vis-above-dy', type=int, default=325,
+        help='Amount to offset images above nodes by')
     return parser
 
 
