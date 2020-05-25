@@ -207,7 +207,7 @@ def build_tree(G, root,
     label = _node.get('label', '')
     sublabel = root
 
-    if root.startswith('f') and not include_fake_labels:
+    if root.startswith('f') and label.startswith('(') and not include_fake_labels:
         label = ''
 
     if root.startswith('f') and not include_fake_sublabels:  # WARNING: hacky, ignores fake wnids -- this will have to be changed lol
@@ -218,7 +218,7 @@ def build_tree(G, root,
         'label': label,
         'parent': parent,
         'children': children,
-        'alt': ', '.join(map(wnid_to_name, get_leaves(G, root=root))),
+        'alt': _node.get('alt', ', '.join(map(wnid_to_name, get_leaves(G, root=root)))),
         'id': root
     }
 
