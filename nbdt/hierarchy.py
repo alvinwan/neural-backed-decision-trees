@@ -392,6 +392,9 @@ def generate_vis_fname(vis_color_path_to=None, vis_out_fname=None, **kwargs):
 
 def generate_node_conf(node_conf):
     node_to_conf = defaultdict(lambda: {})
+    if not node_conf:
+        return node_to_conf
+
     for node, key, value in node_conf:
         node_to_conf[node][key] = value
     return node_to_conf
