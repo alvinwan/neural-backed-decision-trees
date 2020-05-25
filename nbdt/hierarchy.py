@@ -295,7 +295,7 @@ def image_to_base64_encode(image, format="jpeg"):
 
 def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
         show_sublabels=False, height=750, dark=False, margin_top=20,
-        above_dy=350, y_node_sep=160, hide=[], _print=False):
+        above_dy=350, y_node_sep=160, hide=[], _print=False, out_dir='.'):
     with open(path_template) as f:
         html = f.read() \
         .replace(
@@ -341,8 +341,8 @@ def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
             "CONFIG_MARGIN_TOP",
             str(margin_top))
 
-    os.makedirs('out', exist_ok=True)
-    path_html = f'out/{fname}.html'
+    os.makedirs(out_dir, exist_ok=True)
+    path_html = f'{out_dir}/{fname}.html'
     with open(path_html, 'w') as f:
         f.write(html)
 
