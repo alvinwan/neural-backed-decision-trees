@@ -30,7 +30,7 @@ var treeData = CONFIG_TREE_DATA;
 var margin = {
         top: CONFIG_MARGIN_TOP * CONFIG_SCALE,
         right: 120 * CONFIG_SCALE,
-        bottom: 300 * CONFIG_SCALE,
+        bottom: 10 * CONFIG_SCALE,
         left: 250 * CONFIG_SCALE
     },
 	  width = CONFIG_VIS_WIDTH - margin.right - margin.left,
@@ -41,7 +41,9 @@ var i = 0,
 	root;
 
 var tree = d3.layout.tree().size([height, width]);
-var zoom = d3.behavior.zoom().translate([margin.left, margin.top]).scale(CONFIG_SCALE);
+var zoom = d3.behavior.zoom()
+    .translate([margin.left, margin.top])
+    .scale(CONFIG_SCALE);
 
 var diagonal = d3.svg.diagonal()
 	.projection(function(d) { return [d.y, d.x]; });
@@ -51,9 +53,10 @@ var svg = d3.select("div.tree-main").append("svg")
 	.attr("height", height + margin.top + margin.bottom)
   .style("background-color", "CONFIG_BG_COLOR")
   .style("font-size", 15 * CONFIG_ZOOM)
-  .call(zoom.on("zoom", d3.zooming))
     .append("g")
-  	.attr("transform", "translate(" + margin.left + "," + margin.top + ")scale(" + CONFIG_SCALE + "," + CONFIG_SCALE +")");
+  	.attr("transform", "translate(" + margin.left + "," + margin.top + ")scale(" + CONFIG_SCALE + "," + CONFIG_SCALE +")")
+    .call(zoom)
+    .on(".zoom", null);
 
 // define custom reusable elements
 
