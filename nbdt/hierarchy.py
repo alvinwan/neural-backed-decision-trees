@@ -381,7 +381,7 @@ def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=()):
             nodes[target] = {'color': color, 'color_incident_edge': True, 'highlighted': True}
             view = G.pred[target]
             target = list(view.keys())[0]
-        nodes[root] = {'color': color}
+        nodes[root] = {'color': color, 'highlighted': True}
     return nodes
 
 

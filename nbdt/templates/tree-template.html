@@ -489,7 +489,10 @@ function update(source) {
 
     link.enter().insert("line", "g")
           .attr("class", "link")
-          .style("stroke-width", 2)
+          .style("stroke-width", function(d) {
+              if (d.source.highlighted && d.target.highlighted) return 4;
+              return 2
+          })
           .style("stroke", gradientStroke);
 
     link.attr('x1', function(d) {
