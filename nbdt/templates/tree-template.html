@@ -648,6 +648,8 @@ function update(source) {
   	d.x0 = d.x;
   	d.y0 = d.y;
   });
+
+  d3_onload();
 }
 
 // Toggle children on click.
@@ -662,7 +664,10 @@ function click(d) {
   update(d);
 }
 
-window.onload = function() {
+var d3_onload_run = false;
+function d3_onload() {
+  if (d3_onload_run) return;
+  d3_onload_run = true;
   setTimeout(function() {
     var hide = CONFIG_HIDE;
     for (var i = 0; i < hide.length; i++) {
@@ -675,6 +680,8 @@ window.onload = function() {
 
   }, 1000);
 }
+
+window.onload = d3_onload;
 
 // function saveImage() {
 //   var doctype = '<?xml version="1.0" standalone="no"?>'
