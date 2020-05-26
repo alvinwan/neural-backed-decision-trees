@@ -141,8 +141,10 @@ function gradientFontColor(d) {
 
 
 // arrow
-function makeArrow(d) {
-  var fill = gradientStroke(d);
+function makeArrow(d, fill) {
+  if (!fill || typeof(fill) == 'number') {
+    fill = gradientStroke(d);
+  }
   var id = "arrow" + fill.replace("#", "");
 
   var arrow = svg.append("svg:defs").append("svg:marker")
@@ -299,6 +301,24 @@ function update(source) {
     .attr("height", function(d) { return d.left ? (d.left.h - left_padding * 2) : 0 })
     .attr("width", function(d) { return d.left ? (d.left.w - left_padding * 2) : 0 });
 
+  nodeEnter.append("rect", "image")
+    .attr("x", function (d) { return d.left ? - left_dx + d.left.w / 2 : 0 })
+    .attr("y", -1)
+    .attr("width", function(d) { return 5; })
+    .attr("height", function(d) { return 5; })
+    .style("stroke-width", function (d) { return d.left ? 2 : 0; })
+    .style("stroke", '#39ff14')
+    .style('fill-opacity', '0')
+
+  nodeEnter.append("line", "image")
+    .attr("x1", function (d) { return d.left ? - left_dx + d.left.w - 20: 0 })
+    .attr("y1", function(d) { return d.left ? - d.left.h / 2 + 20 : 0})
+    .attr("x2", function (d) { return d.left ? - left_dx + d.left.w / 2 + 25 : 0 })
+    .attr("y2", -25)
+    .style("stroke-width", function(d) { return d.left ? 4 : 0 })
+    .style("stroke", '#39ff14')
+    .attr('marker-end', function(d) { if(d.left) return makeArrow(d, '#39ff14'); })
+
   var x1 = - (em2px(CONFIG_ZOOM * 0.5) + left_padding * 4);
   nodeEnter.append("line", "svg:image")
     .attr("x1", function(d) { return d.left ? - (left_dx - d.left.w - left_padding * 2) : x1 })
@@ -402,6 +422,15 @@ function update(source) {
      .attr("y", function(d) { return d.below ? (d.below.dy || below_dy) - d.below.h + below_padding : 0 })
      .attr("height", function(d) { return d.below ? (d.below.h - below_padding * 2) : 0 })
      .attr("width", function(d) { return d.below ? (d.below.w - below_padding * 2) : 0 });
+
+   nodeEnter.append("rect", "image")
+     .attr("x", -1)
+     .attr("y", function (d) { return d.below ? (d.below.dy || below_dy) - d.below.h / 2 : 0 })
+     .attr("width", function(d) { return 5; })
+     .attr("height", function(d) { return 5; })
+     .attr("stroke-width", function (d) { return d.below ? 2 : 0; })
+     .attr("stroke", '#39ff14')
+     .style('fill-opacity', '0')
 
    var y1 = (em2px(CONFIG_ZOOM * 0.5) + below_padding);
    nodeEnter.append("line", "svg:image")
