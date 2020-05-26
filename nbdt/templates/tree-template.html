@@ -405,7 +405,7 @@ function update(source) {
    **/
 
    below_dy = CONFIG_BELOW_DY;
-   below_padding = 7;
+   below_padding = 5;
 
    nodeEnter.insert("rect", "circle")
      .attr("x", function(d) {
@@ -416,7 +416,10 @@ function update(source) {
      .attr("y", function(d) { return d.below ? (d.below.dy || below_dy) - d.below.h : 0 })
      .attr("width", function(d) { return d.below ? d.below.w : 0 })
      .attr("height", function(d) { return d.below ? d.below.h : 0 })
-     .style("fill", '#333333');
+     .style("fill", function(d) {
+         if (d.below && d.below.rect) return gradientStroke(d);
+         return '#FFFFFF'
+     });
 
    nodeEnter.append("svg:image", "circle")
      .attr("xlink:href", function(d) { return d.below ? d.below.href : '' })
