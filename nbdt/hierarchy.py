@@ -296,7 +296,7 @@ def image_to_base64_encode(image, format="jpeg"):
 def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
         show_sublabels=False, height=750, dark=False, margin_top=20,
         above_dy=325, y_node_sep=150, hide=[], _print=False, out_dir='.',
-        scale=1):
+        scale=1, colormap='colormap_annotated.png'):
     with open(path_template) as f:
         html = f.read() \
         .replace(
@@ -343,7 +343,16 @@ def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
             "rgba(17,17,17,0.8)" if dark else "rgba(255,255,255,1)") \
         .replace(
             "CONFIG_MARGIN_TOP",
-            str(margin_top))
+            str(margin_top)) \
+        .replace(
+            "CONFIG_COLORMAP",
+            f'''<img src="{colormap}" style="
+        position: absolute;
+        top: 40px;
+        left: 80px;
+        height: 250px;
+        border: 4px solid #ccc;">''' if os.path.exists(colormap) else ''
+        )
 
     os.makedirs(out_dir, exist_ok=True)
     path_html = f'{out_dir}/{fname}.html'
@@ -457,4 +466,5 @@ def generate_hierarchy_vis(args):
         margin_top=args.vis_margin_top,
         hide=args.vis_hide or [],
         above_dy=args.vis_above_dy,
-        scale=args.vis_scale)
+        scale=args.vis_scale,
+        colormap=args.vis_colormap)
