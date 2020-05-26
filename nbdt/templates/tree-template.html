@@ -16,6 +16,8 @@
 
 <script>
 
+window.d3_onload_run = false;
+
 // CONSTANTS that python will impute
 var zoom_factor = CONFIG_ZOOM;
 var show_sublabels = CONFIG_SHOW_SUBLABELS;
@@ -664,10 +666,9 @@ function click(d) {
   update(d);
 }
 
-var d3_onload_run = false;
 function d3_onload() {
-  if (d3_onload_run) return;
-  d3_onload_run = true;
+  if (window.d3_onload_run) return;
+  window.d3_onload_run = true;
   setTimeout(function() {
     var hide = CONFIG_HIDE;
     for (var i = 0; i < hide.length; i++) {
