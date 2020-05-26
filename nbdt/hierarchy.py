@@ -351,7 +351,7 @@ def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
         top: 40px;
         left: 80px;
         height: 250px;
-        border: 4px solid #ccc;">''' if os.path.exists(colormap) else ''
+        border: 4px solid #ccc;">''' if isinstance(colormap, str) and os.path.exists(colormap) else ''
         )
 
     os.makedirs(out_dir, exist_ok=True)

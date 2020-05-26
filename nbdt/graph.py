@@ -88,8 +88,7 @@ def get_parser():
         help='Key-value pairs to add: <node> <key> <value>')
     parser.add_argument('--vis-above-dy', type=int, default=325,
         help='Amount to offset images above nodes by')
-    parser.add_argument('--vis-colormap', default='colormap_annotated.png',
-        help='Path to colormap image')
+    parser.add_argument('--vis-colormap', help='Path to colormap image')
     return parser
 
 
