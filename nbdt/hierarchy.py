@@ -295,8 +295,8 @@ def image_to_base64_encode(image, format="jpeg"):
 
 def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
         show_sublabels=False, height=750, dark=False, margin_top=20,
-        above_dy=325, y_node_sep=150, hide=[], _print=False, out_dir='.',
-        scale=1, colormap='colormap_annotated.png'):
+        above_dy=325, y_node_sep=170, hide=[], _print=False, out_dir='.',
+        scale=1, colormap='colormap_annotated.png', below_dy=475, root_y='null'):
     with open(path_template) as f:
         html = f.read() \
         .replace(
@@ -314,6 +314,9 @@ def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
         .replace(
             "CONFIG_ABOVE_DY",
             str(above_dy)) \
+        .replace(
+            "CONFIG_BELOW_DY",
+            str(below_dy)) \
         .replace(
             "CONFIG_TREE_DATA",
             json.dumps([data])) \
@@ -344,6 +347,9 @@ def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
         .replace(
             "CONFIG_MARGIN_TOP",
             str(margin_top)) \
+        .replace(
+            "CONFIG_ROOT_Y",
+            str(root_y)) \
         .replace(
             "CONFIG_COLORMAP",
             f'''<img src="{colormap}" style="
@@ -409,6 +415,8 @@ def generate_node_conf(node_conf):
         return node_to_conf
 
     for node, key, value in node_conf:
+        if value.isdigit():
+            value = int(value)
         node_to_conf[node][key] = value
     return node_to_conf
 
@@ -466,5 +474,7 @@ def generate_hierarchy_vis(args):
         margin_top=args.vis_margin_top,
         hide=args.vis_hide or [],
         above_dy=args.vis_above_dy,
+        below_dy=args.vis_below_dy,
         scale=args.vis_scale,
+        root_y=args.vis_root_y,
         colormap=args.vis_colormap)

@@ -4,11 +4,6 @@
     <meta charset="utf-8">
     <title>CONFIG_TITLE</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond&display=swap" rel="stylesheet">
-    <style>
-main {
-  position:relative;
-}
-    </style>
   </head>
   <body>
     <div class="tree-main">
@@ -33,7 +28,7 @@ var treeData = CONFIG_TREE_DATA;
 var margin = {
         top: CONFIG_MARGIN_TOP * CONFIG_SCALE,
         right: 120 * CONFIG_SCALE,
-        bottom: 20 * CONFIG_SCALE,
+        bottom: 300 * CONFIG_SCALE,
         left: 250 * CONFIG_SCALE
     },
 	  width = 3000 - margin.right - margin.left,
@@ -182,7 +177,7 @@ var diagonalHatch = svg.append("svg:defs").append("pattern")
 
 root = treeData[0];
 root['force_text_on_left'] = true;
-root.x0 = height / 2;
+root.x0 = CONFIG_ROOT_Y != null ? CONFIG_ROOT_Y : height / 2;
 root.y0 = 0;
 
 update(root);
@@ -325,7 +320,7 @@ function update(source) {
   nodeEnter.append("text", "text.left")
     .attr("class", "left small")
     .attr("x", function(d) { return d.left ? - (left_dx - d.left.w / 2) : 0 })
-    .attr("y", function(d) { return d.left ? d.left.h / 2 + left_padding * 5 + em2px(1.2) : 0 })
+    .attr("y", function(d) { return d.left ? d.left.h / 2 + left_padding * 5 + em2px(CONFIG_ZOOM) : 0 })
     .text(function(d) { return d.left ? d.left.sublabel || '' : ''; })
     .attr("text-anchor", "middle")
     .call(setBBGenerator('bbox_left_small'))
@@ -356,6 +351,7 @@ function update(source) {
     .attr("width", function(d) { return d.above ? (d.above.w - above_padding * 2) : 0 });
 
   var y1 = - (em2px(CONFIG_ZOOM * 0.5) + above_padding);
+
   nodeEnter.append("line", "svg:image")
     .attr("x1", 0)
     .attr("y1", y1)
@@ -376,15 +372,75 @@ function update(source) {
   nodeEnter.append("text", "text.above")
     .attr("class", "above small")
     .attr("x", 0)
-    .attr("y", function(d) { return d.above ? - (above_dy - d.above.h - above_padding * 5 - em2px(1.2)) : y1 })
+    .attr("y", function(d) { return d.above ? - (above_dy - d.above.h - above_padding * 5 - em2px(CONFIG_ZOOM)) : y1 })
     .text(function(d) { return d.above ? d.above.sublabel || '' : ''; })
     .attr("text-anchor", "middle")
     .style("fill", "#999999")
     .call(setBBGenerator('bbox_above_small'))
 
   /**
-   * End saliency vis
+   * BELOW saliency vis
    **/
+
+   below_dy = CONFIG_BELOW_DY;
+   below_padding = 7;
+
+   nodeEnter.insert("rect", "circle")
+     .attr("x", function(d) {
+         if (d.below && !d.below.w) d.below.w = default_dim;
+         if (d.below && !d.below.h) d.below.h = default_dim;
+         return d.below ? -d.below.w / 2 : 0
+     })
+     .attr("y", function(d) { return d.below ? (d.below.dy || below_dy) - d.below.h : 0 })
+     .attr("width", function(d) { return d.below ? d.below.w : 0 })
+     .attr("height", function(d) { return d.below ? d.below.h : 0 })
+     .style("fill", '#333333');
+
+   nodeEnter.append("svg:image", "circle")
+     .attr("xlink:href", function(d) { return d.below ? d.below.href : '' })
+     .attr("x", function(d) { return d.below ? -(d.below.w / 2 - below_padding) : 0})
+     .attr("y", function(d) { return d.below ? (d.below.dy || below_dy) - d.below.h + below_padding : 0 })
+     .attr("height", function(d) { return d.below ? (d.below.h - below_padding * 2) : 0 })
+     .attr("width", function(d) { return d.below ? (d.below.w - below_padding * 2) : 0 });
+
+   var y1 = (em2px(CONFIG_ZOOM * 0.5) + below_padding);
+   nodeEnter.append("line", "svg:image")
+     .attr("x1", 0)
+     .attr("y1", y1)
+     .attr("x2", 0)
+     .attr("y2", function(d) { return d.below ? ((d.below.dy || below_dy) - d.below.h - below_padding * 2) : y1 })
+     .style("stroke-width", 8)
+     .style("stroke", '#ffffff');
+
+   nodeEnter.append("line", "svg:image")
+     .attr("x1", 0)
+     .attr("y1", y1)
+     .attr("x2", 0)
+     .attr("y2", function(d) { return d.below ? ((d.below.dy || below_dy) - d.below.h - below_padding * 2) : y1 })
+     .style("stroke-width", 2)
+     .style("stroke", '#cccccc');
+
+   // Text for saliency popup
+   nodeEnter.append("text", "line")
+     .attr("class", "below")
+     .attr("x", 0)
+     .attr("y", function(d) { return d.below ? ((d.below.dy || below_dy) + below_padding * 5) : y1 })
+     .text(function(d) { return d.below ? d.below.label || '' : ''; })
+     .attr("text-anchor", "middle")
+     .call(setBBGenerator('bbox_below'))
+
+   nodeEnter.append("text", "text.below")
+     .attr("class", "below small")
+     .attr("x", 0)
+     .attr("y", function(d) { return d.below ? ((d.below.dy || below_dy) + below_padding * 5 + em2px(CONFIG_ZOOM)) : y1 })
+     .text(function(d) { return d.below ? d.below.sublabel || '' : ''; })
+     .attr("text-anchor", "middle")
+     .style("fill", "#999999")
+     .call(setBBGenerator('bbox_below_small'))
+
+  /**
+   * GGeneral text
+   */
 
    nodeEnter.selectAll("text")
      .style("font-size", "0.9em")
