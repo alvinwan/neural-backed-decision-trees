@@ -297,9 +297,12 @@ def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
         show_sublabels=False, height=750, dark=False, margin_top=20,
         above_dy=325, y_node_sep=170, hide=[], _print=False, out_dir='.',
         scale=1, colormap='colormap_annotated.png', below_dy=475, root_y='null',
-        width=1000):
+        width=1000, margin_left=250):
     with open(path_template) as f:
         html = f.read() \
+        .replace(
+            "CONFIG_MARGIN_LEFT",
+            str(margin_left)) \
         .replace(
             "CONFIG_VIS_WIDTH",
             str(width)) \
@@ -378,11 +381,11 @@ def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=()):
     leaves = list(get_leaves(G))
     if color_leaves:
         for leaf in leaves:
-            nodes[leaf] = {'color': color}
+            nodes[leaf] = {'color': color, 'highlighted': True}
 
     for (id, node) in G.nodes.items():
         if node.get('label', '') in color_nodes or id in color_nodes:
-            nodes[id] = {'color': color}
+            nodes[id] = {'color': color, 'highlighted': True}
 
     root = get_root(G)
     target = None
@@ -477,6 +480,7 @@ def generate_hierarchy_vis(args):
         width=args.vis_width,
         dark=args.vis_dark,
         margin_top=args.vis_margin_top,
+        margin_left=args.vis_margin_left,
         hide=args.vis_hide or [],
         above_dy=args.vis_above_dy,
         below_dy=args.vis_below_dy,

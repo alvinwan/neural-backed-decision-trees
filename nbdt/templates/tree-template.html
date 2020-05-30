@@ -31,7 +31,7 @@ var margin = {
         top: CONFIG_MARGIN_TOP * CONFIG_SCALE,
         right: 120 * CONFIG_SCALE,
         bottom: 10 * CONFIG_SCALE,
-        left: 250 * CONFIG_SCALE
+        left: CONFIG_MARGIN_LEFT * CONFIG_SCALE
     },
 	  width = CONFIG_VIS_WIDTH - margin.right - margin.left,
 	  height = CONFIG_VIS_HEIGHT - margin.top - margin.bottom;
@@ -134,7 +134,8 @@ function gradientStroke(d) {
   if (d.target && d.target.color_incident_edge) d = d.target;
   if (d.color == "blue-green") return "#0450b4";
   if (d.color == "blue") return "#1155cc";
-  return d.color || "#ffffff"
+  if (d.color == "white") return "#FFFFFF";
+  return d.color || "#999999"
 }
 
 function gradientFontColor(d) {
