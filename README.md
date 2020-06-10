@@ -16,6 +16,10 @@ Run decision trees that achieve state-of-the-art accuracy for explainable models
 - [Setup for Development](#setup-for-development)
 - [Citation](#citation)
 
+**Applications**
+
+- **NEW!** [SegNBDT: Visual Decision Rules for Segmentation](https://github.com/daniel-ho/SegNBDT)
+
 ![pipeline](https://user-images.githubusercontent.com/2068077/76384774-1ffb8480-631d-11ea-973f-7cac2a60bb10.jpg)
 
 Per the pipeline illustration above, we (1) [generate the hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#1-Hierarchies) and (2) train the neural network [with a tree supervision loss](https://github.com/alvinwan/neural-backed-decision-trees#2-Tree-Supervision-Loss). Then, we (3) [run inference](https://github.com/alvinwan/neural-backed-decision-trees#3-Inference) by featurizing images using the network backbone and running embedded decision rules.
