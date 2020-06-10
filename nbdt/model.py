@@ -9,7 +9,9 @@ import torch.nn as nn
 from nbdt.utils import (
     dataset_to_default_path_graph,
     dataset_to_default_path_wnids,
-    hierarchy_to_path_graph)
+    hierarchy_to_path_graph,
+    coerce_tensor,
+    uncoerce_tensor)
 from nbdt.models.utils import load_state_dict_from_key, coerce_state_dict
 from nbdt.data.custom import Node, dataset_to_dummy_classes
 from nbdt.graph import get_root, get_wnids, synset_to_name, wnid_to_name
@@ -86,11 +88,13 @@ class EmbeddedDecisionRules(nn.Module):
         wnid_to_outputs = {}
         for node in nodes:
             node_logits = cls.get_node_logits(outputs, node)
-            wnid_to_outputs[node.wnid] = {
-                'logits': node_logits,
-                'preds': torch.max(node_logits, dim=1)[1],
-                'probs': F.softmax(node_logits, dim=1)
-            }
+            node_outputs = {'logits': node_logits}
+
+            if len(node_logits.size()) > 1:
+                node_outputs['preds'] = torch.max(node_logits, dim=1)[1]
+                node_outputs['probs'] = F.softmax(node_logits, dim=1)
+
+            wnid_to_outputs[node.wnid] = node_outputs
         return wnid_to_outputs
 
     def forward_nodes(self, outputs):
@@ -127,6 +131,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         # move all to CPU, detach from computation graph
         example = wnid_to_outputs[nodes[0].wnid]
         n_samples = int(example['logits'].size(0))
+        device = example['logits'].device
 
         for wnid in tuple(wnid_to_outputs.keys()):
             outputs = wnid_to_outputs[wnid]
@@ -156,7 +161,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
             pred = -1 if cls is None else classes.index(cls)
             preds.append(pred)
             decisions.append(decision)
-        return torch.Tensor(preds).long(), decisions
+        return torch.Tensor(preds).long().to(device), decisions
 
     def predicted_to_logits(self, predicted):
         """Convert predicted classes to one-hot logits."""
@@ -311,8 +316,8 @@ class NBDT(nn.Module):
         state_dict = coerce_state_dict(state_dict, self.model.state_dict())
         return self.model.load_state_dict(state_dict, **kwargs)
 
-    def state_dict(self):
-        return self.model.state_dict()
+    def state_dict(self, *args, **kwargs):
+        return self.model.state_dict(*args, **kwargs)
 
     def forward(self, x):
         x = self.model(x)
@@ -335,6 +340,39 @@ class HardNBDT(NBDT):
 
 
 class SoftNBDT(NBDT):
+
+    def __init__(self, *args, **kwargs):
+        kwargs.update({
+            'Rules': SoftEmbeddedDecisionRules
+        })
+        super().__init__(*args, **kwargs)
+
+
+class SegNBDT(NBDT):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def forward(self, x):
+        assert len(x.shape) == 4, 'Input must be of shape (N,C,H,W) for segmentation'
+        x = self.model(x)
+        original_shape = x.shape
+        x = coerce_tensor(x)
+        x = self.rules.forward(x)
+        x = uncoerce_tensor(x, original_shape)
+        return x
+
+
+class HardSegNBDT(SegNBDT):
+
+    def __init__(self, *args, **kwargs):
+        kwargs.update({
+            'Rules': HardEmbeddedDecisionRules
+        })
+        super().__init__(*args, **kwargs)
+
+
+class SoftSegNBDT(SegNBDT):
 
     def __init__(self, *args, **kwargs):
         kwargs.update({

@@ -19,12 +19,17 @@ import nltk
 
 # tree-generation consntants
 METHODS = ('wordnet', 'random', 'induced')
-DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200', 'Imagenet1000')
+DATASETS = ('CIFAR10', 'CIFAR100', 'TinyImagenet200', 'Imagenet1000',
+    'Cityscapes', 'PascalContext', 'LookIntoPerson', 'ADE20K')
 DATASET_TO_NUM_CLASSES = {
     'CIFAR10': 10,
     'CIFAR100': 100,
     'TinyImagenet200': 200,
-    'Imagenet1000': 1000
+    'Imagenet1000': 1000,
+    'Cityscapes': 19,
+    'PascalContext': 59,
+    'LookIntoPerson': 20,
+    'ADE20K': 150,
 }
 DATASET_TO_CLASSES = {
     'CIFAR10': [
@@ -268,3 +273,15 @@ def generate_fname(dataset, arch, path_graph, wnid=None, name='',
         if tree_supervision_weight is not None and tree_supervision_weight != 1:
             fname += f'-tsw{tree_supervision_weight}'
     return fname
+
+
+def coerce_tensor(x, is_label=False):
+    if is_label:
+        return x.reshape(-1,1)
+    else:
+        return x.permute(0,2,3,1).reshape(-1,x.shape[1])
+
+
+def uncoerce_tensor(x, original_shape):
+    n,c,h,w = original_shape
+    return x.reshape(n,h,w,c).permute(0,3,1,2)

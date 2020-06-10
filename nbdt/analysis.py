@@ -131,6 +131,7 @@ class DecisionRules(Noop):
 
     def __init__(self, *args, Rules=HardRules, **kwargs):
         self.rules = Rules(*args, **kwargs)
+        self.total, self.correct = 0,0
 
     def update_batch(self, outputs, targets):
         super().update_batch(outputs, targets)
