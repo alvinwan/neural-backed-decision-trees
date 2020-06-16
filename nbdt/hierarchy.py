@@ -12,6 +12,7 @@ import json
 import torchvision
 import base64
 from io import BytesIO
+from collections import defaultdict
 
 
 ############
@@ -36,7 +37,7 @@ def assert_all_wnids_in_graph(G, wnids):
 
 def generate_hierarchy(
         dataset, method, seed=0, branching_factor=2, extra=0,
-        no_prune=False, fname='', single_path=False,
+        no_prune=False, fname='', path='', single_path=False,
         induced_linkage='ward', induced_affinity='euclidean',
         checkpoint=None, arch=None, model=None, **kwargs):
     wnids = get_wnids_from_dataset(dataset)
@@ -78,6 +79,7 @@ def generate_hierarchy(
         extra=extra,
         no_prune=no_prune,
         fname=fname,
+        path=path,
         single_path=single_path,
         induced_linkage=induced_linkage,
         induced_affinity=induced_affinity,
@@ -158,6 +160,23 @@ def test_hierarchy(args):
 #######
 
 
+def set_dot_notation(node, key, value):
+    """
+    >>> a = {}
+    >>> set_dot_notation(a, 'above.href', 'hello')
+    >>> a['above']['href']
+    'hello'
+    """
+    curr = last = node
+    key_part = key
+    if '.' in key:
+        for key_part in key.split('.'):
+            last = curr
+            curr[key_part] = node.get(key_part, {})
+            curr = curr[key_part]
+    last[key_part] = value
+
+
 def build_tree(G, root,
         parent='null',
         color_info=(),
@@ -165,7 +184,9 @@ def build_tree(G, root,
         include_leaf_images=False,
         dataset=None,
         image_resize_factor=1,
-        include_fake_sublabels=False):
+        include_fake_sublabels=False,
+        include_fake_labels=False,
+        node_to_conf={}):
     """
     :param color_info dict[str, dict]: mapping from node labels or IDs to color
                                        information. This is by default just a
@@ -178,11 +199,16 @@ def build_tree(G, root,
             include_leaf_images=include_leaf_images,
             dataset=dataset,
             image_resize_factor=image_resize_factor,
-            include_fake_sublabels=include_fake_sublabels)
+            include_fake_sublabels=include_fake_sublabels,
+            include_fake_labels=include_fake_labels,
+            node_to_conf=node_to_conf)
         for child in G.succ[root]]
     _node = G.nodes[root]
     label = _node.get('label', '')
     sublabel = root
+
+    if root.startswith('f') and label.startswith('(') and not include_fake_labels:
+        label = ''
 
     if root.startswith('f') and not include_fake_sublabels:  # WARNING: hacky, ignores fake wnids -- this will have to be changed lol
         sublabel = ''
@@ -192,6 +218,8 @@ def build_tree(G, root,
         'label': label,
         'parent': parent,
         'children': children,
+        'alt': _node.get('alt', ', '.join(map(wnid_to_name, get_leaves(G, root=root)))),
+        'id': root
     }
 
     if label in color_info:
@@ -218,6 +246,9 @@ def build_tree(G, root,
             'width': image_width * image_resize_factor,
             'height': image_height *  image_resize_factor
         }
+
+    for key, value in node_to_conf[root].items():
+        set_dot_notation(node, key, value)
     return node
 
 
@@ -262,11 +293,38 @@ def image_to_base64_encode(image, format="jpeg"):
     return base64.b64encode(buffered.getvalue())
 
 
-def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
-        show_sublabels=False, height=750, bg='#FFFFFF',
+def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
+        show_sublabels=False, height=750, margin_top=20,
+        above_dy=325, y_node_sep=170, hide=[], _print=False, out_dir='.',
+        scale=1, colormap='colormap_annotated.png', below_dy=475, root_y='null',
+        width=1000, margin_left=250, bg='#FFFFFF',
         text_rect='rgba(255,255,255,0.8)', stroke_width=0.3):
     with open(path_template) as f:
         html = f.read() \
+        .replace(
+            "CONFIG_MARGIN_LEFT",
+            str(margin_left)) \
+        .replace(
+            "CONFIG_VIS_WIDTH",
+            str(width)) \
+        .replace(
+            "CONFIG_SCALE",
+            str(scale)) \
+        .replace(
+            "CONFIG_PRINT",
+            str(_print).lower()) \
+        .replace(
+            "CONFIG_HIDE",
+            str(hide)) \
+        .replace(
+            "CONFIG_Y_NODE_SEP",
+            str(y_node_sep)) \
+        .replace(
+            "CONFIG_ABOVE_DY",
+            str(above_dy)) \
+        .replace(
+            "CONFIG_BELOW_DY",
+            str(below_dy)) \
         .replace(
             "CONFIG_TREE_DATA",
             json.dumps([data])) \
@@ -293,10 +351,25 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
             text_rect) \
         .replace(
             "CONFIG_STROKE_WIDTH",
-            str(stroke_width))
+            str(stroke_width)) \
+        .replace(
+            "CONFIG_MARGIN_TOP",
+            str(margin_top)) \
+        .replace(
+            "CONFIG_ROOT_Y",
+            str(root_y)) \
+        .replace(
+            "CONFIG_COLORMAP",
+            f'''<img src="{colormap}" style="
+        position: absolute;
+        top: 40px;
+        left: 80px;
+        height: 250px;
+        border: 4px solid #ccc;">''' if isinstance(colormap, str) and os.path.exists(colormap) else ''
+        )
 
-    os.makedirs('out', exist_ok=True)
-    path_html = f'out/{fname}-{name}.html'
+    os.makedirs(out_dir, exist_ok=True)
+    path_html = f'{out_dir}/{fname}.html'
     with open(path_html, 'w') as f:
         f.write(html)
 
@@ -322,11 +395,11 @@ def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=(),
     leaves = list(get_leaves(G))
     if color_leaves:
         for leaf in leaves:
-            nodes[leaf] = {'color': color, 'theme': theme}
+            nodes[leaf] = {'color': color, 'highlighted': True, 'theme': theme}
 
     for (id, node) in G.nodes.items():
         if node.get('label', '') in color_nodes or id in color_nodes:
-            nodes[id] = {'color': color, 'theme': theme}
+            nodes[id] = {'color': color, 'highlighted': True, 'theme': theme}
         else:
             nodes[id] = {'color': 'gray', 'theme': theme}
 
@@ -339,19 +412,36 @@ def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=(),
             break
 
     if target is not None:
+        for node in G.nodes:
+            nodes[node] = {'color': '#cccccc', 'color_incident_edge': True, 'highlighted': False}
+
         while target != root:
-            nodes[target] = {'color': color, 'color_incident_edge': True, 'theme': theme}
+            nodes[target] = {'color': color, 'color_incident_edge': True, 'highlighted': True, 'theme': theme}
             view = G.pred[target]
             target = list(view.keys())[0]
-        nodes[root] = {'color': color, 'theme': theme}
+        nodes[root] = {'color': color, 'highlighted': True}
     return nodes
 
 
-def generate_vis_fname(vis_color_path_to=None, **kwargs):
-    fname = generate_fname(**kwargs).replace('graph-', f'{kwargs["dataset"]}-', 1)
+def generate_vis_fname(vis_color_path_to=None, vis_out_fname=None, **kwargs):
+    fname = vis_out_fname
+    if fname is None:
+        fname = generate_fname(**kwargs).replace('graph-', f'{kwargs["dataset"]}-', 1)
     if vis_color_path_to is not None:
         fname += '-' + vis_color_path_to
     return fname
+
+
+def generate_node_conf(node_conf):
+    node_to_conf = defaultdict(lambda: {})
+    if not node_conf:
+        return node_to_conf
+
+    for node, key, value in node_conf:
+        if value.isdigit():
+            value = int(value)
+        node_to_conf[node][key] = value
+    return node_to_conf
 
 
 def generate_hierarchy_vis(args):
@@ -362,10 +452,12 @@ def generate_hierarchy_vis(args):
 
     roots = list(get_roots(G))
     num_roots = len(roots)
-    root = next(get_roots(G))
+    root = args.vis_root or next(get_roots(G))
+
+    assert root in G, f'Node {root} is not a valid node. Nodes: {G.nodes}'
 
     dataset = None
-    if args.dataset:
+    if args.dataset and args.vis_leaf_images:
         cls = getattr(data, args.dataset)
         dataset = cls(root='./data', train=False, download=True)
 
@@ -377,13 +469,16 @@ def generate_hierarchy_vis(args):
         color_nodes=args.vis_color_nodes or (),
         theme=args.vis_theme)
 
+    node_to_conf = generate_node_conf(args.vis_node_conf)
+
     tree = build_tree(G, root,
         color_info=color_info,
         force_labels_left=args.vis_force_labels_left or [],
         dataset=dataset,
         include_leaf_images=args.vis_leaf_images,
         image_resize_factor=args.vis_image_resize_factor,
-        include_fake_sublabels=args.vis_fake_sublabels)
+        include_fake_sublabels=args.vis_fake_sublabels,
+        node_to_conf=node_to_conf)
     graph = build_graph(G)
 
     if num_roots > 1:
@@ -394,10 +489,19 @@ def generate_hierarchy_vis(args):
     fname = generate_vis_fname(**vars(args))
     parent = Path(fwd()).parent
     generate_vis(
-        str(parent / 'nbdt/templates/tree-template.html'), tree, 'tree', fname,
+        str(parent / 'nbdt/templates/tree-template.html'), tree, fname,
         zoom=args.vis_zoom,
         straight_lines=not args.vis_curved,
         show_sublabels=args.vis_sublabels,
         height=args.vis_height,
         bg=color_info['bg'],
-        text_rect=color_info['text_rect'])
+        text_rect=color_info['text_rect'],
+        width=args.vis_width,
+        margin_top=args.vis_margin_top,
+        margin_left=args.vis_margin_left,
+        hide=args.vis_hide or [],
+        above_dy=args.vis_above_dy,
+        below_dy=args.vis_below_dy,
+        scale=args.vis_scale,
+        root_y=args.vis_root_y,
+        colormap=args.vis_colormap)

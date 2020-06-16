@@ -30,6 +30,8 @@ def get_parser():
         help='Allows each leaf multiple paths to the root.')
     parser.add_argument('--no-prune', action='store_true', help='Do not prune.')
     parser.add_argument('--fname', type=str,
+        help='Override all settings and just provide graph name')
+    parser.add_argument('--path', type=str,
         help='Override all settings and just provide a path to a graph')
     parser.add_argument('--method', choices=METHODS,
         help='structure_released.xml apparently is missing many CIFAR100 classes. '
@@ -48,7 +50,12 @@ def get_parser():
         help='(induced hierarchy) Linkage type used for agglomerative clustering')
     parser.add_argument('--induced-affinity', type=str, default='euclidean',
         help='(induced hierarchy) Metric used for computing similarity')
-    parser.add_argument('--vis-zoom', type=float, default=1.0)
+    parser.add_argument('--vis-out-fname', type=str,
+        help='Base filename for vis output file')
+    parser.add_argument('--vis-zoom', type=float, default=1.0,
+        help='How large individual elements are, relative to the whole screen')
+    parser.add_argument('--vis-scale', type=float, default=1.0,
+        help='Initial scale for the svg. Like scaling an image.')
     parser.add_argument('--vis-curved', action='store_true',
         help='Use curved lines for edges')
     parser.add_argument('--vis-sublabels', action='store_true',
@@ -73,15 +80,30 @@ def get_parser():
              'by the original image. e.g., 32 for CIFAR10, 224 for Imagenet')
     parser.add_argument('--vis-height', type=int, default=750,
         help='Height of the outputted visualization')
+    parser.add_argument('--vis-width', type=int, default=3000)
     parser.add_argument('--vis-theme', choices=('dark', 'minimal', 'regular'),
         default='regular')
+    parser.add_argument('--vis-root', type=str, help='Which node is root')
+    parser.add_argument('--vis-margin-top', type=int, default=20)
+    parser.add_argument('--vis-margin-left', type=int, default=250)
+    parser.add_argument('--vis-hide', nargs='*', help='IDs of nodes to hide')
+    parser.add_argument('--vis-node-conf', nargs=3, action='append',
+        help='Key-value pairs to add: <node> <key> <value>')
+    parser.add_argument('--vis-above-dy', type=int, default=325,
+        help='Amount to offset images above nodes by')
+    parser.add_argument('--vis-below-dy', type=int, default=200,
+        help='Amount to offset images below nodes by')
+    parser.add_argument('--vis-colormap', help='Path to colormap image')
+    parser.add_argument('--vis-root-y', type=int, help='root position y', default=-1)
     return parser
 
 
 def generate_fname(method, seed=0, branching_factor=2, extra=0,
-                   no_prune=False, fname='', multi_path=False,
+                   no_prune=False, fname='', path='', multi_path=False,
                    induced_linkage='ward', induced_affinity='euclidean',
                    checkpoint=None, arch=None, **kwargs):
+    if path:
+        return Path(path).stem
     if fname:
         return fname
 
@@ -139,9 +161,11 @@ def get_wnids(path_wnids):
 
 def get_graph_path_from_args(
         dataset, method, seed=0, branching_factor=2, extra=0,
-        no_prune=False, fname='', multi_path=False,
+        no_prune=False, fname='', path='', multi_path=False,
         induced_linkage='ward', induced_affinity='euclidean',
         checkpoint=None, arch=None, **kwargs):
+    if path:
+        return path
     fname = generate_fname(
         method=method,
         seed=seed,

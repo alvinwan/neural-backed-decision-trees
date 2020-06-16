@@ -2,12 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>CONFIG_TITLE</title>
+    <title>CIFAR10-induced-ResNet18-dog</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
   </head>
   <body>
     <div class="tree-main">
-      CONFIG_COLORMAP
+      
     </div>
 
 <!-- load the d3.js library -->
@@ -19,22 +19,22 @@
 window.d3_onload_run = false;
 
 // CONSTANTS that python will impute
-var zoom_factor = CONFIG_ZOOM;
-var show_sublabels = CONFIG_SHOW_SUBLABELS;
-var straight_lines = CONFIG_STRAIGHT_LINES;
-var treeData = CONFIG_TREE_DATA;
+var zoom_factor = 1.5;
+var show_sublabels = false;
+var straight_lines = true;
+var treeData = [{"sublabel": "n00003553", "label": "whole", "parent": "null", "children": [{"sublabel": "n04524313", "label": "vehicle", "parent": "n00003553", "children": [{"sublabel": "n03791235", "label": "motor_vehicle", "parent": "n04524313", "children": [{"sublabel": "n02958343", "label": "car", "parent": "n03791235", "children": [], "alt": "car", "id": "n02958343", "color": "#cccccc", "color_incident_edge": true, "highlighted": false}, {"sublabel": "n04490091", "label": "truck", "parent": "n03791235", "children": [], "alt": "truck", "id": "n04490091", "color": "#cccccc", "color_incident_edge": true, "highlighted": false}], "alt": "truck, car", "id": "n03791235", "color": "#cccccc", "color_incident_edge": true, "highlighted": false, "force_text_on_left": true}, {"sublabel": "n03125870", "label": "craft", "parent": "n04524313", "children": [{"sublabel": "n02691156", "label": "airplane", "parent": "n03125870", "children": [], "alt": "airplane", "id": "n02691156", "color": "#cccccc", "color_incident_edge": true, "highlighted": false}, {"sublabel": "n04194289", "label": "ship", "parent": "n03125870", "children": [], "alt": "ship", "id": "n04194289", "color": "#cccccc", "color_incident_edge": true, "highlighted": false}], "alt": "airplane, ship", "id": "n03125870", "color": "#cccccc", "color_incident_edge": true, "highlighted": false, "force_text_on_left": true}], "alt": "truck, ship, car, airplane", "id": "n04524313", "color": "#cccccc", "color_incident_edge": true, "highlighted": false, "force_text_on_left": true}, {"sublabel": "n01466257", "label": "chordate", "parent": "n00003553", "children": [{"sublabel": "n01471682", "label": "vertebrate", "parent": "n01466257", "children": [{"sublabel": "n01503061", "label": "bird", "parent": "n01471682", "children": [], "alt": "bird", "id": "n01503061", "color": "#cccccc", "color_incident_edge": true, "highlighted": false}, {"sublabel": "n01639765", "label": "frog", "parent": "n01471682", "children": [], "alt": "frog", "id": "n01639765", "color": "#cccccc", "color_incident_edge": true, "highlighted": false}], "alt": "frog, bird", "id": "n01471682", "color": "#cccccc", "color_incident_edge": true, "highlighted": false, "force_text_on_left": true}, {"sublabel": "n01886756", "label": "placental", "parent": "n01466257", "children": [{"sublabel": "n02075296", "label": "carnivore", "parent": "n01886756", "children": [{"sublabel": "n02121620", "label": "cat", "parent": "n02075296", "children": [], "alt": "cat", "id": "n02121620", "color": "#cccccc", "color_incident_edge": true, "highlighted": false}, {"sublabel": "n02084071", "label": "dog", "parent": "n02075296", "children": [], "alt": "dog", "id": "n02084071", "color": "blue-minimal", "color_incident_edge": true, "highlighted": true, "theme": "minimal"}], "alt": "dog, cat", "id": "n02075296", "color": "blue-minimal", "color_incident_edge": true, "highlighted": true, "theme": "minimal", "force_text_on_left": true}, {"sublabel": "n02370806", "label": "ungulate", "parent": "n01886756", "children": [{"sublabel": "n02430045", "label": "deer", "parent": "n02370806", "children": [], "alt": "deer", "id": "n02430045", "color": "#cccccc", "color_incident_edge": true, "highlighted": false}, {"sublabel": "n02374451", "label": "horse", "parent": "n02370806", "children": [], "alt": "horse", "id": "n02374451", "color": "#cccccc", "color_incident_edge": true, "highlighted": false}], "alt": "deer, horse", "id": "n02370806", "color": "#cccccc", "color_incident_edge": true, "highlighted": false, "force_text_on_left": true}], "alt": "cat, dog, deer, horse", "id": "n01886756", "color": "blue-minimal", "color_incident_edge": true, "highlighted": true, "theme": "minimal", "force_text_on_left": true}], "alt": "cat, frog, dog, deer, horse, bird", "id": "n01466257", "color": "blue-minimal", "color_incident_edge": true, "highlighted": true, "theme": "minimal", "force_text_on_left": true}], "alt": "cat, dog, truck, car, bird, frog, deer, ship, horse, airplane", "id": "n00003553", "color": "blue-minimal", "highlighted": true}];
 
 // copy-pasta'ed the code in this file from https://bl.ocks.org/d3noob/8375092
 
 // ************** Generate the tree diagram	 *****************
 var margin = {
-        top: CONFIG_MARGIN_TOP * CONFIG_SCALE,
-        right: 120 * CONFIG_SCALE,
-        bottom: 10 * CONFIG_SCALE,
-        left: CONFIG_MARGIN_LEFT * CONFIG_SCALE
+        top: 20 * 1.0,
+        right: 120 * 1.0,
+        bottom: 10 * 1.0,
+        left: 250 * 1.0
     },
-	  width = CONFIG_VIS_WIDTH - margin.right - margin.left,
-	  height = CONFIG_VIS_HEIGHT - margin.top - margin.bottom;
+	  width = 3000 - margin.right - margin.left,
+	  height = 500 - margin.top - margin.bottom;
 
 var i = 0,
 	duration = 750,
@@ -43,7 +43,7 @@ var i = 0,
 var tree = d3.layout.tree().size([height, width]);
 var zoom = d3.behavior.zoom()
     .translate([margin.left, margin.top])
-    .scale(CONFIG_SCALE);
+    .scale(1.0);
 
 var diagonal = d3.svg.diagonal()
 	.projection(function(d) { return [d.y, d.x]; });
@@ -51,10 +51,10 @@ var diagonal = d3.svg.diagonal()
 var svg = d3.select("div.tree-main").append("svg")
 	.attr("width", width + margin.right + margin.left)
 	.attr("height", height + margin.top + margin.bottom)
-  .style("background-color", "CONFIG_BG_COLOR")
-  .style("font-size", 15 * CONFIG_ZOOM)
+  .style("background-color", "#EEEEEE")
+  .style("font-size", 15 * 1.5)
     .append("g")
-  	.attr("transform", "translate(" + margin.left + "," + margin.top + ")scale(" + CONFIG_SCALE + "," + CONFIG_SCALE +")")
+  	.attr("transform", "translate(" + margin.left + "," + margin.top + ")scale(" + 1.0 + "," + 1.0 +")")
     .call(zoom)
     .on(".zoom", null);
 
@@ -199,7 +199,7 @@ var diagonalHatch = svg.append("svg:defs").append("pattern")
 
 root = treeData[0];
 root['force_text_on_left'] = true;
-root.x0 = CONFIG_ROOT_Y != null ? CONFIG_ROOT_Y : height / 2;
+root.x0 = -1 != null ? -1 : height / 2;
 root.y0 = 0;
 
 update(root);
@@ -213,7 +213,7 @@ function update(source) {
 	  links = tree.links(nodes);
 
   // Normalize for fixed-depth.
-  nodes.forEach(function(d) { d.y = d.depth * CONFIG_Y_NODE_SEP; });
+  nodes.forEach(function(d) { d.y = d.depth * 170; });
 
   // Update the nodes…
   var node = svg.selectAll("g.node")
@@ -226,10 +226,10 @@ function update(source) {
 	  .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
 	  .on("click", click)
     .attr("d", function(d) {
-          d.radius = 21 * CONFIG_ZOOM;
-          d.marker_end = 7 * CONFIG_ZOOM;
-          d.marker_start = 0 * CONFIG_ZOOM;
-          d.padding = 20 * CONFIG_ZOOM;  // enabled by getTargetNodeCircumferencePoint
+          d.radius = 21 * 1.5;
+          d.marker_end = 7 * 1.5;
+          d.marker_start = 0 * 1.5;
+          d.padding = 20 * 1.5;  // enabled by getTargetNodeCircumferencePoint
     });
 
   nodeEnter.append("svg:image")
@@ -340,7 +340,7 @@ function update(source) {
     .style("stroke", '#39ff14')
     .attr('marker-end', function(d) { if(d.left) return makeArrow(d, '#39ff14'); })
 
-  var x1 = - (em2px(CONFIG_ZOOM * 0.5) + left_padding * 4);
+  var x1 = - (em2px(1.5 * 0.5) + left_padding * 4);
   nodeEnter.append("line", "svg:image")
     .attr("x1", function(d) { return d.left ? - (left_dx - d.left.w - left_padding * 2) : x1 })
     .attr("y1", 0)
@@ -361,7 +361,7 @@ function update(source) {
   nodeEnter.append("text", "text.left")
     .attr("class", "left small")
     .attr("x", function(d) { return d.left ? - (left_dx - d.left.w / 2) : 0 })
-    .attr("y", function(d) { return d.left ? d.left.h / 2 + left_padding * 5 + em2px(CONFIG_ZOOM) : 0 })
+    .attr("y", function(d) { return d.left ? d.left.h / 2 + left_padding * 5 + em2px(1.5) : 0 })
     .text(function(d) { return d.left ? d.left.sublabel || '' : ''; })
     .attr("text-anchor", "middle")
     .call(setBBGenerator('bbox_left_small'))
@@ -370,7 +370,7 @@ function update(source) {
    * Saliency vis for each node
    **/
 
-  above_dy = CONFIG_ABOVE_DY;
+  above_dy = 325;
   above_padding = 7;
 
   nodeEnter.insert("rect", "circle")
@@ -391,7 +391,7 @@ function update(source) {
     .attr("height", function(d) { return d.above ? (d.above.h - above_padding * 2) : 0 })
     .attr("width", function(d) { return d.above ? (d.above.w - above_padding * 2) : 0 });
 
-  var y1 = - (em2px(CONFIG_ZOOM * 0.5) + above_padding);
+  var y1 = - (em2px(1.5 * 0.5) + above_padding);
 
   nodeEnter.append("line", "svg:image")
     .attr("x1", 0)
@@ -413,7 +413,7 @@ function update(source) {
   nodeEnter.append("text", "text.above")
     .attr("class", "above small")
     .attr("x", 0)
-    .attr("y", function(d) { return d.above ? - (above_dy - d.above.h - above_padding * 5 - em2px(CONFIG_ZOOM)) : y1 })
+    .attr("y", function(d) { return d.above ? - (above_dy - d.above.h - above_padding * 5 - em2px(1.5)) : y1 })
     .text(function(d) { return d.above ? d.above.sublabel || '' : ''; })
     .attr("text-anchor", "middle")
     .style("fill", "#999999")
@@ -423,7 +423,7 @@ function update(source) {
    * BELOW saliency vis
    **/
 
-   below_dy = CONFIG_BELOW_DY;
+   below_dy = 200;
    below_padding = 5;
 
    nodeEnter.insert("rect", "circle")
@@ -456,7 +456,7 @@ function update(source) {
      .attr("stroke", '#39ff14')
      .style('fill-opacity', '0')
 
-   var y1 = (em2px(CONFIG_ZOOM * 0.5) + below_padding);
+   var y1 = (em2px(1.5 * 0.5) + below_padding);
    nodeEnter.append("line", "svg:image")
      .attr("x1", 0)
      .attr("y1", y1)
@@ -485,7 +485,7 @@ function update(source) {
    nodeEnter.append("text", "text.below")
      .attr("class", "below small")
      .attr("x", 0)
-     .attr("y", function(d) { return d.below ? ((d.below.dy || below_dy) + below_padding * 5 + em2px(CONFIG_ZOOM)) : y1 })
+     .attr("y", function(d) { return d.below ? ((d.below.dy || below_dy) + below_padding * 5 + em2px(1.5)) : y1 })
      .text(function(d) { return d.below ? d.below.sublabel || '' : ''; })
      .attr("text-anchor", "middle")
      .style("fill", "#999999")
@@ -534,7 +534,7 @@ function update(source) {
      .attr("y", function(d) { return d[name].y * (bbox.ratio_y || 1)})
      .attr("width", function(d){ return d[name].width * (bbox.ratio_width || 1); })
      .attr("height", function(d) {return d[name].height; })
-     .style("fill", "CONFIG_TEXT_RECT_COLOR");
+     .style("fill", "rgba(255,255,255,0.8)");
   }
 
   // End text bg
@@ -692,12 +692,12 @@ function d3_onload() {
   if (window.d3_onload_run) return;
   window.d3_onload_run = true;
   setTimeout(function() {
-    var hide = CONFIG_HIDE;
+    var hide = [];
     for (var i = 0; i < hide.length; i++) {
         document.getElementById(hide[i]).dispatchEvent(new Event('click'))
     }
 
-    if (CONFIG_PRINT) {
+    if (false) {
       setTimeout(print, 1000);
     }
 
