@@ -55,7 +55,7 @@ def get_parser():
         help='Show sublabels')
     parser.add_argument('--vis-fake-sublabels', action='store_true',
         help='Show fake sublabels')
-    parser.add_argument('--color', choices=('blue', 'blue-green'), default='blue',
+    parser.add_argument('--color', choices=('blue', 'blue-green', 'blue-minimal'), default='blue',
         help='Color to use, for colored flags. Note this takes NO effect if '
         'nodes are not colored.')
     parser.add_argument('--vis-no-color-leaves', action='store_true',
@@ -73,7 +73,8 @@ def get_parser():
              'by the original image. e.g., 32 for CIFAR10, 224 for Imagenet')
     parser.add_argument('--vis-height', type=int, default=750,
         help='Height of the outputted visualization')
-    parser.add_argument('--vis-dark', action='store_true', help='Dark mode')
+    parser.add_argument('--vis-theme', choices=('dark', 'minimal', 'regular'),
+        default='regular')
     return parser
 
 

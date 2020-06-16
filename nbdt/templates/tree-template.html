@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>CONFIG_TITLE</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
     <style>
 html {
   font-size: calc(16px * CONFIG_ZOOM);
@@ -17,19 +17,18 @@ html {
 .node circle {
   fill: rgb(102,102,102);
   stroke: #666666;
-  stroke-width: 0.12em;
+  stroke-width: CONFIG_STROKE_WIDTHem;
   r: 0.6em;
 }
 
 .node text {
   font-size:0.9em;
-  font-family: 'Cormorant Garamond', serif;
-  font-weight:bold;
+  font-family: 'Montserrat-Regular', serif;
 }
 
 .node text.small {
   font-size:0.7em;
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Montserrat-Regular', serif;
 }
 
 .link {
@@ -141,9 +140,17 @@ gradientBlueGreen.append("svg:stop")
     .attr("stop-opacity", 1);
 
 
+function fontWeight(d) {
+  if (d.theme == "minimal" && d.color == "gray") return "normal";
+  return "bold";
+}
+
+
 function gradientFill(d) {
+  if (d.color == "blue-minimal") return "#2C60E5";
   if (d.color == "blue") return "url(#gradientBlue)";
   if (d.color == "blue-green") return "url(#gradientBlueGreen)";
+  if (d.theme == "minimal") return "#CCC";
   return "url(#gradientGray)";
 }
 
@@ -151,6 +158,9 @@ function gradientStroke(d) {
   if (d.target && d.target.color_incident_edge) d = d.target;
   if (d.color == "blue-green") return "#0460b4";
   if (d.color == "blue") return "#1155cc";
+  if (d.color == "blue-minimal") return "#2C60E5";
+  if (d.theme == "minimal") return "#FFF";
+  if (d.target && d.target.theme == "minimal") return "#CCC";
   return "#666666"
 }
 
@@ -158,7 +168,10 @@ function gradientFontColor(d) {
   if (d.target && d.target.color_incident_edge) d = d.target;
   if (d.color == "blue-green") return "#0460b4";
   if (d.color == "blue") return "#1155cc";
-  return "CONFIG_TEXT_COLOR"
+  if (d.color == "blue-minimal") return "#2C60E5";
+  if (d.color == "white") return "#FFF";
+  if (d.color == "gray") return "#ccc";
+  return "#000000"
 }
 
 
@@ -252,6 +265,7 @@ function update(source) {
 	  .attr("x", function(d) { return textOnLeft(d) ? -13 : 13; })
     .attr("dx", function(d) { return textOnLeft(d) ? -dx + "px" : dx + "px"; })
 	  .attr("text-anchor", function(d) { return textOnLeft(d) ? "end" : "start"; })
+    .attr("font-weight", fontWeight)
     .attr("fill", gradientFontColor);
 
   nodeEnter.append("circle")

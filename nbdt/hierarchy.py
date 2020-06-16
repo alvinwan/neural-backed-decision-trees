@@ -263,7 +263,8 @@ def image_to_base64_encode(image, format="jpeg"):
 
 
 def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
-        show_sublabels=False, height=750, dark=False):
+        show_sublabels=False, height=750, bg='#FFFFFF',
+        text_rect='rgba(255,255,255,0.8)', stroke_width=0.3):
     with open(path_template) as f:
         html = f.read() \
         .replace(
@@ -286,13 +287,13 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
             str(height)) \
         .replace(
             "CONFIG_BG_COLOR",
-            "#111111" if dark else "#FFFFFF") \
-        .replace(
-            "CONFIG_TEXT_COLOR",
-            '#FFFFFF' if dark else '#000000') \
+            bg) \
         .replace(
             "CONFIG_TEXT_RECT_COLOR",
-            "rgba(17,17,17,0.8)" if dark else "rgba(255,255,255,0.8)")
+            text_rect) \
+        .replace(
+            "CONFIG_STROKE_WIDTH",
+            str(stroke_width))
 
     os.makedirs('out', exist_ok=True)
     path_html = f'out/{fname}-{name}.html'
@@ -302,17 +303,32 @@ def generate_vis(path_template, data, name, fname, zoom=2, straight_lines=True,
     Colors.green('==> Wrote HTML to {}'.format(path_html))
 
 
-def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=()):
+def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=(),
+        theme='regular'):
     """Mapping from node to color information."""
     nodes = {}
+
+    theme_to_bg = {
+        'minimal': '#EEEEEE',
+        'dark': '#111111'
+    }
+    nodes['bg'] = theme_to_bg.get(theme, '#FFFFFF')
+
+    theme_to_text_rect = {
+        'dark': 'rgba(17,17,17,0.8)'
+    }
+    nodes['text_rect'] = theme_to_text_rect.get(theme, 'rgba(255,255,255,0.8)')
+
     leaves = list(get_leaves(G))
     if color_leaves:
         for leaf in leaves:
-            nodes[leaf] = {'color': color}
+            nodes[leaf] = {'color': color, 'theme': theme}
 
     for (id, node) in G.nodes.items():
         if node.get('label', '') in color_nodes or id in color_nodes:
-            nodes[id] = {'color': color}
+            nodes[id] = {'color': color, 'theme': theme}
+        else:
+            nodes[id] = {'color': 'gray', 'theme': theme}
 
     root = get_root(G)
     target = None
@@ -324,10 +340,10 @@ def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=()):
 
     if target is not None:
         while target != root:
-            nodes[target] = {'color': color, 'color_incident_edge': True}
+            nodes[target] = {'color': color, 'color_incident_edge': True, 'theme': theme}
             view = G.pred[target]
             target = list(view.keys())[0]
-        nodes[root] = {'color': color}
+        nodes[root] = {'color': color, 'theme': theme}
     return nodes
 
 
@@ -358,7 +374,8 @@ def generate_hierarchy_vis(args):
         args.color,
         color_leaves=not args.vis_no_color_leaves,
         color_path_to=args.vis_color_path_to,
-        color_nodes=args.vis_color_nodes or ())
+        color_nodes=args.vis_color_nodes or (),
+        theme=args.vis_theme)
 
     tree = build_tree(G, root,
         color_info=color_info,
@@ -382,4 +399,5 @@ def generate_hierarchy_vis(args):
         straight_lines=not args.vis_curved,
         show_sublabels=args.vis_sublabels,
         height=args.vis_height,
-        dark=args.vis_dark)
+        bg=color_info['bg'],
+        text_rect=color_info['text_rect'])
