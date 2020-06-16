@@ -4,6 +4,11 @@
     <meta charset="utf-8">
     <title>CONFIG_TITLE</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
+    <style>
+html {
+  background-color: CONFIG_BG_COLOR;
+}
+    </style>
   </head>
   <body>
     <div class="tree-main">
@@ -125,7 +130,7 @@ gradientBlueGreen.append("svg:stop")
 
 
 function fontWeight(d) {
-  if (d.theme == "minimal" && d.color == "gray") return "normal";
+  if (d.theme == "minimal" && !d.highlighted) return "normal";
   return "bold";
 }
 
@@ -143,8 +148,8 @@ function gradientStroke(d) {
   if (d.color == "blue-green") return "#0450b4";
   if (d.color == "blue") return "#1155cc";
   if (d.color == "blue-minimal") return "#2C60E5";
-  if (d.theme == "minimal") return "#FFF";
-  if (d.target && d.target.theme == "minimal") return "#CCC";
+  if (d.theme == "minimal") return "#CCCCCC";
+  if (d.target && d.target.theme == "minimal") return "#CCCCCC";
   if (d.color == "white") return "#FFFFFF";
   return d.color || "#999999"
 }
@@ -154,8 +159,8 @@ function gradientFontColor(d) {
   if (d.color == "blue-green") return "#0450b4";
   if (d.color == "blue") return "#1155cc";
   if (d.color == "blue-minimal") return "#2C60E5";
-  if (d.color == "white") return "#FFF";
-  if (d.color == "gray") return "#ccc";
+  if (d.color == "white") return "#FFFFFF";
+  if (d.color == "gray") return "#CCCCCC";
   return d.color
 }
 
@@ -229,7 +234,7 @@ function update(source) {
           d.radius = 21 * CONFIG_ZOOM;
           d.marker_end = 7 * CONFIG_ZOOM;
           d.marker_start = 0 * CONFIG_ZOOM;
-          d.padding = 20 * CONFIG_ZOOM;  // enabled by getTargetNodeCircumferencePoint
+          d.padding = 40 * CONFIG_ZOOM;  // enabled by getTargetNodeCircumferencePoint
     });
 
   nodeEnter.append("svg:image")
@@ -246,7 +251,7 @@ function update(source) {
       return gradientFill(d);
     })
     .style("cursor", "pointer")
-    .style("stroke-width", "0.12em")
+    .style("stroke-width", "CONFIG_STROKE_WIDTHem")
     .style("stroke", gradientStroke);
 
   function get_sublabel(d) {
@@ -497,12 +502,11 @@ function update(source) {
 
    nodeEnter.selectAll("text")
      .style("font-size", "0.9em")
-     .style("font-family", "Cormorant Garamond")
-     .style("font-weight", "bold")
+     .style("font-family", "Montserrat-Regular")
 
    nodeEnter.selectAll("text.small")
      .style("font-size", "0.7em")
-     .style("font-family", "Cormorant Garamond")
+     .style("font-family", "Montserrat-Regular")
 
 
   /**
@@ -551,7 +555,10 @@ function update(source) {
       return gradientFill(d);
     })
     .style("stroke", function(d) {
-      if (!d.children && !d.highlighted) return "#fff";
+      if (!d.children && !d.highlighted) {
+        if (d.theme == "minimal") return "#EEEEEE";
+        return "#FFFFFF";
+      }
       return gradientStroke(d);
     });
 
@@ -605,7 +612,7 @@ function update(source) {
     link.enter().insert("line", "g")
           .attr("class", "link")
           .style("stroke-width", function(d) {
-              if (d.source.highlighted && d.target.highlighted) return 4;
+              if (d.source.highlighted && d.target.highlighted) return 3;
               return 2
           })
           .style("stroke", gradientStroke);

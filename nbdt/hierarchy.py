@@ -298,7 +298,7 @@ def generate_vis(path_template, data, fname, zoom=2, straight_lines=True,
         above_dy=325, y_node_sep=170, hide=[], _print=False, out_dir='.',
         scale=1, colormap='colormap_annotated.png', below_dy=475, root_y='null',
         width=1000, margin_left=250, bg='#FFFFFF',
-        text_rect='rgba(255,255,255,0.8)', stroke_width=0.3):
+        text_rect='rgba(255,255,255,0.8)', stroke_width=0.45):
     with open(path_template) as f:
         html = f.read() \
         .replace(
@@ -388,7 +388,8 @@ def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=(),
     nodes['bg'] = theme_to_bg.get(theme, '#FFFFFF')
 
     theme_to_text_rect = {
-        'dark': 'rgba(17,17,17,0.8)'
+        'minimal': 'rgba(0,0,0,0)',
+        'dark': 'rgba(17,17,17,0.8)',
     }
     nodes['text_rect'] = theme_to_text_rect.get(theme, 'rgba(255,255,255,0.8)')
 
@@ -413,13 +414,13 @@ def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=(),
 
     if target is not None:
         for node in G.nodes:
-            nodes[node] = {'color': '#cccccc', 'color_incident_edge': True, 'highlighted': False}
+            nodes[node] = {'color': '#cccccc', 'color_incident_edge': True, 'highlighted': False, 'theme': theme}
 
         while target != root:
             nodes[target] = {'color': color, 'color_incident_edge': True, 'highlighted': True, 'theme': theme}
             view = G.pred[target]
             target = list(view.keys())[0]
-        nodes[root] = {'color': color, 'highlighted': True}
+        nodes[root] = {'color': color, 'highlighted': True, 'theme': theme}
     return nodes
 
 
