@@ -466,8 +466,10 @@ Without any modifications to `main.py`, you can use any image classification dat
 
 1. Create a new file containing your dataset, such as `./nbdt/data/yourdata.py`. Say the data class is `YourData10`. Like before, only expose the dataset class via `__all__`. This dataset class should support a `.classes` attribute which returns a list of human-readable class names.
 2. Expose your new file via `'./nbdt/data/__init__.py'`: `from .yourdata import *`.
-3. Create a text file with wordnet IDs in `./nbdt/wnids/{dataset}.txt`. This list should be in the same order that your dataset's `.classes` is. You may optionally use the utility `nbdt-wnids` to generate wnids (see note below)
-4. Train the original neural network on the target dataset. e.g., `python main.py --dataset=YourData10`
+3. Modify `nbdt.utils.DATASETS` to include the name of your dataset, which is `YourData10` in this example.
+4. Also in `nbdt/utils.py`, modify `DATASET_TO_NUM_CLASSES` and `DATASET_TO_CLASSES` to include your new dataset.
+5. (Optional) Create a text file with wordnet IDs in `./nbdt/wnids/{dataset}.txt`. This list should be in the same order that your dataset's `.classes` is. You may optionally use the utility `nbdt-wnids` to generate wnids (see note below)
+6. Train the original neural network on the target dataset. e.g., `python main.py --dataset=YourData10`
 
 > **\*Note**: You may optionally use the utility `nbdt-wnids` to generate wnids:
 > ```
