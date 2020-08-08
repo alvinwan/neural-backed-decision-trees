@@ -56,6 +56,13 @@ parser.add_argument('--name', default='',
 parser.add_argument('--pretrained', action='store_true',
                     help='Download pretrained model. Not all models support this.')
 parser.add_argument('--eval', help='eval only', action='store_true')
+parser.add_argument('--dataset-test', choices=datasets,
+                    help='If not set, automatically set to train dataset')
+parser.add_argument('--disable-test-eval',
+                    help='Allows you to run model inference on a test dataset '
+                    ' different from train dataset. Use an anlayzer to define '
+                    'a metric.',
+                    action='store_true')
 
 # options specific to this project and its dataloaders
 parser.add_argument('--loss', choices=loss.names, default='CrossEntropyLoss')
@@ -78,7 +85,7 @@ best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 # Data
-print('==> Preparing data..')
+print('==> Preparing training data..')
 transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomHorizontalFlip(),
@@ -86,18 +93,13 @@ transform_train = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
-transform_test = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
+dataset_train_name = args.dataset
+dataset_train = getattr(data, dataset_train_name)
 
-dataset = getattr(data, args.dataset)
-
-if args.dataset in ('TinyImagenet200', 'Imagenet1000'):
-    default_input_size = 64 if args.dataset == 'TinyImagenet200' else 224
+if dataset_train_name in ('TinyImagenet200', 'Imagenet1000'):
+    default_input_size = 64 if dataset_train_name == 'TinyImagenet200' else 224
     input_size = args.input_size or default_input_size
-    transform_train = dataset.transform_train(input_size)
-    transform_test = dataset.transform_val(input_size)
+    transform_train = dataset_train.transform_train(input_size)
 elif args.input_size is not None and args.input_size > 32:
     transform_train = transforms.Compose([
         transforms.Resize(args.input_size + 32),
@@ -114,20 +116,51 @@ elif args.input_size is not None and args.input_size > 32:
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 
-dataset_kwargs = generate_kwargs(args, dataset,
-    name=f'Dataset {args.dataset}',
+dataset_train_kwargs = generate_kwargs(args, dataset_train,
+    name=f'Dataset {dataset_train_name}',
     keys=data.custom.keys,
     globals=globals())
 
-trainset = dataset(**dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
-testset = dataset(**dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
-
-assert trainset.classes == testset.classes, (trainset.classes, testset.classes)
-
+trainset = dataset_train(**dataset_train_kwargs, root='./data', train=True, download=True, transform=transform_train)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
-testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
+verb = 'Trained' if args.eval else 'Training'
+Colors.cyan(f'{verb} with dataset {dataset_train_name} and {len(trainset.classes)} classes')
 
-Colors.cyan(f'Training with dataset {args.dataset} and {len(trainset.classes)} classes')
+print('==> Preparing testing data..')
+transform_test = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+])
+
+dataset_test_name = args.dataset_test or dataset_train_name
+dataset_test = getattr(data, dataset_test_name)
+
+if dataset_train_name in ('TinyImagenet200', 'Imagenet1000'):
+    default_input_size = 64 if dataset_test_name == 'TinyImagenet200' else 224
+    input_size = args.input_size or default_input_size
+    transform_test = dataset_test.transform_val(input_size)
+elif args.input_size is not None and args.input_size > 32:
+    transform_test = transforms.Compose([
+        transforms.Resize(args.input_size + 32),
+        transforms.CenterCrop(args.input_size),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+
+dataset_test_kwargs = generate_kwargs(args, dataset_test,
+    name=f'Dataset {dataset_test_name}',
+    keys=data.custom.keys,
+    globals=globals())
+
+testset = dataset_test(**dataset_test_kwargs, root='./data', train=False, download=True, transform=transform_test)
+testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
+Colors.cyan(f'Evaluating with dataset {dataset_test_name} and {len(testset.classes)} classes')
+
+assert dataset_train_name == dataset_test_name or args.disable_test_eval, (
+    f'Either datasets need to be the same (train {dataset_train_name}, eval '
+    f'{dataset_test_name}) or you need to use `--disable_test_eval`')
+assert trainset.classes == testset.classes or args.disable_test_eval, (
+    trainset.classes, testset.classes)
 
 # Model
 print('==> Building model..')
@@ -137,10 +170,10 @@ model_kwargs = {'num_classes': len(trainset.classes) }
 if args.pretrained:
     print('==> Loading pretrained model..')
     try:
-        net = model(pretrained=True, dataset=args.dataset, **model_kwargs)
+        net = model(pretrained=True, dataset=dataset_train_name, **model_kwargs)
     except TypeError as e:  # likely because `dataset` not allowed arg
         print(e)
-        
+
         try:
             net = model(pretrained=True, **model_kwargs)
         except Exception as e:
@@ -257,12 +290,16 @@ def test(epoch, analyzer, checkpoint=True):
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
-            loss = criterion(outputs, targets)
 
-            test_loss += loss.item()
+            if not args.disable_test_eval:
+                loss = criterion(outputs, targets)
+                test_loss += loss.item()
+
             _, predicted = outputs.max(1)
             total += targets.size(0)
-            correct += predicted.eq(targets).sum().item()
+
+            if not args.disable_test_eval:
+                correct += predicted.eq(targets).sum().item()
 
             if device == 'cuda':
                 predicted = predicted.cpu()
@@ -300,11 +337,17 @@ analyzer_kwargs = generate_kwargs(args, class_analysis,
     globals=globals())
 analyzer = class_analysis(**analyzer_kwargs)
 
+if args.disable_test_eval and (not args.analysis or args.analysis == 'Noop'):
+    Colors.red(
+        ' * Warning: `disable_test_eval` is used but no custom metric '
+        '`--analysis` is supplied. I suggest supplying an analysis to perform '
+        ' custom loss and accuracy calculation.')
 
 if args.eval:
     if not args.resume and not args.pretrained:
-        Colors.red(' * Warning: Model is not loaded from checkpoint. '
-        'Use --resume or --pretrained (if supported)')
+        Colors.red(
+            ' * Warning: In eval mode but model is not loaded from checkpoint.'
+            ' Use --resume or --pretrained (if supported)')
 
     analyzer.start_epoch(0)
     test(0, analyzer, checkpoint=False)
