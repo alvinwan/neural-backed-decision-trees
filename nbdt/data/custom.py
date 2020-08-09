@@ -283,36 +283,20 @@ class IncludeLabelsDataset(ResampleLabelsDataset):
         ])
 
 
-class CIFAR10ResampleLabels(ResampleLabelsDataset):
-
-    def __init__(self, *args, root='./data', probability_labels=1, **kwargs):
-        super().__init__(
-            dataset=datasets.CIFAR10(*args, root=root, **kwargs),
-            probability_labels=probability_labels)
-
-
-class CIFAR100ResampleLabels(ResampleLabelsDataset):
-
-    def __init__(self, *args, root='./data', probability_labels=1, **kwargs):
-        super().__init__(
-            dataset=datasets.CIFAR100(*args, root=root, **kwargs),
-            probability_labels=probability_labels)
+def get_resample_labels_dataset(dataset):
+    class Cls(ResampleLabelsDataset):
+        def __init__(self, *args, root='./data', probability_labels=1, **kwargs):
+            super().__init__(
+                dataset=dataset(*args, root=root, **kwargs),
+                probability_labels=probability_labels)
+    Cls.__name__ = f'{dataset.__class__.__name__}ResampleLabels'
+    return Cls
 
 
-class TinyImagenet200ResampleLabels(ResampleLabelsDataset):
-
-    def __init__(self, *args, root='./data', probability_labels=1, **kwargs):
-        super().__init__(
-            dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs),
-            probability_labels=probability_labels)
-
-
-class Imagenet1000ResampleLabels(ResampleLabelsDataset):
-
-    def __init__(self, *args, root='./data', probability_labels=1, **kwargs):
-        super().__init__(
-            dataset=imagenet.Imagenet1000(*args, root=root, **kwargs),
-            probability_labels=probability_labels)
+CIFAR10ResampleLabels = get_resample_labels_dataset(datasets.CIFAR10)
+CIFAR100ResampleLabels = get_resample_labels_dataset(datasets.CIFAR100)
+TinyImagenet200ResampleLabels = get_resample_labels_dataset(imagenet.TinyImagenet200)
+Imagenet1000ResampleLabels = get_resample_labels_dataset(imagenet.Imagenet1000)
 
 
 class IncludeClassesDataset(IncludeLabelsDataset):
@@ -330,36 +314,20 @@ class IncludeClassesDataset(IncludeLabelsDataset):
             ])
 
 
-class CIFAR10IncludeLabels(IncludeLabelsDataset):
-
-    def __init__(self, *args, root='./data', include_labels=(0,), **kwargs):
-        super().__init__(
-            dataset=datasets.CIFAR10(*args, root=root, **kwargs),
-            include_labels=include_labels)
-
-
-class CIFAR100IncludeLabels(IncludeLabelsDataset):
-
-    def __init__(self, *args, root='./data', include_labels=(0,), **kwargs):
-        super().__init__(
-            dataset=datasets.CIFAR100(*args, root=root, **kwargs),
-            include_labels=include_labels)
+def get_include_labels_dataset(dataset):
+    class Cls(IncludeLabelsDataset):
+        def __init__(self, *args, root='./data', include_labels=(0,), **kwargs):
+            super().__init__(
+                dataset=dataset(*args, root=root, **kwargs),
+                include_labels=include_labels)
+    Cls.__name__ = f'{dataset.__class__.__name__}IncludeLabels'
+    return Cls
 
 
-class TinyImagenet200IncludeLabels(IncludeLabelsDataset):
-
-    def __init__(self, *args, root='./data', include_labels=(0,), **kwargs):
-        super().__init__(
-            dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs),
-            include_labels=include_labels)
-
-
-class Imagenet1000IncludeLabels(IncludeLabelsDataset):
-
-    def __init__(self, *args, root='./data', include_labels=(0,), **kwargs):
-        super().__init__(
-            dataset=imagenet.Imagenet1000(*args, root=root, **kwargs),
-            include_labels=include_labels)
+CIFAR10IncludeLabels = get_include_labels_dataset(datasets.CIFAR10)
+CIFAR100IncludeLabels = get_include_labels_dataset(datasets.CIFAR100)
+TinyImagenet200IncludeLabels = get_include_labels_dataset(imagenet.TinyImagenet200)
+Imagenet1000IncludeLabels = get_include_labels_dataset(imagenet.Imagenet1000)
 
 
 class ExcludeLabelsDataset(IncludeLabelsDataset):
@@ -375,33 +343,17 @@ class ExcludeLabelsDataset(IncludeLabelsDataset):
             include_labels=include_labels)
 
 
-class CIFAR10ExcludeLabels(ExcludeLabelsDataset):
-
-    def __init__(self, *args, root='./data', exclude_labels=(0,), **kwargs):
-        super().__init__(
-            dataset=datasets.CIFAR10(*args, root=root, **kwargs),
-            exclude_labels=exclude_labels)
-
-
-class CIFAR100ExcludeLabels(ExcludeLabelsDataset):
-
-    def __init__(self, *args, root='./data', exclude_labels=(0,), **kwargs):
-        super().__init__(
-            dataset=datasets.CIFAR100(*args, root=root, **kwargs),
-            exclude_labels=exclude_labels)
+def get_exclude_labels_dataset(dataset):
+    class Cls(ExcludeLabelsDataset):
+        def __init__(self, *args, root='./data', exclude_labels=(0,), **kwargs):
+            super().__init__(
+                dataset=dataset(*args, root=root, **kwargs),
+                exclude_labels=exclude_labels)
+    Cls.__name__ = f'{dataset.__class__.__name__}ExcludeLabels'
+    return Cls
 
 
-class TinyImagenet200ExcludeLabels(ExcludeLabelsDataset):
-
-    def __init__(self, *args, root='./data', exclude_labels=(0,), **kwargs):
-        super().__init__(
-            dataset=imagenet.TinyImagenet200(*args, root=root, **kwargs),
-            exclude_labels=exclude_labels)
-
-
-class Imagenet1000ExcludeLabels(ExcludeLabelsDataset):
-
-    def __init__(self, *args, root='./data', exclude_labels=(0,), **kwargs):
-        super().__init__(
-            dataset=imagenet.Imagenet1000(*args, root=root, **kwargs),
-            exclude_labels=exclude_labels)
+CIFAR10ExcludeLabels = get_exclude_labels_dataset(datasets.CIFAR10)
+CIFAR100ExcludeLabels = get_exclude_labels_dataset(datasets.CIFAR100)
+TinyImagenet200ExcludeLabels = get_exclude_labels_dataset(imagenet.TinyImagenet200)
+Imagenet1000ExcludeLabels = get_exclude_labels_dataset(imagenet.Imagenet1000)
