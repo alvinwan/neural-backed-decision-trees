@@ -44,8 +44,6 @@ class TinyImagenet200(Dataset):
     @staticmethod
     def transform_val(input_size=-1):
         return transforms.Compose([
-            transforms.Resize(input_size + 12),
-            transforms.CenterCrop(input_size),
             transforms.ToTensor(),
             transforms.Normalize([0.4802, 0.4481, 0.3975], [0.2302, 0.2265, 0.2262]),
         ])
