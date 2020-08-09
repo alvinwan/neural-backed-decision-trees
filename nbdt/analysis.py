@@ -11,7 +11,7 @@ import numpy as np
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules',
-    'SuperclassAccuracy')
+    'Superclass', 'SuperclassHard', 'SuperclassSoft')
 keys = ('path_graph', 'path_wnids', 'classes', 'dataset',
         'dataset_test', 'superclass_wnids')
 
@@ -169,7 +169,7 @@ class SoftEmbeddedDecisionRules(DecisionRules):
         super().__init__(*args, Rules=SoftRules, **kwargs)
 
 
-class SuperclassAccuracy(DecisionRules):
+class Superclass(DecisionRules):
     """Evaluate provided model on superclasses
 
     Each wnid must be a hypernym of at least one label in the test set.
@@ -225,8 +225,11 @@ class SuperclassAccuracy(DecisionRules):
             frontier.extend(current.hypernyms())
         return hypernyms
 
+    def forward(self, x):
+        return x
+
     def update_batch(self, outputs, targets):
-        predicted = outputs.max(1)[1].to(targets.device)
+        predicted = self.forward(outputs).max(1)[1].to(targets.device)
 
         if self.mapping.device != targets.device:
             self.mapping = self.mapping.to(targets.device)
@@ -242,3 +245,22 @@ class SuperclassAccuracy(DecisionRules):
         self.correct += (predicted == targets).sum().item()
         accuracy = round(self.correct / (float(self.total) or 1), 4) * 100
         return f'{self.name}: {accuracy}%'
+
+
+class SuperclassHard(Superclass):
+
+    name = 'Superclass-Hard'
+
+    def forward(self, x):
+        return self.rules.forward(x)
+
+
+class SuperclassSoft(SuperclassHard):
+
+    name = 'Superclass-Soft'
+
+    def __init__(self, *args, Rules=None, **kwargs):
+        super().__init__(*args, Rules=SoftRules, **kwargs)
+
+    def forward(self, x):
+        return self.rules.forward(x)
