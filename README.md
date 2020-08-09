@@ -392,7 +392,7 @@ nbdt-wnids --classes animal vehicle
 # evaluate CIFAR100-trained ResNet18 on "Animal vs. Vehicle" superclasses, with images from TinyImagenet200
 python main.py --dataset-test=TinyImagenet200 --dataset=CIFAR100 --disable-test-eval --eval --analysis=Superclass --superclass-wnids n00015388 n04524313 --pretrained
 
-
+python main.py --dataset-test=CIFAR100 --dataset=CIFAR10 --disable-test-eval --eval --analysis=SuperclassNBDT --superclass-wnids n00015388 n04524313 --pretrained --loss=SoftTreeSupLoss
 ```
 
 </details>

@@ -247,8 +247,8 @@ class Superclass(DecisionRules):
         outputs = outputs[targets >= 0]
         targets = targets[targets >= 0]
 
-        predicted = outputs.max(1)[1].to(targets.device)
-        predicted = self.mapping_pred[predicted]
+        predicted = outputs.max(1)[1]
+        predicted = self.mapping_pred[predicted].to(targets.device)
         return predicted, targets
 
     def update_batch(self, outputs, targets):
