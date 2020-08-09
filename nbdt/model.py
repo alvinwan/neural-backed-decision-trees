@@ -69,14 +69,19 @@ class EmbeddedDecisionRules(nn.Module):
         self.I = torch.eye(len(classes))
 
     @staticmethod
-    def get_node_logits(outputs, node):
+    def get_node_logits(outputs, node=None,
+            new_to_old_classes=None, num_classes=None):
         """Get output for a particular node
 
         This `outputs` above are the output of the neural network.
         """
+        assert node or (new_to_old_classes and num_classes), \
+            'Either pass node or (new_to_old_classes mapping and num_classes)'
+        new_to_old_classes = new_to_old_classes or node.new_to_old_classes
+        num_classes = num_classes or node.num_classes
         return torch.stack([
-            outputs.T[node.new_to_old_classes[new_label]].mean(dim=0)
-            for new_label in range(node.num_classes)
+            outputs.T[new_to_old_classes[new_label]].mean(dim=0)
+            for new_label in range(num_classes)
         ]).T
 
     @classmethod

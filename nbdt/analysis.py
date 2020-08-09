@@ -4,6 +4,7 @@ from nbdt.model import (
     SoftEmbeddedDecisionRules as SoftRules,
     HardEmbeddedDecisionRules as HardRules
 )
+from collections import defaultdict
 import torch
 import numpy as np
 
@@ -11,7 +12,7 @@ import numpy as np
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules',
-    'Superclass', 'SuperclassHard', 'SuperclassSoft')
+    'Superclass', 'SuperclassNBDT')
 keys = ('path_graph', 'path_wnids', 'classes', 'dataset',
         'dataset_test', 'superclass_wnids')
 
@@ -198,10 +199,21 @@ class Superclass(DecisionRules):
         self.rules_test = Rules(*args, **kwargs)
         self.superclass_wnids = superclass_wnids
 
+        self.mapping_target, self.new_to_old_classes_target = Superclass.build_mapping(self.rules_test.wnids, superclass_wnids)
+        self.mapping_pred, self.new_to_old_classes_pred = Superclass.build_mapping(self.rules.wnids, superclass_wnids)
+
+        mapped_classes = [self.classes[i] for i in (self.mapping_target >= 0).nonzero()]
+        Colors.cyan(
+            f'==> Mapped {len(mapped_classes)} classes to your superclasses: '
+            f'{mapped_classes}')
+
+    @staticmethod
+    def build_mapping(dataset_wnids, superclass_wnids):
+        new_to_old_classes = defaultdict(lambda: [])
         mapping = []
-        for dataset_wnid in self.rules_test.wnids:
+        for old_index, dataset_wnid in enumerate(dataset_wnids):
             synset = wnid_to_synset(dataset_wnid)
-            hypernyms = self.all_hypernyms(synset)
+            hypernyms = Superclass.all_hypernyms(synset)
             hypernym_wnids = list(map(synset_to_wnid, hypernyms))
 
             value = -1
@@ -210,12 +222,9 @@ class Superclass(DecisionRules):
                     value = new_index
                     break
             mapping.append(value)
-        self.mapping = torch.Tensor(mapping)
-
-        mapped_classes = [self.classes[i] for i in (self.mapping >= 0).nonzero()]
-        Colors.cyan(
-            f'==> Mapped {len(mapped_classes)} classes to your superclasses: '
-            f'{mapped_classes}')
+            new_to_old_classes[value].append(old_index)
+        mapping = torch.Tensor(mapping)
+        return mapping, new_to_old_classes
 
     @staticmethod
     def all_hypernyms(synset):
@@ -227,42 +236,46 @@ class Superclass(DecisionRules):
             frontier.extend(current.hypernyms())
         return hypernyms
 
-    def forward(self, x):
-        return x
+    def forward(self, outputs, targets):
+        if self.mapping_target.device != targets.device:
+            self.mapping_target = self.mapping_target.to(targets.device)
 
-    def update_batch(self, outputs, targets):
-        predicted = self.forward(outputs).max(1)[1].to(targets.device)
+        if self.mapping_pred.device != outputs.device:
+            self.mapping_pred = self.mapping_pred.to(outputs.device)
 
-        if self.mapping.device != targets.device:
-            self.mapping = self.mapping.to(targets.device)
-
-        predicted = self.mapping[predicted]
-        targets = self.mapping[targets]
-
-        predicted = predicted[targets >= 0]
+        targets = self.mapping_target[targets]
+        outputs = outputs[targets >= 0]
         targets = targets[targets >= 0]
 
-        n_samples = outputs.size(0)
+        predicted = outputs.max(1)[1].to(targets.device)
+        predicted = self.mapping_pred[predicted]
+        return predicted, targets
+
+    def update_batch(self, outputs, targets):
+        predicted, targets = self.forward(outputs, targets)
+
+        n_samples = predicted.size(0)
         self.total += n_samples
         self.correct += (predicted == targets).sum().item()
         accuracy = round(self.correct / (float(self.total) or 1), 4) * 100
         return f'{self.name}: {accuracy}%'
 
 
-class SuperclassHard(Superclass):
+class SuperclassNBDT(Superclass):
 
-    name = 'Superclass-Hard'
-
-    def forward(self, x):
-        return self.rules.forward(x)
-
-
-class SuperclassSoft(SuperclassHard):
-
-    name = 'Superclass-Soft'
+    name = 'Superclass-NBDT'
 
     def __init__(self, *args, Rules=None, **kwargs):
         super().__init__(*args, Rules=SoftRules, **kwargs)
 
-    def forward(self, x):
-        return self.rules.forward(x)
+    def forward(self, outputs, targets):
+        outputs = self.rules.get_node_logits(
+            outputs,
+            new_to_old_classes=self.new_to_old_classes_pred,
+            num_classes=len(self.new_to_old_classes_pred))
+        predicted = outputs.max(1)[1].to(targets.device)
+
+        targets = self.mapping_target[targets]
+        predicted = predicted[targets >= 0]
+        targets = targets[targets >= 0]
+        return predicted, targets
