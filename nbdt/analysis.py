@@ -1,24 +1,28 @@
-from nbdt.utils import set_np_printoptions
+from nbdt.utils import set_np_printoptions, Colors
+from nbdt.graph import wnid_to_synset, synset_to_wnid
 from nbdt.model import (
     SoftEmbeddedDecisionRules as SoftRules,
     HardEmbeddedDecisionRules as HardRules
 )
+import torch
 import numpy as np
 
 
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
-    'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules')
-keys = ('path_graph', 'path_wnids', 'classes', 'dataset_test')
+    'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules',
+    'SuperclassAccuracy')
+keys = ('path_graph', 'path_wnids', 'classes', 'dataset',
+        'dataset_test', 'superclass_wnids')
 
 
 def add_arguments(parser):
-    pass
+    parser.add_argument('--superclass-wnids', nargs='*', type=str)
 
 
 class Noop:
 
-    accepts_classes = lambda trainset, **kwargs: trainset.classes
+    accepts_classes = lambda testset, **kwargs: testset.classes
 
     def __init__(self, classes=()):
         set_np_printoptions()
@@ -131,6 +135,7 @@ class DecisionRules(Noop):
 
     def __init__(self, *args, Rules=HardRules, **kwargs):
         self.rules = Rules(*args, **kwargs)
+        super().__init__(self.rules.classes)
         self.total, self.correct = 0,0
 
     def update_batch(self, outputs, targets):
@@ -162,3 +167,78 @@ class SoftEmbeddedDecisionRules(DecisionRules):
 
     def __init__(self, *args, Rules=None, **kwargs):
         super().__init__(*args, Rules=SoftRules, **kwargs)
+
+
+class SuperclassAccuracy(DecisionRules):
+    """Evaluate provided model on superclasses
+
+    Each wnid must be a hypernym of at least one label in the test set.
+    This metric will convert each predicted class into the corrresponding
+    wnid and report accuracy on this len(wnids)-class problem.
+    """
+
+    accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
+    accepts_dataset_test = lambda testset, **kwargs: testset.__class__.__name__
+    name = 'Superclass'
+    accepts_superclass_wnids = True
+
+    def __init__(self, *args, superclass_wnids, dataset_test=None,
+            Rules=SoftRules, **kwargs):
+        """Pass wnids to classify.
+
+        Assumes index of each wnid is the index of the wnid in the rules.wnids
+        list. This agrees with Node.wnid_to_class_index as of writing, since
+        rules.wnids = get_wnids(...).
+        """
+        super().__init__(*args, **kwargs)
+
+        kwargs['dataset'] = dataset_test
+        self.rules_test = Rules(*args, **kwargs)
+        self.superclass_wnids = superclass_wnids
+
+        mapping = []
+        for dataset_wnid in self.rules_test.wnids:
+            synset = wnid_to_synset(dataset_wnid)
+            hypernyms = self.all_hypernyms(synset)
+            hypernym_wnids = list(map(synset_to_wnid, hypernyms))
+
+            value = -1
+            for new_index, superclass_wnid in enumerate(superclass_wnids):
+                if superclass_wnid in hypernym_wnids:
+                    value = new_index
+                    break
+            mapping.append(value)
+        self.mapping = torch.Tensor(mapping)
+
+        mapped_classes = [self.classes[i] for i in (self.mapping >= 0).nonzero()]
+        Colors.cyan(
+            f'==> Mapped {len(mapped_classes)} classes to your superclasses: '
+            f'{mapped_classes}')
+
+    @staticmethod
+    def all_hypernyms(synset):
+        hypernyms = []
+        frontier = [synset]
+        while frontier:
+            current = frontier.pop(0)
+            hypernyms.append(current)
+            frontier.extend(current.hypernyms())
+        return hypernyms
+
+    def update_batch(self, outputs, targets):
+        predicted = outputs.max(1)[1].to(targets.device)
+
+        if self.mapping.device != targets.device:
+            self.mapping = self.mapping.to(targets.device)
+
+        predicted = self.mapping[predicted]
+        targets = self.mapping[targets]
+
+        predicted = predicted[targets >= 0]
+        targets = targets[targets >= 0]
+
+        n_samples = outputs.size(0)
+        self.total += n_samples
+        self.correct += (predicted == targets).sum().item()
+        accuracy = round(self.correct / (float(self.total) or 1), 4) * 100
+        return f'{self.name}: {accuracy}%'
