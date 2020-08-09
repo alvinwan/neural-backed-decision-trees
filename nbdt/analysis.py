@@ -193,6 +193,8 @@ class Superclass(DecisionRules):
         super().__init__(*args, **kwargs)
 
         kwargs['dataset'] = dataset_test
+        kwargs.pop('path_graph', '')
+        kwargs.pop('path_wnids', '')
         self.rules_test = Rules(*args, **kwargs)
         self.superclass_wnids = superclass_wnids
 
