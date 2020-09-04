@@ -47,12 +47,16 @@ class Node:
         self.wnid = wnid
         self.synset = wnid_to_synset(wnid)
 
+        self.parents = list(self.tree.G.pred[self.wnid])
+        self.children = list(self.tree.G.succ[self.wnid])
+
         self.original_classes = tree.classes
         self.num_original_classes = len(self.tree.wnids_leaves)
 
         assert not self.is_leaf(), 'Cannot build dataset for leaf'
         self.has_other = other_class and not (self.is_root() or self.is_leaf())
-        self.num_children = len(self.get_children())
+        self.num_children = len(self.children)
+
         self.num_classes = self.num_children + int(self.has_other)
 
         self.old_to_new_classes, self.new_to_old_classes = \
@@ -64,32 +68,31 @@ class Node:
             f'class names found ({len(self.classes)}): {self.classes}'
         )
 
-        self.children = list(self.get_children())
         self.leaves = list(self.get_leaves())
         self.num_leaves = len(self.leaves)
 
     def wnid_to_class_index(self, wnid):
         return self.tree.wnids_leaves.index(wnid)
 
-    def get_parents(self):
-        return self.tree.G.pred[self.wnid]
-
-    def get_children(self):
-        return self.tree.G.succ[self.wnid]
+    @property
+    def parent(self):
+        if not self.parents:
+            return None
+        return self.parents[0]
 
     def get_leaves(self):
         return get_leaves(self.tree.G, self.wnid)
 
     def is_leaf(self):
-        return len(self.get_children()) == 0
+        return len(self.children) == 0
 
     def is_root(self):
-        return len(self.get_parents()) == 0
+        return len(self.parents) == 0
 
     def build_class_mappings(self):
         old_to_new = defaultdict(lambda: [])
         new_to_old = defaultdict(lambda: [])
-        for new_index, child in enumerate(self.get_children()):
+        for new_index, child in enumerate(self.children):
             for leaf in get_leaves(self.tree.G, child):
                 old_index = self.wnid_to_class_index(leaf)
                 old_to_new[old_index].append(new_index)
@@ -145,11 +148,11 @@ class Tree:
 
         self.wnid_to_node = self.get_wnid_to_node()
         self.wnids_nodes = sorted(self.wnid_to_node)
-        self.nodes = [self.wnid_to_node[wnid] for wnid in self.wnids_nodes]
+        self.inodes = [self.wnid_to_node[wnid] for wnid in self.wnids_nodes]
 
     @property
     def root(self):
-        for node in self.nodes:
+        for node in self.inodes:
             if node.is_root():
                 return node
         raise UserWarning('Should not be reachable. Tree should always have root')
@@ -161,9 +164,9 @@ class Tree:
         return wnid_to_node
 
     def get_leaf_to_path(self):
-        node = self.nodes[0]
+        node = self.inodes[0]
         leaf_to_path = get_leaf_to_path(self.G)
-        wnid_to_node = {node.wnid: node for node in self.nodes}
+        wnid_to_node = {node.wnid: node for node in self.inodes}
         leaf_to_path_nodes = {}
         for leaf in leaf_to_path:
             leaf_to_path_nodes[leaf] = [

@@ -119,12 +119,12 @@ class HardTreeSupLoss(TreeSupLoss):
         self.assert_output_not_nbdt(outputs)
 
         loss = self.criterion(outputs, targets)
-        num_losses = outputs.size(0) * len(self.tree.nodes) / 2.
+        num_losses = outputs.size(0) * len(self.tree.inodes) / 2.
 
         outputs_subs = defaultdict(lambda: [])
         targets_subs = defaultdict(lambda: [])
         targets_ints = [int(target) for target in targets.cpu().long()]
-        for node in self.tree.nodes:
+        for node in self.tree.inodes:
             _, outputs_sub, targets_sub = \
                 HardEmbeddedDecisionRules.get_node_logits_filtered(
                     node, outputs, targets_ints)

@@ -84,7 +84,7 @@ class EmbeddedDecisionRules(nn.Module):
         return wnid_to_outputs
 
     def forward_nodes(self, outputs):
-        return self.get_all_node_outputs(outputs, self.tree.nodes)
+        return self.get_all_node_outputs(outputs, self.tree.inodes)
 
 
 class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
@@ -158,7 +158,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
     def forward_with_decisions(self, outputs):
         wnid_to_outputs = self.forward_nodes(outputs)
         predicted, decisions = self.traverse_tree(
-            wnid_to_outputs, self.tree.nodes, self.tree.wnid_to_class, self.tree.classes)
+            wnid_to_outputs, self.tree.inodes, self.tree.wnid_to_class, self.tree.classes)
         logits = self.predicted_to_logits(predicted)
         logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return logits, decisions
@@ -212,7 +212,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         _, predicted = outputs.max(1)
 
         decisions = []
-        node = self.tree.nodes[0]
+        node = self.tree.inodes[0]
         leaf_to_path_nodes = self.tree.get_leaf_to_path()
         for index, prediction in enumerate(predicted):
             leaf = self.tree.wnids_leaves[prediction]
@@ -224,7 +224,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
 
     def forward(self, outputs):
         wnid_to_outputs = self.forward_nodes(outputs)
-        logits = self.traverse_tree(wnid_to_outputs, self.tree.nodes)
+        logits = self.traverse_tree(wnid_to_outputs, self.tree.inodes)
         logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return logits
 
