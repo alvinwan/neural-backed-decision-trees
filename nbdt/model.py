@@ -52,7 +52,6 @@ class EmbeddedDecisionRules(nn.Module):
         self.tree = tree
 
         self.classes = tree.classes
-        self.G = self.tree.nodes[0].G
         self.wnid_to_node = {node.wnid: node for node in self.tree.nodes}
 
         self.wnids = get_wnids(tree.path_wnids)
@@ -222,7 +221,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
 
         decisions = []
         node = self.tree.nodes[0]
-        leaf_to_path_nodes = Node.get_leaf_to_path(self.tree.nodes)
+        leaf_to_path_nodes = self.tree.get_leaf_to_path()
         for index, prediction in enumerate(predicted):
             leaf = node.wnids[prediction]
             decision = leaf_to_path_nodes[leaf]

@@ -149,32 +149,6 @@ class Node:
         self._class_weights = class_weights
 
     @staticmethod
-    def get_leaf_to_path(nodes):
-        node = nodes[0]
-        leaf_to_path = get_leaf_to_path(node.G)
-        wnid_to_node = {node.wnid: node for node in nodes}
-        leaf_to_path_nodes = {}
-        for leaf in leaf_to_path:
-            leaf_to_path_nodes[leaf] = [
-                {
-                    'node': wnid_to_node.get(wnid, None),
-                    'name': wnid_to_name(wnid)
-                }
-                for wnid in leaf_to_path[leaf]
-            ]
-        return leaf_to_path_nodes
-
-    @staticmethod
-    def get_root_node_wnid(path_graph):
-        raise UserWarning('Root node may have wnid now')
-        tree = ET.parse(path_graph)
-        for node in tree.iter():
-            wnid = node.get('wnid')
-            if wnid is not None:
-                return wnid
-        return None
-
-    @staticmethod
     def dim(nodes):
         return sum([node.num_classes for node in nodes])
 
@@ -197,7 +171,8 @@ class Tree:
         self.path_graph = path_graph
         self.path_wnids = path_wnids
         self.classes = classes
-        self.wnid_to_node = Tree.get_wnid_to_node(path_graph, path_wnids, classes)
+        self.G = read_graph(path_graph)
+        self.wnid_to_node = Tree.get_wnid_to_node(self.G, path_graph, path_wnids, classes)
         self.wnids = sorted(self.wnid_to_node)
         self.nodes = [self.wnid_to_node[wnid] for wnid in self.wnids]
 
@@ -209,13 +184,27 @@ class Tree:
         raise UserWarning('Should not be reachable. Tree should always have root')
 
     @staticmethod
-    def get_wnid_to_node(path_graph, path_wnids, classes):
+    def get_wnid_to_node(G, path_graph, path_wnids, classes):
         wnid_to_node = {}
-        G = read_graph(path_graph)
         for wnid in get_non_leaves(G):
             wnid_to_node[wnid] = Node(
                 wnid, classes, path_graph=path_graph, path_wnids=path_wnids)
         return wnid_to_node
+
+    def get_leaf_to_path(self):
+        node = self.nodes[0]
+        leaf_to_path = get_leaf_to_path(node.G)
+        wnid_to_node = {node.wnid: node for node in self.nodes}
+        leaf_to_path_nodes = {}
+        for leaf in leaf_to_path:
+            leaf_to_path_nodes[leaf] = [
+                {
+                    'node': wnid_to_node.get(wnid, None),
+                    'name': wnid_to_name(wnid)
+                }
+                for wnid in leaf_to_path[leaf]
+            ]
+        return leaf_to_path_nodes
 
 
 class ResampleLabelsDataset(Dataset):
