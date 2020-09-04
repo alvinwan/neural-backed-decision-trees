@@ -61,7 +61,7 @@ class EmbeddedDecisionRules(nn.Module):
         This `outputs` above are the output of the neural network.
         """
         return torch.stack([
-            outputs.T[node.child_index_to_leaf_index[child_index]].mean(dim=0)
+            outputs.T[node.child_index_to_class_index[child_index]].mean(dim=0)
             for child_index in range(node.num_classes)
         ]).T
 
@@ -96,7 +96,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         If you have targets for the node, you can selectively perform inference,
         only for nodes where the label of a sample is well-defined.
         """
-        classes = [node.leaf_index_to_child_index[int(t)] for t in targets]
+        classes = [node.class_index_to_child_index[int(t)] for t in targets]
         selector = [bool(cls) for cls in classes]
         targets_sub = [cls[0] for cls in classes if cls]
 
@@ -174,7 +174,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         few lines:
 
             for index_child in range(len(node.children)):
-                old_indexes = node.child_index_to_leaf_index[index_child]
+                old_indexes = node.child_index_to_class_index[index_child]
                 class_probs[:,old_indexes] *= output[:,index_child][:,None]
 
         However, we collect all indices first, so that only one tensor operation
@@ -193,7 +193,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
 
             old_indices, new_indices = [], []
             for index_child in range(len(node.children)):
-                old = node.child_index_to_leaf_index[index_child]
+                old = node.child_index_to_class_index[index_child]
                 old_indices.extend(old)
                 new_indices.extend([index_child] * len(old))
 

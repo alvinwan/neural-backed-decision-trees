@@ -56,7 +56,7 @@ class Node:
 
         self.num_classes = self.num_children + int(self.has_other)
 
-        self.leaf_index_to_child_index, self.child_index_to_leaf_index = self.build_class_mappings()
+        self.class_index_to_child_index, self.child_index_to_class_index = self.build_class_mappings()
         self.classes = self.build_classes()
 
         assert len(self.classes) == self.num_classes, (
@@ -127,13 +127,13 @@ class Node:
         return [
             ','.join([self.original_classes[old] for old in old_indices])
             for new_index, old_indices in sorted(
-                self.child_index_to_leaf_index.items(), key=lambda t: t[0])
+                self.child_index_to_class_index.items(), key=lambda t: t[0])
         ]
 
     @property
     def class_counts(self):
         """Number of old classes in each new class"""
-        return [len(old_indices) for old_indices in self.child_index_to_leaf_index]
+        return [len(old_indices) for old_indices in self.child_index_to_class_index]
 
     @staticmethod
     def dim(nodes):
