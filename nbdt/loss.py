@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import defaultdict
-from nbdt.data.custom import Node, Tree, dataset_to_dummy_classes
+from nbdt.tree import Node, Tree
 from nbdt.model import HardEmbeddedDecisionRules, SoftEmbeddedDecisionRules
 from nbdt.utils import (
     Colors, dataset_to_default_path_graph, dataset_to_default_path_wnids,

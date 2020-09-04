@@ -13,7 +13,7 @@ from nbdt.utils import (
     coerce_tensor,
     uncoerce_tensor)
 from nbdt.models.utils import load_state_dict_from_key, coerce_state_dict
-from nbdt.data.custom import Node, Tree, dataset_to_dummy_classes
+from nbdt.tree import Node, Tree
 from nbdt.graph import get_root, get_wnids, synset_to_name
 
 import torch
