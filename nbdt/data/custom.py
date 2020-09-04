@@ -55,7 +55,7 @@ class Node:
 
         self.num_classes = self.num_children + int(self.has_other)
 
-        self.old_to_new_classes, self.new_to_old_classes = self.build_class_mappings()
+        self.leaf_index_to_child_index, self.child_index_to_leaf_index = self.build_class_mappings()
         self.classes = self.build_classes()
 
         assert len(self.classes) == self.num_classes, (
@@ -111,6 +111,7 @@ class Node:
                 old_index = self.wnid_to_class_index(leaf)
                 old_to_new[old_index].append(new_index)
                 new_to_old[new_index].append(old_index)
+
         if not self.has_other:
             return old_to_new, new_to_old
 
@@ -125,13 +126,13 @@ class Node:
         return [
             ','.join([self.original_classes[old] for old in old_indices])
             for new_index, old_indices in sorted(
-                self.new_to_old_classes.items(), key=lambda t: t[0])
+                self.child_index_to_leaf_index.items(), key=lambda t: t[0])
         ]
 
     @property
     def class_counts(self):
         """Number of old classes in each new class"""
-        return [len(old_indices) for old_indices in self.new_to_old_classes]
+        return [len(old_indices) for old_indices in self.child_index_to_leaf_index]
 
     @staticmethod
     def dim(nodes):
@@ -159,6 +160,7 @@ class Tree:
         self.G = read_graph(path_graph)
         self.wnids_leaves = get_wnids(path_wnids)
         self.wnid_to_class = {wnid: cls for wnid, cls in zip(self.wnids_leaves, self.classes)}
+        self.wnid_to_class_index = {wnid: i for i, wnid in enumerate(self.wnids_leaves)}
         self.wnid_to_node = self.get_wnid_to_node()
         self.nodes = [self.wnid_to_node[wnid] for wnid in sorted(self.wnid_to_node)]
         self.inodes = [node for node in self.nodes if not node.is_leaf()]

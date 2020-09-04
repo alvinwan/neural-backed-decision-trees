@@ -61,8 +61,8 @@ class EmbeddedDecisionRules(nn.Module):
         This `outputs` above are the output of the neural network.
         """
         return torch.stack([
-            outputs.T[node.new_to_old_classes[new_label]].mean(dim=0)
-            for new_label in range(node.num_classes)
+            outputs.T[node.child_index_to_leaf_index[child_index]].mean(dim=0)
+            for child_index in range(node.num_classes)
         ]).T
 
     @classmethod
@@ -96,7 +96,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         If you have targets for the node, you can selectively perform inference,
         only for nodes where the label of a sample is well-defined.
         """
-        classes = [node.old_to_new_classes[int(t)] for t in targets]
+        classes = [node.leaf_index_to_child_index[int(t)] for t in targets]
         selector = [bool(cls) for cls in classes]
         targets_sub = [cls[0] for cls in classes if cls]
 
@@ -108,14 +108,14 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         return selector, outputs_sub, targets_sub
 
     @classmethod
-    def traverse_tree(cls, wnid_to_outputs, nodes, wnid_to_class, classes):
+    def traverse_tree(cls, wnid_to_outputs, tree):
         """Convert node outputs to final prediction.
 
         Note that the prediction output for this function can NOT be trained
         on. The outputs have been detached from the computation graph.
         """
         # move all to CPU, detach from computation graph
-        example = wnid_to_outputs[nodes[0].wnid]
+        example = wnid_to_outputs[tree.inodes[0].wnid]
         n_samples = int(example['logits'].size(0))
         device = example['logits'].device
 
@@ -124,15 +124,11 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
             outputs['preds'] = list(map(int, outputs['preds'].cpu()))
             outputs['probs'] = outputs['probs'].detach().cpu()
 
-        wnid_to_node = {node.wnid: node for node in nodes}
-        wnid_root = get_root(nodes[0].tree.G)
-        node_root = wnid_to_node[wnid_root]
-
         decisions = []
         preds = []
         for index in range(n_samples):
-            decision = [{'node': node_root, 'name': 'root', 'prob': 1}]
-            node = node_root
+            decision = [{'node': tree.root, 'name': 'root', 'prob': 1}]
+            node = tree.root
             while not node.is_leaf():
                 if node.wnid not in wnid_to_outputs:
                     node = None
@@ -142,9 +138,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
                 prob_child = float(outputs['probs'][index][index_child])
                 node = node.children[index_child]
                 decision.append({'node': node, 'name': wnid_to_name(node.wnid), 'prob': prob_child})
-            cls = wnid_to_class[node.wnid]
-            pred = -1 if cls is None else classes.index(cls)
-            preds.append(pred)
+            preds.append(tree.wnid_to_class_index[node.wnid])
             decisions.append(decision)
         return torch.Tensor(preds).long().to(device), decisions
 
@@ -156,8 +150,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
 
     def forward_with_decisions(self, outputs):
         wnid_to_outputs = self.forward_nodes(outputs)
-        predicted, decisions = self.traverse_tree(
-            wnid_to_outputs, self.tree.nodes, self.tree.wnid_to_class, self.tree.classes)
+        predicted, decisions = self.traverse_tree(wnid_to_outputs, self.tree)
         logits = self.predicted_to_logits(predicted)
         logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return logits, decisions
@@ -176,7 +169,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         few lines:
 
             for index_child in range(len(node.children)):
-                old_indexes = node.new_to_old_classes[index_child]
+                old_indexes = node.child_index_to_leaf_index[index_child]
                 class_probs[:,old_indexes] *= output[:,index_child][:,None]
 
         However, we collect all indices first, so that only one tensor operation
@@ -197,7 +190,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
 
             old_indices, new_indices = [], []
             for index_child in range(len(node.children)):
-                old = node.new_to_old_classes[index_child]
+                old = node.child_index_to_leaf_index[index_child]
                 old_indices.extend(old)
                 new_indices.extend([index_child] * len(old))
 
