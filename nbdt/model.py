@@ -259,14 +259,6 @@ class NBDT(nn.Module):
         if dataset and not hierarchy and not path_graph:
             assert arch, 'Must specify `arch` if no `hierarchy` or `path_graph`'
             hierarchy = f'induced-{arch}'
-        if dataset and hierarchy and not path_graph:
-            path_graph = hierarchy_to_path_graph(dataset, hierarchy)
-        if dataset and not path_graph:
-            path_graph = dataset_to_default_path_graph(dataset)
-        if dataset and not path_wnids:
-            path_wnids = dataset_to_default_path_wnids(dataset)
-        if dataset and not classes:
-            classes = dataset_to_dummy_classes(dataset)
         if pretrained and not arch:
             raise UserWarning(
                 'To load a pretrained NBDT, you need to specify the `arch`. '
@@ -274,15 +266,14 @@ class NBDT(nn.Module):
         if isinstance(model, str):
             raise NotImplementedError('Model must be nn.Module')
 
-        self.init(dataset, model, path_graph, path_wnids, classes,
+        tree = Tree(dataset, path_graph, path_wnids, classes)
+        self.init(dataset, model, tree,
             arch=arch, pretrained=pretrained, hierarchy=hierarchy, **kwargs)
 
     def init(self,
             dataset,
             model,
-            path_graph,
-            path_wnids,
-            classes,
+            tree,
             arch=None,
             pretrained=False,
             hierarchy=None,
@@ -293,7 +284,7 @@ class NBDT(nn.Module):
         this class to function. The constructor for this class may generate
         some of these required arguments if initially missing.
         """
-        self.rules = Rules(dataset, path_graph, path_wnids, classes)
+        self.rules = Rules(tree=tree)
         self.model = model
 
         if pretrained:

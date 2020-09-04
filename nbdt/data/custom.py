@@ -7,6 +7,10 @@ from nbdt.utils import DATASET_TO_NUM_CLASSES, DATASETS
 from collections import defaultdict
 from nbdt.graph import get_wnids, read_graph, get_leaves, get_non_leaves, \
     FakeSynset, get_leaf_to_path, wnid_to_synset, wnid_to_name
+from nbdt.utils import (
+    dataset_to_default_path_graph,
+    dataset_to_default_path_wnids,
+    hierarchy_to_path_graph)
 from . import imagenet
 import torch.nn as nn
 import random
@@ -161,11 +165,11 @@ class Tree:
         if dataset and hierarchy and not path_graph:
             path_graph = hierarchy_to_path_graph(dataset, hierarchy)
         if dataset and not path_graph:
-            path_graph = dataset_to_default_path_graph(dataset_name)
+            path_graph = dataset_to_default_path_graph(dataset)
         if dataset and not path_wnids:
-            path_wnids = dataset_to_default_path_wnids(dataset_name)
+            path_wnids = dataset_to_default_path_wnids(dataset)
         if dataset and not classes:
-            classes = dataset_to_dummy_classes(dataset_name)
+            classes = dataset_to_dummy_classes(dataset)
 
         self.dataset = dataset
         self.path_graph = path_graph
