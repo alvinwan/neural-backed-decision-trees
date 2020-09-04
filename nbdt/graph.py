@@ -251,14 +251,14 @@ def get_depth(G):
 def get_leaf_to_path(G):
     leaf_to_path = {}
     for root in get_roots(G):
-        frontier = [(root, [])]
+        frontier = [(root, 0, [])]
         while frontier:
-            node, path = frontier.pop(0)
-            path = path + [node]
+            node, child_index, path = frontier.pop(0)
+            path = path + [(child_index, node)]
             if is_leaf(G, node):
                 leaf_to_path[node] = path
                 continue
-            frontier.extend([(child, path) for child in G.succ[node]])
+            frontier.extend([(child, i, path) for i, child in enumerate(G.succ[node])])
     return leaf_to_path
 
 

@@ -137,7 +137,12 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
                 index_child = outputs['preds'][index]
                 prob_child = float(outputs['probs'][index][index_child])
                 node = node.children[index_child]
-                decision.append({'node': node, 'name': node.name, 'prob': prob_child})
+                decision.append({
+                    'node': node,
+                    'name': node.name,
+                    'prob': prob_child,
+                    'next_index': index_child
+                })
             preds.append(tree.wnid_to_class_index[node.wnid])
             decisions.append(decision)
         return torch.Tensor(preds).long().to(device), decisions
@@ -208,14 +213,18 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
 
         decisions = []
         node = self.tree.inodes[0]
-        leaf_to_path_nodes = self.tree.get_leaf_to_path()
+        leaf_to_steps = self.tree.get_leaf_to_steps()
         for index, prediction in enumerate(predicted):
             leaf = self.tree.wnids_leaves[prediction]
-            decision = leaf_to_path_nodes[leaf]
-            probabilities = [1]
-            for justification in decision[:-1]:
-                probs.append(wnid_to_outputs[node.wnid]['probs'].max())  # TODO(alvin): fill in prob
-            decisions.append(decision)
+            steps = leaf_to_steps[leaf]
+            probs = [1]
+            for step in steps[:-1]:
+                _out = wnid_to_outputs[step['node'].wnid]
+                _probs = _out['probs'][0]
+                probs.append(_probs[step['next_index']])
+            for step, prob in zip(steps, probs):
+                step['prob'] = float(prob)
+            decisions.append(steps)
         return outputs, decisions
 
     def forward(self, outputs, wnid_to_outputs=None):

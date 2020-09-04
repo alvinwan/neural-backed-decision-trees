@@ -180,19 +180,21 @@ class Tree:
             wnid_to_node[wnid] = Node(self, wnid)
         return wnid_to_node
 
-    def get_leaf_to_path(self):
+    def get_leaf_to_steps(self):
         node = self.inodes[0]
         leaf_to_path = get_leaf_to_path(self.G)
-        leaf_to_path_nodes = {}
+        leaf_to_steps = {}
         for leaf in self.wnids_leaves:
-            leaf_to_path_nodes[leaf] = [
+            next_indices = [index for index, _ in leaf_to_path[leaf][1:]] + [-1]
+            leaf_to_steps[leaf] = [
                 {
                     'node': self.wnid_to_node[wnid],
-                    'name': self.wnid_to_node[wnid].name
+                    'name': self.wnid_to_node[wnid].name,
+                    'next_index': next_index,  # curr node's next child index to traverse
                 }
-                for wnid in leaf_to_path[leaf]
+                for next_index, (_, wnid) in zip(next_indices, leaf_to_path[leaf])
             ]
-        return leaf_to_path_nodes
+        return leaf_to_steps
 
 
 class ResampleLabelsDataset(Dataset):
