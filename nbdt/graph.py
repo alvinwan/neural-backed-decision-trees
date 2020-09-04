@@ -19,8 +19,8 @@ import nbdt.models as models
 import torch
 import argparse
 import os
-from nbdt.thirdparty.wordnet import FakeSynset, synset_to_wnid, wnid_to_synset, synset_to_name
-from nbdt.thirdparty.networkx import get_roots
+from nbdt.thirdparty.wn import FakeSynset, synset_to_wnid, wnid_to_synset, synset_to_name
+from nbdt.thirdparty.nx import get_roots
 from nbdt.utils import get_directory
 
 

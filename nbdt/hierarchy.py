@@ -4,8 +4,8 @@ from nbdt.graph import build_minimal_wordnet_graph, build_random_graph, \
     prune_single_successor_nodes, generate_graph_fname, \
     get_parser, get_directory, get_graph_path_from_args, \
     augment_graph, build_induced_graph
-from nbdt.thirdparty.wordnet import get_wnids, synset_to_wnid, wnid_to_name, get_wnids_from_dataset
-from nbdt.thirdparty.networkx import write_graph, get_roots, get_root, read_graph, get_leaves, get_depth
+from nbdt.thirdparty.wn import get_wnids, synset_to_wnid, wnid_to_name, get_wnids_from_dataset
+from nbdt.thirdparty.nx import write_graph, get_roots, get_root, read_graph, get_leaves, get_depth
 from nbdt import data
 from networkx.readwrite.json_graph import adjacency_data
 from pathlib import Path
