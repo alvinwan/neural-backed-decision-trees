@@ -1,9 +1,10 @@
+"""Uses nbdt.graph utilities to build, test, and visualize NBDT hierarchies."""
 from nbdt.utils import DATASETS, METHODS, Colors, fwd
 from nbdt.graph import build_minimal_wordnet_graph, build_random_graph, \
-    prune_single_successor_nodes, generate_fname, \
-    get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args, \
+    prune_single_successor_nodes, generate_graph_fname, \
+    get_parser, get_directory, get_graph_path_from_args, \
     augment_graph, build_induced_graph
-from nbdt.thirdparty.wordnet import get_wnids, synset_to_wnid, wnid_to_name
+from nbdt.thirdparty.wordnet import get_wnids, synset_to_wnid, wnid_to_name, get_wnids_from_dataset
 from nbdt.thirdparty.networkx import write_graph, get_roots, get_root, read_graph, get_leaves, get_depth
 from nbdt import data
 from networkx.readwrite.json_graph import adjacency_data
@@ -428,7 +429,7 @@ def get_color_info(G, color, color_leaves, color_path_to=None, color_nodes=(),
 def generate_vis_fname(vis_color_path_to=None, vis_out_fname=None, **kwargs):
     fname = vis_out_fname
     if fname is None:
-        fname = generate_fname(**kwargs).replace('graph-', f'{kwargs["dataset"]}-', 1)
+        fname = generate_graph_fname(**kwargs).replace('graph-', f'{kwargs["dataset"]}-', 1)
     if vis_color_path_to is not None:
         fname += '-' + vis_color_path_to
     return fname

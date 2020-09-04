@@ -1,3 +1,13 @@
+"""Various graph creation algorithms and utilities for WordNet association.
+
+Builds off of thirdparty utilities in thirdparty/*, interfacing with WordNet
+and Networkx for the rest of NBDT code.
+
+- Minimal WordNet graph
+- Random graph
+- Induced graph
+- WordNet association with nodes
+"""
 import networkx as nx
 import json
 import random
@@ -9,7 +19,9 @@ import nbdt.models as models
 import torch
 import argparse
 import os
-from nbdt.thirdparty.wordnet import FakeSynset
+from nbdt.thirdparty.wordnet import FakeSynset, synset_to_wnid, wnid_to_synset, synset_to_name
+from nbdt.thirdparty.networkx import get_roots
+from nbdt.utils import get_directory
 
 
 def get_parser():
@@ -99,10 +111,10 @@ def get_parser():
     return parser
 
 
-def generate_fname(method, seed=0, branching_factor=2, extra=0,
-                   no_prune=False, fname='', path='', multi_path=False,
-                   induced_linkage='ward', induced_affinity='euclidean',
-                   checkpoint=None, arch=None, **kwargs):
+def generate_graph_fname(method, seed=0, branching_factor=2, extra=0,
+                        no_prune=False, fname='', path='', multi_path=False,
+                        induced_linkage='ward', induced_affinity='euclidean',
+                        checkpoint=None, arch=None, **kwargs):
     if path:
         return Path(path).stem
     if fname:
@@ -141,15 +153,6 @@ def generate_fname(method, seed=0, branching_factor=2, extra=0,
     return fname
 
 
-def get_directory(dataset, root='./nbdt/hierarchies'):
-    return os.path.join(root, dataset)
-
-
-def get_wnids_from_dataset(dataset, root='./nbdt/wnids'):
-    directory = get_directory(dataset, root)
-    return get_wnids(f'{directory}.txt')
-
-
 def get_graph_path_from_args(
         dataset, method, seed=0, branching_factor=2, extra=0,
         no_prune=False, fname='', path='', multi_path=False,
@@ -157,7 +160,7 @@ def get_graph_path_from_args(
         checkpoint=None, arch=None, **kwargs):
     if path:
         return path
-    fname = generate_fname(
+    fname = generate_graph_fname(
         method=method,
         seed=seed,
         branching_factor=branching_factor,
@@ -174,9 +177,9 @@ def get_graph_path_from_args(
     return path
 
 
-##########
-# GRAPHS #
-##########
+#################
+# MINIMAL GRAPH #
+#################
 
 
 def build_minimal_wordnet_graph(wnids, multi_path=False):
@@ -210,6 +213,11 @@ def build_minimal_wordnet_graph(wnids, multi_path=False):
         assert len(children) == 0, \
             f'Node {wnid} ({synset.name()}) is not a leaf. Children: {children}'
     return G
+
+
+################
+# RANDOM GRAPH #
+################
 
 
 def build_random_graph(wnids, seed=0, branching_factor=2):
@@ -260,14 +268,6 @@ def build_random_graph(wnids, seed=0, branching_factor=2):
 
             if not is_leaf:
                 next.append((candidate, wnid))
-    return G
-
-
-def prune_single_successor_nodes(G):
-    for node in G.nodes:
-        if len(G.succ[node]) == 1:
-            succ = list(G.succ[node])[0]
-            G = nx.contracted_nodes(G, succ, node, self_loops=False)
     return G
 
 
@@ -428,6 +428,16 @@ def augment_graph(G, extra, allow_imaginary=False, seed=0, max_retries=10000):
     return G, n_extra, n_imaginary
 
 
+def set_node_label(G, synset):
+    nx.set_node_attributes(G, {
+        synset_to_wnid(synset): synset_to_name(synset)
+    }, 'label')
+
+
+def set_random_node_label(G, i):
+    nx.set_node_attributes(G, {i: ''}, 'label')
+
+
 def get_new_node(G):
     """Get new candidate node for the graph"""
     root = get_root(G)
@@ -439,14 +449,6 @@ def get_new_node(G):
     candidate = get_wordnet_meaning(G, synsets)
     is_fake = candidate.pos() == 'f'
     return candidate, is_fake, children
-
-
-def get_wordnet_meaning(G, synsets):
-    hypernyms = get_common_hypernyms(synsets)
-    candidate = pick_unseen_hypernym(G, hypernyms) if hypernyms else None
-    if candidate is None:
-        return FakeSynset.create_from_offset(len(G.nodes))
-    return candidate
 
 
 def add_node_to_graph(G, candidate, children):
@@ -471,6 +473,31 @@ def get_new_adjacency(G, nodes):
     return children
 
 
+def prune_single_successor_nodes(G):
+    for node in G.nodes:
+        if len(G.succ[node]) == 1:
+            succ = list(G.succ[node])[0]
+            G = nx.contracted_nodes(G, succ, node, self_loops=False)
+    return G
+
+
+####################
+# WORDNET + GRAPHS #
+####################
+
+
+def get_wordnet_meaning(G, synsets):
+    hypernyms = get_common_hypernyms(synsets)
+    candidate = pick_unseen_hypernym(G, hypernyms) if hypernyms else None
+    if candidate is None:
+        return FakeSynset.create_from_offset(len(G.nodes))
+    return candidate
+
+
+def deepest_synset(synsets):
+    return max(synsets, key=lambda synset: synset.max_depth())
+
+
 def get_common_hypernyms(synsets):
     if any(synset.pos() == 'f' for synset in synsets):
         return set()
@@ -478,10 +505,6 @@ def get_common_hypernyms(synsets):
     for synset in synsets[2:]:
         common_hypernyms &= set(synsets[0].common_hypernyms(synset))
     return common_hypernyms
-
-
-def deepest_synset(synsets):
-    return max(synsets, key=lambda synset: synset.max_depth())
 
 
 def pick_unseen_hypernym(G, common_hypernyms):

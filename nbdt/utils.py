@@ -55,6 +55,10 @@ def dataset_to_default_path_wnids(dataset):
     return os.path.join(fwd(), f'wnids/{dataset}.txt')
 
 
+def get_directory(dataset, root='./nbdt/hierarchies'):
+    return os.path.join(root, dataset)
+
+
 def generate_kwargs(args, object, name='Dataset', keys=(), globals={}, kwargs=None):
     kwargs = kwargs or {}
 

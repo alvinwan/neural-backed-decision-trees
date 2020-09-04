@@ -59,16 +59,6 @@ def get_leaf_to_path(G):
     return leaf_to_path
 
 
-def set_node_label(G, synset):
-    nx.set_node_attributes(G, {
-        synset_to_wnid(synset): synset_to_name(synset)
-    }, 'label')
-
-
-def set_random_node_label(G, i):
-    nx.set_node_attributes(G, {i: ''}, 'label')
-
-
 def write_graph(G, path):
     makeparentdirs(path)
     with open(str(path), 'w') as f:
