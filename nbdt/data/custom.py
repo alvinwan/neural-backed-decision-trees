@@ -177,8 +177,10 @@ class Tree:
         self.classes = classes
         self.G = read_graph(path_graph)
         self.wnid_to_node = Tree.get_wnid_to_node(self.G, path_graph, path_wnids, classes)
-        self.wnids = sorted(self.wnid_to_node)
-        self.nodes = [self.wnid_to_node[wnid] for wnid in self.wnids]
+        self.wnids_leaves = get_wnids(path_wnids)
+        self.wnids_nodes = sorted(self.wnid_to_node)
+        self.wnid_to_class = {wnid: cls for wnid, cls in zip(self.wnids_leaves, self.classes)}
+        self.nodes = [self.wnid_to_node[wnid] for wnid in self.wnids_nodes]
 
     @property
     def root(self):

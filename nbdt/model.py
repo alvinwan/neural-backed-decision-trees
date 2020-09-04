@@ -46,21 +46,12 @@ class EmbeddedDecisionRules(nn.Module):
             classes=(),
             tree=None):
         super().__init__()
-
         if not tree:
             tree = Tree(dataset, path_graph, path_wnids, classes)
         self.tree = tree
-
-        self.classes = tree.classes
-        self.wnid_to_node = {node.wnid: node for node in self.tree.nodes}
-
-        self.wnids = get_wnids(tree.path_wnids)
-        self.wnid_to_class = {wnid: cls for wnid, cls in zip(self.wnids, self.classes)}
-
         self.correct = 0
         self.total = 0
-
-        self.I = torch.eye(len(self.classes))
+        self.I = torch.eye(len(self.tree.classes))
 
     @staticmethod
     def get_node_logits(outputs, node):
@@ -166,7 +157,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
     def forward_with_decisions(self, outputs):
         wnid_to_outputs = self.forward_nodes(outputs)
         predicted, decisions = self.traverse_tree(
-            wnid_to_outputs, self.tree.nodes, self.wnid_to_class, self.classes)
+            wnid_to_outputs, self.tree.nodes, self.tree.wnid_to_class, self.tree.classes)
         logits = self.predicted_to_logits(predicted)
         logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return logits, decisions
@@ -223,7 +214,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         node = self.tree.nodes[0]
         leaf_to_path_nodes = self.tree.get_leaf_to_path()
         for index, prediction in enumerate(predicted):
-            leaf = node.wnids[prediction]
+            leaf = self.tree.wnids_leaves[prediction]
             decision = leaf_to_path_nodes[leaf]
             for justification in decision:
                 justification['prob'] = -1  # TODO(alvin): fill in prob
