@@ -14,7 +14,7 @@ from nbdt.utils import (
     uncoerce_tensor)
 from nbdt.models.utils import load_state_dict_from_key, coerce_state_dict
 from nbdt.data.custom import Node, Tree, dataset_to_dummy_classes
-from nbdt.graph import get_root, get_wnids, synset_to_name, wnid_to_name
+from nbdt.graph import get_root, get_wnids, synset_to_name
 
 import torch
 import torch.nn as nn
@@ -137,7 +137,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
                 index_child = outputs['preds'][index]
                 prob_child = float(outputs['probs'][index][index_child])
                 node = node.children[index_child]
-                decision.append({'node': node, 'name': wnid_to_name(node.wnid), 'prob': prob_child})
+                decision.append({'node': node, 'name': node.name, 'prob': prob_child})
             preds.append(tree.wnid_to_class_index[node.wnid])
             decisions.append(decision)
         return torch.Tensor(preds).long().to(device), decisions
@@ -202,7 +202,8 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         return class_probs
 
     def forward_with_decisions(self, outputs):
-        outputs = self.forward(outputs)
+        wnid_to_outputs = self.forward_nodes(outputs)
+        outputs = self.forward(outputs, wnid_to_outputs)
         _, predicted = outputs.max(1)
 
         decisions = []
@@ -211,13 +212,15 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         for index, prediction in enumerate(predicted):
             leaf = self.tree.wnids_leaves[prediction]
             decision = leaf_to_path_nodes[leaf]
-            for justification in decision:
-                justification['prob'] = -1  # TODO(alvin): fill in prob
+            probabilities = [1]
+            for justification in decision[:-1]:
+                probs.append(wnid_to_outputs[node.wnid]['probs'].max())  # TODO(alvin): fill in prob
             decisions.append(decision)
         return outputs, decisions
 
-    def forward(self, outputs):
-        wnid_to_outputs = self.forward_nodes(outputs)
+    def forward(self, outputs, wnid_to_outputs=None):
+        if not wnid_to_outputs:
+            wnid_to_outputs = self.forward_nodes(outputs)
         logits = self.traverse_tree(wnid_to_outputs, self.tree.inodes)
         logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return logits

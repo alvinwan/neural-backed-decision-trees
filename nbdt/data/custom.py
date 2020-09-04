@@ -45,6 +45,7 @@ class Node:
         self.tree = tree
 
         self.wnid = wnid
+        self.name = wnid_to_name(wnid)
         self.synset = wnid_to_synset(wnid)
 
         self.original_classes = tree.classes
@@ -182,13 +183,12 @@ class Tree:
     def get_leaf_to_path(self):
         node = self.inodes[0]
         leaf_to_path = get_leaf_to_path(self.G)
-        wnid_to_node = {node.wnid: node for node in self.inodes}
         leaf_to_path_nodes = {}
-        for leaf in leaf_to_path:
+        for leaf in self.wnids_leaves:
             leaf_to_path_nodes[leaf] = [
                 {
-                    'node': wnid_to_node[wnid],
-                    'name': wnid_to_name(wnid)
+                    'node': self.wnid_to_node[wnid],
+                    'name': self.wnid_to_node[wnid].name
                 }
                 for wnid in leaf_to_path[leaf]
             ]
