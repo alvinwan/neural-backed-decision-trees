@@ -60,23 +60,11 @@ class TreeSupLoss(nn.Module):
             hierarchy=None,
             Rules=HardEmbeddedDecisionRules,
             tree=None,
-            **kwargs):
+            tree_supervision_weight=1.):
         super().__init__()
 
         if not tree:
-            tree = Tree(dataset, path_graph, path_wnids, classes)
-        self.init(criterion, tree, Rules=Rules, **kwargs)
-
-    def init(self,
-            criterion,
-            tree,
-            Rules,
-            tree_supervision_weight=1.):
-        """
-        Extra init method makes clear which arguments are finally necessary for
-        this class to function. The constructor for this class may generate
-        some of these required arguments if initially missing.
-        """
+            tree = Tree(dataset, path_graph, path_wnids, classes, hierarchy=hierarchy)
         self.num_classes = len(tree.classes)
         self.tree = tree
         self.rules = Rules(tree=tree)

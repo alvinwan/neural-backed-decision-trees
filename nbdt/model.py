@@ -44,10 +44,11 @@ class EmbeddedDecisionRules(nn.Module):
             path_graph=None,
             path_wnids=None,
             classes=(),
+            hierarchy=None,
             tree=None):
         super().__init__()
         if not tree:
-            tree = Tree(dataset, path_graph, path_wnids, classes)
+            tree = Tree(dataset, path_graph, path_wnids, classes, hierarchy=hierarchy)
         self.tree = tree
         self.correct = 0
         self.total = 0
@@ -257,7 +258,7 @@ class NBDT(nn.Module):
         if isinstance(model, str):
             raise NotImplementedError('Model must be nn.Module')
 
-        tree = Tree(dataset, path_graph, path_wnids, classes)
+        tree = Tree(dataset, path_graph, path_wnids, classes, hierarchy=hierarchy)
         self.init(dataset, model, tree,
             arch=arch, pretrained=pretrained, hierarchy=hierarchy, **kwargs)
 
