@@ -228,12 +228,6 @@ def get_leaves(G, root=None):
             yield node
 
 
-def get_non_leaves(G):
-    for node in G.nodes:
-        if len(G.succ[node]) > 0:
-            yield node
-
-
 def get_roots(G):
     for node in G.nodes:
         if len(G.pred[node]) == 0:

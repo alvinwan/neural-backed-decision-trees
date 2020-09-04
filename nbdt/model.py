@@ -133,7 +133,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         for index in range(n_samples):
             decision = [{'node': node_root, 'name': 'root', 'prob': 1}]
             wnid, node = wnid_root, node_root
-            while node is not None:
+            while not node.is_leaf():
                 if node.wnid not in wnid_to_outputs:
                     wnid = node = None
                     break
@@ -141,7 +141,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
                 index_child = outputs['preds'][index]
                 prob_child = float(outputs['probs'][index][index_child])
                 wnid = node.children[index_child]
-                node = wnid_to_node.get(wnid, None)
+                node = wnid_to_node[wnid]
                 decision.append({'node': node, 'name': wnid_to_name(wnid), 'prob': prob_child})
             cls = wnid_to_class.get(wnid, None)
             pred = -1 if cls is None else classes.index(cls)
@@ -158,7 +158,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
     def forward_with_decisions(self, outputs):
         wnid_to_outputs = self.forward_nodes(outputs)
         predicted, decisions = self.traverse_tree(
-            wnid_to_outputs, self.tree.inodes, self.tree.wnid_to_class, self.tree.classes)
+            wnid_to_outputs, self.tree.nodes, self.tree.wnid_to_class, self.tree.classes)
         logits = self.predicted_to_logits(predicted)
         logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return logits, decisions
@@ -192,6 +192,8 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         class_probs = torch.ones((num_samples, num_classes)).to(device)
 
         for node in nodes:
+            if node.is_leaf():
+                continue
             outputs = wnid_to_outputs[node.wnid]
 
             old_indices, new_indices = [], []

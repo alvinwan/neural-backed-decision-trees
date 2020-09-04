@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from collections import defaultdict
 from nbdt.utils import DATASET_TO_NUM_CLASSES, DATASETS
 from collections import defaultdict
-from nbdt.graph import get_wnids, read_graph, get_leaves, get_non_leaves, \
+from nbdt.graph import get_wnids, read_graph, get_leaves, \
     FakeSynset, get_leaf_to_path, wnid_to_synset, wnid_to_name
 from nbdt.utils import (
     dataset_to_default_path_graph,
@@ -53,14 +53,12 @@ class Node:
         self.original_classes = tree.classes
         self.num_original_classes = len(self.tree.wnids_leaves)
 
-        assert not self.is_leaf(), 'Cannot build dataset for leaf'
         self.has_other = other_class and not (self.is_root() or self.is_leaf())
         self.num_children = len(self.children)
 
         self.num_classes = self.num_children + int(self.has_other)
 
-        self.old_to_new_classes, self.new_to_old_classes = \
-            self.build_class_mappings()
+        self.old_to_new_classes, self.new_to_old_classes = self.build_class_mappings()
         self.classes = self.build_classes()
 
         assert len(self.classes) == self.num_classes, (
@@ -90,6 +88,9 @@ class Node:
         return len(self.parents) == 0
 
     def build_class_mappings(self):
+        if self.is_leaf():
+            return {}, {}
+
         old_to_new = defaultdict(lambda: [])
         new_to_old = defaultdict(lambda: [])
         for new_index, child in enumerate(self.children):
@@ -147,8 +148,10 @@ class Tree:
         self.wnid_to_class = {wnid: cls for wnid, cls in zip(self.wnids_leaves, self.classes)}
 
         self.wnid_to_node = self.get_wnid_to_node()
-        self.wnids_nodes = sorted(self.wnid_to_node)
-        self.inodes = [self.wnid_to_node[wnid] for wnid in self.wnids_nodes]
+        self.nodes = [self.wnid_to_node[wnid] for wnid in sorted(self.wnid_to_node)]
+        self.inodes = [node for node in self.nodes if not node.is_leaf()]
+        self.leaves = [node for node in self.nodes if node.is_leaf()]
+
 
     @property
     def root(self):
@@ -159,7 +162,7 @@ class Tree:
 
     def get_wnid_to_node(self):
         wnid_to_node = {}
-        for wnid in get_non_leaves(self.G):
+        for wnid in self.G:
             wnid_to_node[wnid] = Node(self, wnid)
         return wnid_to_node
 
@@ -171,7 +174,7 @@ class Tree:
         for leaf in leaf_to_path:
             leaf_to_path_nodes[leaf] = [
                 {
-                    'node': wnid_to_node.get(wnid, None),
+                    'node': wnid_to_node[wnid],
                     'name': wnid_to_name(wnid)
                 }
                 for wnid in leaf_to_path[leaf]
