@@ -32,7 +32,7 @@ import numpy as np
 from nbdt.utils import (
     progress_bar, generate_fname, generate_kwargs, Colors
 )
-from nbdt.wordnet import maybe_install_wordnet
+from nbdt.thirdparty.wordnet import maybe_install_wordnet
 
 maybe_install_wordnet()
 

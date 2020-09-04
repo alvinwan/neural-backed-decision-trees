@@ -6,8 +6,8 @@ from torch.utils.data import Dataset
 from collections import defaultdict
 from nbdt.utils import DATASET_TO_NUM_CLASSES, DATASETS
 from collections import defaultdict
-from nbdt.wordnet import get_wnids, FakeSynset, wnid_to_synset, wnid_to_name
-from nbdt.networkx import read_graph, get_leaves, get_leaf_to_path
+from nbdt.thirdparty.wordnet import get_wnids, FakeSynset, wnid_to_synset, wnid_to_name
+from nbdt.thirdparty.networkx import read_graph, get_leaves, get_leaf_to_path
 from nbdt.utils import (
     dataset_to_default_path_graph,
     dataset_to_default_path_wnids,

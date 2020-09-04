@@ -7,7 +7,7 @@ from nbdt import data
 from nltk.corpus import wordnet as wn
 from pathlib import Path
 from nbdt.utils import Colors, generate_kwargs
-from nbdt.wordnet import maybe_install_wordnet, synset_to_wnid, write_wnids, FakeSynset
+from nbdt.thirdparty.wordnet import maybe_install_wordnet, synset_to_wnid, write_wnids, FakeSynset
 import os
 
 maybe_install_wordnet()

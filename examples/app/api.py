@@ -10,7 +10,7 @@ from nbdt.model import HardNBDT
 from nbdt.models import wrn28_10_cifar10
 from torchvision import transforms
 from nbdt.utils import DATASET_TO_CLASSES, load_image_from_path
-from nbdt.wordnet import maybe_install_wordnet
+from nbdt.thirdparty.wordnet import maybe_install_wordnet
 from werkzeug.utils import secure_filename
 from PIL import Image
 import os

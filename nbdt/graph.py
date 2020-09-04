@@ -9,7 +9,7 @@ import nbdt.models as models
 import torch
 import argparse
 import os
-from nbdt.wordnet import FakeSynset
+from nbdt.thirdparty.wordnet import FakeSynset
 
 
 def get_parser():
