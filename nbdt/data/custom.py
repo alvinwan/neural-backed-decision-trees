@@ -68,9 +68,6 @@ class Node:
         self.leaves = list(self.get_leaves())
         self.num_leaves = len(self.leaves)
 
-        self._probabilities = None
-        self._class_weights = None
-
     def wnid_to_class_index(self, wnid):
         return self.tree.wnids_leaves.index(wnid)
 
@@ -118,36 +115,6 @@ class Node:
     def class_counts(self):
         """Number of old classes in each new class"""
         return [len(old_indices) for old_indices in self.new_to_old_classes]
-
-    @property
-    def probabilities(self):
-        """Calculates probability of training on the ith class.
-
-        If the class contains more than `resample_threshold` samples, the
-        probability is lower, as it is likely to cause severe class imbalance
-        issues.
-        """
-        if self._probabilities is None:
-            reference = min(self.class_counts)
-            self._probabilities = torch.Tensor([
-                min(1, reference / len(old_indices))
-                for old_indices in self.new_to_old_classes
-            ])
-        return self._probabilities
-
-    @probabilities.setter
-    def probabilities(self, probabilities):
-        self._probabilities = probabilities
-
-    @property
-    def class_weights(self):
-        if self._class_weights is None:
-            self._class_weights = self.probabilities
-        return self._class_weights
-
-    @class_weights.setter
-    def class_weights(self, class_weights):
-        self._class_weights = class_weights
 
     @staticmethod
     def dim(nodes):
