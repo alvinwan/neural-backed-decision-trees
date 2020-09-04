@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import defaultdict
-from nbdt.data.custom import Node, dataset_to_dummy_classes
+from nbdt.data.custom import Node, Tree, dataset_to_dummy_classes
 from nbdt.model import HardEmbeddedDecisionRules, SoftEmbeddedDecisionRules
 from nbdt.utils import (
     Colors, dataset_to_default_path_graph, dataset_to_default_path_wnids,
@@ -59,27 +59,17 @@ class TreeSupLoss(nn.Module):
             classes=None,
             hierarchy=None,
             Rules=HardEmbeddedDecisionRules,
+            tree=None,
             **kwargs):
         super().__init__()
 
-        if dataset and hierarchy and not path_graph:
-            path_graph = hierarchy_to_path_graph(dataset, hierarchy)
-        if dataset and not path_graph:
-            path_graph = dataset_to_default_path_graph(dataset)
-        if dataset and not path_wnids:
-            path_wnids = dataset_to_default_path_wnids(dataset)
-        if dataset and not classes:
-            classes = dataset_to_dummy_classes(dataset)
-
-        self.init(dataset, criterion, path_graph, path_wnids, classes,
-            Rules=Rules, **kwargs)
+        if not tree:
+            tree = Tree(dataset, path_graph, path_wnids, classes)
+        self.init(criterion, tree, Rules=Rules, **kwargs)
 
     def init(self,
-            dataset,
             criterion,
-            path_graph,
-            path_wnids,
-            classes,
+            tree,
             Rules,
             tree_supervision_weight=1.):
         """
@@ -87,10 +77,9 @@ class TreeSupLoss(nn.Module):
         this class to function. The constructor for this class may generate
         some of these required arguments if initially missing.
         """
-        self.dataset = dataset
-        self.num_classes = len(classes)
-        self.nodes = Node.get_nodes(path_graph, path_wnids, classes)
-        self.rules = Rules(dataset, path_graph, path_wnids, classes)
+        self.num_classes = len(tree.classes)
+        self.tree = tree
+        self.rules = Rules(tree=tree)
         self.tree_supervision_weight = tree_supervision_weight
         self.criterion = criterion
 
@@ -142,12 +131,12 @@ class HardTreeSupLoss(TreeSupLoss):
         self.assert_output_not_nbdt(outputs)
 
         loss = self.criterion(outputs, targets)
-        num_losses = outputs.size(0) * len(self.nodes) / 2.
+        num_losses = outputs.size(0) * len(self.tree.nodes) / 2.
 
         outputs_subs = defaultdict(lambda: [])
         targets_subs = defaultdict(lambda: [])
         targets_ints = [int(target) for target in targets.cpu().long()]
-        for node in self.nodes:
+        for node in self.tree.nodes:
             _, outputs_sub, targets_sub = \
                 HardEmbeddedDecisionRules.get_node_logits_filtered(
                     node, outputs, targets_ints)

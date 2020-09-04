@@ -149,13 +149,6 @@ class Node:
         self._class_weights = class_weights
 
     @staticmethod
-    def get_nodes(path_graph, path_wnids, classes):
-        wnid_to_node = Hierarchy.get_wnid_to_node(path_graph, path_wnids, classes)
-        wnids = sorted(wnid_to_node)
-        nodes = [wnid_to_node[wnid] for wnid in wnids]
-        return nodes
-
-    @staticmethod
     def get_leaf_to_path(nodes):
         node = nodes[0]
         leaf_to_path = get_leaf_to_path(node.G)
@@ -186,20 +179,25 @@ class Node:
         return sum([node.num_classes for node in nodes])
 
 
-class Hierarchy:
+class Tree:
 
-    def __init__(dataset_name=None, path_graph=None, path_wnids=None, classes=None):
-        if not path_graph:
-            assert dataset_name, 'Must have dataset name or path graph'
+    def __init__(
+            self, dataset, path_graph=None, path_wnids=None, classes=None,
+            hierarchy=None):
+        if dataset and hierarchy and not path_graph:
+            path_graph = hierarchy_to_path_graph(dataset, hierarchy)
+        if dataset and not path_graph:
             path_graph = dataset_to_default_path_graph(dataset_name)
-        if not path_wnids:
-            assert dataset_name, 'Must have dataset name or path wnids'
+        if dataset and not path_wnids:
             path_wnids = dataset_to_default_path_wnids(dataset_name)
-        if not classes:
-            assert dataset_name, 'Must have dataset name class names'
+        if dataset and not classes:
             classes = dataset_to_dummy_classes(dataset_name)
 
-        self.wnid_to_node = Hierarchy.get_wnid_to_node(path_graph, path_wnids, classes)
+        self.dataset = dataset
+        self.path_graph = path_graph
+        self.path_wnids = path_wnids
+        self.classes = classes
+        self.wnid_to_node = Tree.get_wnid_to_node(path_graph, path_wnids, classes)
         self.wnids = sorted(self.wnid_to_node)
         self.nodes = [self.wnid_to_node[wnid] for wnid in self.wnids]
 

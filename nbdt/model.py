@@ -13,7 +13,7 @@ from nbdt.utils import (
     coerce_tensor,
     uncoerce_tensor)
 from nbdt.models.utils import load_state_dict_from_key, coerce_state_dict
-from nbdt.data.custom import Node, dataset_to_dummy_classes
+from nbdt.data.custom import Node, Tree, dataset_to_dummy_classes
 from nbdt.graph import get_root, get_wnids, synset_to_name, wnid_to_name
 
 import torch
@@ -40,33 +40,28 @@ model_urls = {
 class EmbeddedDecisionRules(nn.Module):
 
     def __init__(self,
-            dataset,
+            dataset=None,
             path_graph=None,
             path_wnids=None,
-            classes=()):
-
-        if not path_graph:
-            path_graph = dataset_to_default_path_graph(dataset)
-        if not path_wnids:
-            path_wnids = dataset_to_default_path_wnids(dataset)
-        if not classes:
-            classes = dataset_to_dummy_classes(dataset)
+            classes=(),
+            tree=None):
         super().__init__()
-        assert all([dataset, path_graph, path_wnids, classes])
 
-        self.classes = classes
+        if not tree:
+            tree = Tree(dataset, path_graph, path_wnids, classes)
+        self.tree = tree
 
-        self.nodes = Node.get_nodes(path_graph, path_wnids, classes)
-        self.G = self.nodes[0].G
-        self.wnid_to_node = {node.wnid: node for node in self.nodes}
+        self.classes = tree.classes
+        self.G = self.tree.nodes[0].G
+        self.wnid_to_node = {node.wnid: node for node in self.tree.nodes}
 
-        self.wnids = get_wnids(path_wnids)
+        self.wnids = get_wnids(tree.path_wnids)
         self.wnid_to_class = {wnid: cls for wnid, cls in zip(self.wnids, self.classes)}
 
         self.correct = 0
         self.total = 0
 
-        self.I = torch.eye(len(classes))
+        self.I = torch.eye(len(self.classes))
 
     @staticmethod
     def get_node_logits(outputs, node):
@@ -98,7 +93,7 @@ class EmbeddedDecisionRules(nn.Module):
         return wnid_to_outputs
 
     def forward_nodes(self, outputs):
-        return self.get_all_node_outputs(outputs, self.nodes)
+        return self.get_all_node_outputs(outputs, self.tree.nodes)
 
 
 class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
@@ -172,7 +167,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
     def forward_with_decisions(self, outputs):
         wnid_to_outputs = self.forward_nodes(outputs)
         predicted, decisions = self.traverse_tree(
-            wnid_to_outputs, self.nodes, self.wnid_to_class, self.classes)
+            wnid_to_outputs, self.tree.nodes, self.wnid_to_class, self.classes)
         logits = self.predicted_to_logits(predicted)
         logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return logits, decisions
@@ -226,8 +221,8 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         _, predicted = outputs.max(1)
 
         decisions = []
-        node = self.nodes[0]
-        leaf_to_path_nodes = Node.get_leaf_to_path(self.nodes)
+        node = self.tree.nodes[0]
+        leaf_to_path_nodes = Node.get_leaf_to_path(self.tree.nodes)
         for index, prediction in enumerate(predicted):
             leaf = node.wnids[prediction]
             decision = leaf_to_path_nodes[leaf]
@@ -238,7 +233,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
 
     def forward(self, outputs):
         wnid_to_outputs = self.forward_nodes(outputs)
-        logits = self.traverse_tree(wnid_to_outputs, self.nodes)
+        logits = self.traverse_tree(wnid_to_outputs, self.tree.nodes)
         logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return logits
 
