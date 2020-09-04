@@ -125,7 +125,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
             outputs['probs'] = outputs['probs'].detach().cpu()
 
         wnid_to_node = {node.wnid: node for node in nodes}
-        wnid_root = get_root(nodes[0].G)
+        wnid_root = get_root(nodes[0].tree.G)
         node_root = wnid_to_node[wnid_root]
 
         decisions = []

@@ -41,17 +41,14 @@ def dataset_to_dummy_classes(dataset):
 
 class Node:
 
-    def __init__(self, wnid, classes, path_graph, path_wnids, other_class=False):
-        self.path_graph = path_graph
-        self.path_wnids = path_wnids
+    def __init__(self, tree, wnid, other_class=False):
+        self.tree = tree
 
         self.wnid = wnid
-        self.wnids = get_wnids(path_wnids)
-        self.G = read_graph(path_graph)
         self.synset = wnid_to_synset(wnid)
 
-        self.original_classes = classes
-        self.num_original_classes = len(self.wnids)
+        self.original_classes = tree.classes
+        self.num_original_classes = len(self.tree.wnids_leaves)
 
         assert not self.is_leaf(), 'Cannot build dataset for leaf'
         self.has_other = other_class and not (self.is_root() or self.is_leaf())
@@ -75,16 +72,16 @@ class Node:
         self._class_weights = None
 
     def wnid_to_class_index(self, wnid):
-        return self.wnids.index(wnid)
+        return self.tree.wnids_leaves.index(wnid)
 
     def get_parents(self):
-        return self.G.pred[self.wnid]
+        return self.tree.G.pred[self.wnid]
 
     def get_children(self):
-        return self.G.succ[self.wnid]
+        return self.tree.G.succ[self.wnid]
 
     def get_leaves(self):
-        return get_leaves(self.G, self.wnid)
+        return get_leaves(self.tree.G, self.wnid)
 
     def is_leaf(self):
         return len(self.get_children()) == 0
@@ -96,7 +93,7 @@ class Node:
         old_to_new = defaultdict(lambda: [])
         new_to_old = defaultdict(lambda: [])
         for new_index, child in enumerate(self.get_children()):
-            for leaf in get_leaves(self.G, child):
+            for leaf in get_leaves(self.tree.G, child):
                 old_index = self.wnid_to_class_index(leaf)
                 old_to_new[old_index].append(new_index)
                 new_to_old[new_index].append(old_index)
@@ -176,10 +173,11 @@ class Tree:
         self.path_wnids = path_wnids
         self.classes = classes
         self.G = read_graph(path_graph)
-        self.wnid_to_node = Tree.get_wnid_to_node(self.G, path_graph, path_wnids, classes)
         self.wnids_leaves = get_wnids(path_wnids)
-        self.wnids_nodes = sorted(self.wnid_to_node)
         self.wnid_to_class = {wnid: cls for wnid, cls in zip(self.wnids_leaves, self.classes)}
+
+        self.wnid_to_node = self.get_wnid_to_node()
+        self.wnids_nodes = sorted(self.wnid_to_node)
         self.nodes = [self.wnid_to_node[wnid] for wnid in self.wnids_nodes]
 
     @property
@@ -189,17 +187,15 @@ class Tree:
                 return node
         raise UserWarning('Should not be reachable. Tree should always have root')
 
-    @staticmethod
-    def get_wnid_to_node(G, path_graph, path_wnids, classes):
+    def get_wnid_to_node(self):
         wnid_to_node = {}
-        for wnid in get_non_leaves(G):
-            wnid_to_node[wnid] = Node(
-                wnid, classes, path_graph=path_graph, path_wnids=path_wnids)
+        for wnid in get_non_leaves(self.G):
+            wnid_to_node[wnid] = Node(self, wnid)
         return wnid_to_node
 
     def get_leaf_to_path(self):
         node = self.nodes[0]
-        leaf_to_path = get_leaf_to_path(node.G)
+        leaf_to_path = get_leaf_to_path(self.G)
         wnid_to_node = {node.wnid: node for node in self.nodes}
         leaf_to_path_nodes = {}
         for leaf in leaf_to_path:
