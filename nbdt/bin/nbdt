@@ -4,7 +4,8 @@
 from nbdt.model import SoftNBDT, HardNBDT
 from pytorchcv.models.wrn_cifar import wrn28_10_cifar10
 from torchvision import transforms
-from nbdt.utils import DATASET_TO_CLASSES, load_image_from_path, maybe_install_wordnet
+from nbdt.utils import DATASET_TO_CLASSES, load_image_from_path
+from nbdt.thirdparty.wordnet import maybe_install_wordnet
 import sys
 
 maybe_install_wordnet()
@@ -13,7 +14,7 @@ assert len(sys.argv) > 1, "Need to pass image URL or image path as argument"
 
 # load pretrained NBDT
 model = wrn28_10_cifar10()
-model = HardNBDT(
+model = SoftNBDT(
   pretrained=True,
   dataset='CIFAR10',
   arch='wrn28_10_cifar10',
