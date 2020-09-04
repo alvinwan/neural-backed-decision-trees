@@ -244,7 +244,7 @@ def set_np_printoptions():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
 
-def generate_fname(dataset, arch, path_graph, wnid=None, name='',
+def generate_checkpoint_fname(dataset, arch, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
         include_classes=(), num_samples=0, tree_supervision_weight=0.5,
         fine_tune=False, loss='CrossEntropyLoss',

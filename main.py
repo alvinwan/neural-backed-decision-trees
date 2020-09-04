@@ -30,7 +30,7 @@ import argparse
 import numpy as np
 
 from nbdt.utils import (
-    progress_bar, generate_fname, generate_kwargs, Colors
+    progress_bar, generate_checkpoint_fname, generate_kwargs, Colors
 )
 from nbdt.thirdparty.wordnet import maybe_install_wordnet
 
@@ -155,7 +155,7 @@ if device == 'cuda':
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
 
-checkpoint_fname = generate_fname(**vars(args))
+checkpoint_fname = generate_checkpoint_fname(**vars(args))
 checkpoint_path = './checkpoint/{}.pth'.format(checkpoint_fname)
 print(f'==> Checkpoints will be saved to: {checkpoint_path}')
 

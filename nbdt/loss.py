@@ -19,7 +19,7 @@ def add_arguments(parser):
     parser.add_argument('--hierarchy',
                         help='Hierarchy to use. If supplied, will be used to '
                         'generate --path-graph. --path-graph takes precedence.')
-    parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_fname
+    parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_checkpoint_fname
     parser.add_argument('--path-wnids', help='Path to wnids.txt file.')
     parser.add_argument('--tree-supervision-weight', type=float, default=1,
                         help='Weight assigned to tree supervision losses')
