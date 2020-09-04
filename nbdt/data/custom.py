@@ -149,17 +149,8 @@ class Node:
         self._class_weights = class_weights
 
     @staticmethod
-    def get_wnid_to_node(path_graph, path_wnids, classes):
-        wnid_to_node = {}
-        G = read_graph(path_graph)
-        for wnid in get_non_leaves(G):
-            wnid_to_node[wnid] = Node(
-                wnid, classes, path_graph=path_graph, path_wnids=path_wnids)
-        return wnid_to_node
-
-    @staticmethod
     def get_nodes(path_graph, path_wnids, classes):
-        wnid_to_node = Node.get_wnid_to_node(path_graph, path_wnids, classes)
+        wnid_to_node = Hierarchy.get_wnid_to_node(path_graph, path_wnids, classes)
         wnids = sorted(wnid_to_node)
         nodes = [wnid_to_node[wnid] for wnid in wnids]
         return nodes
@@ -193,6 +184,40 @@ class Node:
     @staticmethod
     def dim(nodes):
         return sum([node.num_classes for node in nodes])
+
+
+class Hierarchy:
+
+    def __init__(dataset_name=None, path_graph=None, path_wnids=None, classes=None):
+        if not path_graph:
+            assert dataset_name, 'Must have dataset name or path graph'
+            path_graph = dataset_to_default_path_graph(dataset_name)
+        if not path_wnids:
+            assert dataset_name, 'Must have dataset name or path wnids'
+            path_wnids = dataset_to_default_path_wnids(dataset_name)
+        if not classes:
+            assert dataset_name, 'Must have dataset name class names'
+            classes = dataset_to_dummy_classes(dataset_name)
+
+        self.wnid_to_node = Hierarchy.get_wnid_to_node(path_graph, path_wnids, classes)
+        self.wnids = sorted(self.wnid_to_node)
+        self.nodes = [self.wnid_to_node[wnid] for wnid in self.wnids]
+
+    @property
+    def root(self):
+        for node in self.nodes:
+            if node.is_root():
+                return node
+        raise UserWarning('Should not be reachable. Tree should always have root')
+
+    @staticmethod
+    def get_wnid_to_node(path_graph, path_wnids, classes):
+        wnid_to_node = {}
+        G = read_graph(path_graph)
+        for wnid in get_non_leaves(G):
+            wnid_to_node[wnid] = Node(
+                wnid, classes, path_graph=path_graph, path_wnids=path_wnids)
+        return wnid_to_node
 
 
 class ResampleLabelsDataset(Dataset):
