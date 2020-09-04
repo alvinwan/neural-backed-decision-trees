@@ -47,14 +47,11 @@ class Node:
         self.wnid = wnid
         self.synset = wnid_to_synset(wnid)
 
-        self.parents = list(self.tree.G.pred[self.wnid])
-        self.children = list(self.tree.G.succ[self.wnid])
-
         self.original_classes = tree.classes
         self.num_original_classes = len(self.tree.wnids_leaves)
 
         self.has_other = other_class and not (self.is_root() or self.is_leaf())
-        self.num_children = len(self.children)
+        self.num_children = len(self.succ)
 
         self.num_classes = self.num_children + int(self.has_other)
 
@@ -78,14 +75,30 @@ class Node:
             return None
         return self.parents[0]
 
+    @property
+    def pred(self):
+        return self.tree.G.pred[self.wnid]
+
+    @property
+    def parents(self):
+        return [self.tree.wnid_to_node[wnid] for wnid in self.pred]
+
+    @property
+    def succ(self):
+        return self.tree.G.succ[self.wnid]
+
+    @property
+    def children(self):
+        return [self.tree.wnid_to_node[wnid] for wnid in self.succ]
+
     def get_leaves(self):
         return get_leaves(self.tree.G, self.wnid)
 
     def is_leaf(self):
-        return len(self.children) == 0
+        return len(self.succ) == 0
 
     def is_root(self):
-        return len(self.parents) == 0
+        return len(self.pred) == 0
 
     def build_class_mappings(self):
         if self.is_leaf():
@@ -93,7 +106,7 @@ class Node:
 
         old_to_new = defaultdict(lambda: [])
         new_to_old = defaultdict(lambda: [])
-        for new_index, child in enumerate(self.children):
+        for new_index, child in enumerate(self.succ):
             for leaf in get_leaves(self.tree.G, child):
                 old_index = self.wnid_to_class_index(leaf)
                 old_to_new[old_index].append(new_index)
@@ -146,12 +159,10 @@ class Tree:
         self.G = read_graph(path_graph)
         self.wnids_leaves = get_wnids(path_wnids)
         self.wnid_to_class = {wnid: cls for wnid, cls in zip(self.wnids_leaves, self.classes)}
-
         self.wnid_to_node = self.get_wnid_to_node()
         self.nodes = [self.wnid_to_node[wnid] for wnid in sorted(self.wnid_to_node)]
         self.inodes = [node for node in self.nodes if not node.is_leaf()]
-        self.leaves = [node for node in self.nodes if node.is_leaf()]
-
+        self.leaves = [self.wnid_to_node[wnid] for wnid in self.wnids_leaves]
 
     @property
     def root(self):

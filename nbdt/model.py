@@ -132,18 +132,17 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         preds = []
         for index in range(n_samples):
             decision = [{'node': node_root, 'name': 'root', 'prob': 1}]
-            wnid, node = wnid_root, node_root
+            node = node_root
             while not node.is_leaf():
                 if node.wnid not in wnid_to_outputs:
-                    wnid = node = None
+                    node = None
                     break
                 outputs = wnid_to_outputs[node.wnid]
                 index_child = outputs['preds'][index]
                 prob_child = float(outputs['probs'][index][index_child])
-                wnid = node.children[index_child]
-                node = wnid_to_node[wnid]
-                decision.append({'node': node, 'name': wnid_to_name(wnid), 'prob': prob_child})
-            cls = wnid_to_class.get(wnid, None)
+                node = node.children[index_child]
+                decision.append({'node': node, 'name': wnid_to_name(node.wnid), 'prob': prob_child})
+            cls = wnid_to_class[node.wnid]
             pred = -1 if cls is None else classes.index(cls)
             preds.append(pred)
             decisions.append(decision)
