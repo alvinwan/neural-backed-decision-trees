@@ -30,8 +30,9 @@ import argparse
 import numpy as np
 
 from nbdt.utils import (
-    progress_bar, generate_fname, generate_kwargs, Colors, maybe_install_wordnet
+    progress_bar, generate_fname, generate_kwargs, Colors
 )
+from nbdt.wordnet import maybe_install_wordnet
 
 maybe_install_wordnet()
 
@@ -140,7 +141,7 @@ if args.pretrained:
         net = model(pretrained=True, dataset=args.dataset, **model_kwargs)
     except TypeError as e:  # likely because `dataset` not allowed arg
         print(e)
-        
+
         try:
             net = model(pretrained=True, **model_kwargs)
         except Exception as e:

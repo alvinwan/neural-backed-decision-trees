@@ -14,7 +14,7 @@ from nbdt.utils import (
     uncoerce_tensor)
 from nbdt.models.utils import load_state_dict_from_key, coerce_state_dict
 from nbdt.tree import Node, Tree
-from nbdt.graph import get_wnids, synset_to_name
+from nbdt.wordnet import get_wnids, synset_to_name
 from nbdt.networkx import get_root
 
 import torch

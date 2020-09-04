@@ -5,9 +5,9 @@ import argparse
 import torchvision
 from nbdt import data
 from nltk.corpus import wordnet as wn
-from nbdt.graph import synset_to_wnid, write_wnids, FakeSynset
 from pathlib import Path
-from nbdt.utils import Colors, generate_kwargs, maybe_install_wordnet
+from nbdt.utils import Colors, generate_kwargs
+from nbdt.wordnet import maybe_install_wordnet, synset_to_wnid, write_wnids, FakeSynset
 import os
 
 maybe_install_wordnet()
