@@ -1,9 +1,10 @@
 from nbdt.utils import DATASETS, METHODS, Colors, fwd
 from nbdt.graph import build_minimal_wordnet_graph, build_random_graph, \
-    prune_single_successor_nodes, write_graph, get_wnids, generate_fname, \
+    prune_single_successor_nodes, get_wnids, generate_fname, \
     get_parser, get_wnids_from_dataset, get_directory, get_graph_path_from_args, \
-    augment_graph, get_depth, build_induced_graph, read_graph, get_leaves, \
-    get_roots, synset_to_wnid, wnid_to_name, get_root
+    augment_graph, build_induced_graph, \
+    synset_to_wnid, wnid_to_name
+from nbdt.networkx import write_graph, get_roots, get_root, read_graph, get_leaves, get_depth
 from nbdt import data
 from networkx.readwrite.json_graph import adjacency_data
 from pathlib import Path

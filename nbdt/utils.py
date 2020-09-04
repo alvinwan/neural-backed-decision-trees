@@ -100,6 +100,11 @@ def load_image_from_path(path):
     return Image.open(file)
 
 
+def makeparentdirs(path):
+    dir = Path(path).parent
+    os.makedirs(dir, exist_ok=True)
+
+
 class Colors:
     RED = '\x1b[31m'
     GREEN = '\x1b[32m'
