@@ -168,7 +168,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
 class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
 
     @classmethod
-    def traverse_tree(cls, wnid_to_outputs, nodes):
+    def traverse_tree(cls, wnid_to_outputs, tree):
         """
         In theory, the loop over children below could be replaced with just a
         few lines:
@@ -182,15 +182,13 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         ordering is determined by the original ordering of the provided logits.
         (I think. Need to check nbdt.data.custom.Node)
         """
-        example = wnid_to_outputs[nodes[0].wnid]
+        example = wnid_to_outputs[tree.inodes[0].wnid]
         num_samples = example['logits'].size(0)
-        num_classes = len(nodes[0].original_classes)
+        num_classes = len(tree.classes)
         device = example['logits'].device
         class_probs = torch.ones((num_samples, num_classes)).to(device)
 
-        for node in nodes:
-            if node.is_leaf():
-                continue
+        for node in tree.inodes:
             outputs = wnid_to_outputs[node.wnid]
 
             old_indices, new_indices = [], []
@@ -230,7 +228,7 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
     def forward(self, outputs, wnid_to_outputs=None):
         if not wnid_to_outputs:
             wnid_to_outputs = self.forward_nodes(outputs)
-        logits = self.traverse_tree(wnid_to_outputs, self.tree.inodes)
+        logits = self.traverse_tree(wnid_to_outputs, self.tree)
         logits._nbdt_output_flag = True  # checked in nbdt losses, to prevent mistakes
         return logits
 
