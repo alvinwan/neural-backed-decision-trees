@@ -114,6 +114,7 @@ class IgnoredSamples(Noop):
     def update_batch(self, outputs, targets):
         super().update_batch(outputs, targets)
         self.ignored += outputs[:,0].eq(-1).sum().item()
+        return self.ignored
 
     def end_test(self, epoch):
         super().end_test(epoch)
@@ -133,6 +134,9 @@ class DecisionRules(Noop):
         self.rules = Rules(*args, **kwargs)
         self.total, self.correct = 0,0
 
+    def start_test(self, epoch):
+        self.total, self.correct = 0,0
+
     def update_batch(self, outputs, targets):
         super().update_batch(outputs, targets)
         predicted = self.rules.forward(outputs).max(1)[1].to(targets.device)
@@ -141,7 +145,7 @@ class DecisionRules(Noop):
         self.total += n_samples
         self.correct += (predicted == targets).sum().item()
         accuracy = round(self.correct / float(self.total), 4) * 100
-        return f'{self.name}: {accuracy}%'
+        return accuracy
 
     def end_test(self, epoch):
         super().end_test(epoch)
