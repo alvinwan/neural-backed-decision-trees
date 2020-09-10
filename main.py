@@ -60,7 +60,7 @@ parser.add_argument('--eval', help='eval only', action='store_true')
 
 # options specific to this project and its dataloaders
 parser.add_argument('--loss', choices=loss.names, default='CrossEntropyLoss')
-parser.add_argument('--metric', choices=metrics.names, default='Top1')
+parser.add_argument('--metric', choices=metrics.names, default='top1')
 parser.add_argument('--analysis', choices=analysis.names, help='Run analysis after each epoch')
 parser.add_argument('--input-size', type=int,
                     help='Set transform train and val. Samples are resized to '
@@ -273,7 +273,7 @@ def test(epoch, analyzer, checkpoint=True):
 
     # Save checkpoint.
     acc = 100. * metric.report()
-    print("Accuracy: {}, {}/{}".format(acc, correct, total))
+    print("Accuracy: {}, {}/{}".format(acc, metric.correct, metric.total))
     if acc > best_acc and checkpoint:
         state = {
             'net': net.state_dict(),

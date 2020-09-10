@@ -1,7 +1,7 @@
 import torch
 
 
-__all__ = names = ('Top1', 'Top2', 'Top5')
+__all__ = names = ('top1', 'top2', 'top5', 'top10')
 
 
 class TopK:
@@ -30,6 +30,7 @@ class TopK:
         return repr(self)
 
 
-Top1 = lambda: TopK(1)
-Top2 = lambda: TopK(2)
-Top5 = lambda: TopK(5)
+top1 = lambda: TopK(1)
+top2 = lambda: TopK(2)
+top5 = lambda: TopK(5)
+top10 = lambda: TopK(10)
