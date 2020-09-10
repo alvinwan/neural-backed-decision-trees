@@ -59,14 +59,11 @@ start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 # Data
 print('==> Preparing data..')
 dataset = getattr(data, args.dataset)
+
 transform_train = dataset.transform_train()
 transform_test = dataset.transform_val()
 
-dataset_kwargs = generate_kwargs(args, dataset,
-    name=f'Dataset {args.dataset}',
-    keys=data.custom.keys,
-    globals=globals())
-
+dataset_kwargs = generate_kwargs(args, dataset, name=f'Dataset {args.dataset}', keys=data.custom.keys, globals=globals())
 trainset = dataset(**dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
 testset = dataset(**dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
 
@@ -80,13 +77,13 @@ Colors.cyan(f'Training with dataset {args.dataset} and {len(trainset.classes)} c
 # Model
 print('==> Building model..')
 model = getattr(models, args.arch)
-model_kwargs = {'num_classes': len(trainset.classes) }
 
 if args.pretrained:
     print('==> Loading pretrained model..')
-    net = make_kwarg_optional(model, dataset=args.dataset)(pretrained=True, **model_kwargs)
+    model = make_kwarg_optional(model, dataset=args.dataset)
+    net = model(pretrained=True, num_classes=len(trainset.classes))
 else:
-    net = model(**model_kwargs)
+    net = model(num_classes=len(trainset.classes))
 
 net = net.to(device)
 if device == 'cuda':
@@ -117,13 +114,9 @@ if args.resume:
             load_state_dict(net, checkpoint)
             Colors.cyan(f'==> Checkpoint found at {resume_path}')
 
-
 criterion = nn.CrossEntropyLoss()
 class_criterion = getattr(loss, args.loss)
-loss_kwargs = generate_kwargs(args, class_criterion,
-    name=f'Loss {args.loss}',
-    keys=loss.keys,
-    globals=globals())
+loss_kwargs = generate_kwargs(args, class_criterion, name=f'Loss {args.loss}', keys=loss.keys, globals=globals())
 criterion = class_criterion(**loss_kwargs)
 
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
@@ -136,14 +129,9 @@ def adjust_learning_rate(epoch, lr):
     else:
         return lr/100
 
-
 class_analysis = getattr(analysis, args.analysis or 'Noop')
-analyzer_kwargs = generate_kwargs(args, class_analysis,
-    name=f'Analyzer {args.analysis}',
-    keys=analysis.keys,
-    globals=globals())
+analyzer_kwargs = generate_kwargs(args, class_analysis, name=f'Analyzer {args.analysis}', keys=analysis.keys, globals=globals())
 analyzer = class_analysis(**analyzer_kwargs)
-
 
 # Training
 @analyzer.train_function
@@ -169,7 +157,6 @@ def train(epoch, analyzer):
 
         progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s' % (
             train_loss / ( batch_idx + 1 ), 100. * metric.report(), metric.correct, metric.total, f'| {stat}' if stat else ''))
-
 
 @analyzer.test_function
 def test(epoch, analyzer, checkpoint=True):
@@ -206,7 +193,6 @@ def test(epoch, analyzer, checkpoint=True):
         torch.save(state, f'./checkpoint/{checkpoint_fname}.pth')
         best_acc = acc
 
-
 if args.eval:
     if not args.resume and not args.pretrained:
         Colors.red(' * Warning: Model is not loaded from checkpoint. '
@@ -216,7 +202,6 @@ if args.eval:
     test(0, analyzer, checkpoint=False)
     analyzer.end_epoch(0)
     exit()
-
 
 for epoch in range(start_epoch, args.epochs):
     analyzer.start_epoch(epoch)
