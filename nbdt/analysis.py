@@ -10,7 +10,7 @@ import numpy as np
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules')
-keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'accepts_metric')
+keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric')
 
 
 def add_arguments(parser):
