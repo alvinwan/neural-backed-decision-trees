@@ -130,7 +130,6 @@ analyzer = class_analysis(**analyzer_kwargs)
 # Training
 @analyzer.train_function
 def train(epoch, analyzer):
-    scheduler.step()
     print('\nEpoch: %d / LR: %.04f' % (epoch, scheduler.get_last_lr()[0]))
     net.train()
     train_loss = 0
@@ -147,8 +146,9 @@ def train(epoch, analyzer):
         metric.forward(outputs, targets)
         stat = analyzer.update_batch(outputs, targets)
 
-        progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s' % (
+        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s' % (
             train_loss / ( batch_idx + 1 ), 100. * metric.report(), metric.correct, metric.total, f'| {stat}' if stat else ''))
+    scheduler.step()
 
 @analyzer.test_function
 def test(epoch, analyzer, checkpoint=True):
@@ -173,15 +173,13 @@ def test(epoch, analyzer, checkpoint=True):
     acc = 100. * metric.report()
     print("Accuracy: {}, {}/{}".format(acc, metric.correct, metric.total))
     if acc > best_acc and checkpoint:
+        Colors.green(f'Saving to {checkpoint_fname} ({acc})..')
         state = {
             'net': net.state_dict(),
             'acc': acc,
             'epoch': epoch,
         }
-        if not os.path.isdir('checkpoint'):
-            os.mkdir('checkpoint')
-
-        print(f'Saving to {checkpoint_fname} ({acc})..')
+        os.makedirs('checkpoint', exist_ok=True)
         torch.save(state, f'./checkpoint/{checkpoint_fname}.pth')
         best_acc = acc
 
