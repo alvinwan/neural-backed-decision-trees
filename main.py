@@ -127,13 +127,15 @@ class_analysis = getattr(analysis, args.analysis or 'Noop')
 analyzer_kwargs = generate_kwargs(args, class_analysis, name=f'Analyzer {args.analysis}', keys=analysis.keys, globals=globals())
 analyzer = class_analysis(**analyzer_kwargs)
 
+metric = getattr(metrics, args.metric)()
+
 # Training
 @analyzer.train_function
-def train(epoch, analyzer):
+def train(epoch):
     print('\nEpoch: %d / LR: %.04f' % (epoch, scheduler.get_last_lr()[0]))
     net.train()
     train_loss = 0
-    metric = getattr(metrics, args.metric)()
+    metric.clear()
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
@@ -151,11 +153,11 @@ def train(epoch, analyzer):
     scheduler.step()
 
 @analyzer.test_function
-def test(epoch, analyzer, checkpoint=True):
+def test(epoch, checkpoint=True):
     global best_acc
     net.eval()
     test_loss = 0
-    metric = getattr(metrics, args.metric)()
+    metric.clear()
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
@@ -187,15 +189,12 @@ if args.eval:
     if not args.resume and not args.pretrained:
         Colors.red(' * Warning: Model is not loaded from checkpoint. '
         'Use --resume or --pretrained (if supported)')
+    with analyzer.epoch_context(0):
+        test(0, checkpoint=False)
+else:
+    for epoch in range(start_epoch, args.epochs):
+        with analyzer.epoch_context(epoch):
+            train(epoch)
+            test(epoch)
 
-    analyzer.start_epoch(0)
-    test(0, analyzer, checkpoint=False)
-    analyzer.end_epoch(0)
-    exit()
-
-for epoch in range(start_epoch, args.epochs):
-    analyzer.start_epoch(epoch)
-    train(epoch, analyzer)
-    test(epoch, analyzer)
-    analyzer.end_epoch(epoch)
 print(f'Best accuracy: {best_acc} // Checkpoint name: {checkpoint_fname}')

@@ -32,6 +32,24 @@ def start_end_decorator(obj, name):
     return decorator
 
 
+class StartEndContext:
+
+    def __init__(self, obj, name, epoch=0):
+        self.obj = obj
+        self.name = name
+        self.epoch = epoch
+
+    def __call__(self, epoch):
+        self.epoch = epoch
+        return self
+
+    def __enter__(self):
+        return getattr(self.obj, f'start_{self.name}')(self.epoch)
+
+    def __exit__(self, type, value, traceback):
+        getattr(self.obj, f'end_{self.name}')(self.epoch)
+
+
 class Noop:
 
     accepts_classes = lambda trainset, **kwargs: trainset.classes
@@ -54,6 +72,10 @@ class Noop:
     @property
     def test_function(self):
         return start_end_decorator(self, 'test')
+
+    @property
+    def epoch_context(self):
+        return StartEndContext(self, 'epoch')
 
     def start_epoch(self, epoch):
         self.epoch = epoch
