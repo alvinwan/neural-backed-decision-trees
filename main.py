@@ -20,7 +20,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-from nbdt import data, analysis, loss, models
+from nbdt import data, analysis, loss, models, metric
 
 import torchvision
 import torchvision.transforms as transforms
@@ -234,9 +234,8 @@ def train(epoch, analyzer):
         optimizer.step()
 
         train_loss += loss.item()
-        _, predicted = outputs.max(1)
         total += targets.size(0)
-        correct += predicted.eq(targets).sum().item()
+        correct += metric.TopK(1).forward(outputs, targets)
 
         stat = analyzer.update_batch(outputs, targets)
         extra = f'| {stat}' if stat else ''
@@ -261,12 +260,10 @@ def test(epoch, analyzer, checkpoint=True):
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()
-            _, predicted = outputs.max(1)
             total += targets.size(0)
-            correct += predicted.eq(targets).sum().item()
+            correct += metric.TopK(1).forward(outputs, targets)
 
             if device == 'cuda':
-                predicted = predicted.cpu()
                 targets = targets.cpu()
 
             stat = analyzer.update_batch(outputs, targets)
