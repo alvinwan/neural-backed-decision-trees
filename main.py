@@ -120,14 +120,8 @@ loss_kwargs = generate_kwargs(args, class_criterion, name=f'Loss {args.loss}', k
 criterion = class_criterion(**loss_kwargs)
 
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-
-def adjust_learning_rate(epoch, lr):
-    if epoch <= 150 / 350. * args.epochs:  # 32k iterations
-        return lr
-    elif epoch <= 250 / 350. * args.epochs:  # 48k iterations
-        return lr/10
-    else:
-        return lr/100
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer,
+    milestones=[int(3/7. * args.epochs), int(5/7. * args.epochs)])
 
 class_analysis = getattr(analysis, args.analysis or 'Noop')
 analyzer_kwargs = generate_kwargs(args, class_analysis, name=f'Analyzer {args.analysis}', keys=analysis.keys, globals=globals())
@@ -136,10 +130,8 @@ analyzer = class_analysis(**analyzer_kwargs)
 # Training
 @analyzer.train_function
 def train(epoch, analyzer):
-    lr = adjust_learning_rate(epoch, args.lr)
-    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
-
-    print('\nEpoch: %d' % epoch)
+    scheduler.step()
+    print('\nEpoch: %d / LR: %.04f' % (epoch, scheduler.get_last_lr()[0]))
     net.train()
     train_loss = 0
     metric = getattr(metrics, args.metric)()
