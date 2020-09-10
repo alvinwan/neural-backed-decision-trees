@@ -1,4 +1,5 @@
 from torch.hub import load_state_dict_from_url
+from utils import Colors
 from pathlib import Path
 import torch
 
@@ -47,8 +48,11 @@ def load_state_dict_from_key(
         raise UserWarning(
             f'None of the keys {keys} correspond to a pretrained model.'
         )
+    key = valid_keys[-1]
+    url = model_urls[key]
+    Colors.green(f'Loading pretrained model {key} from {url}')
     return load_state_dict_from_url(
-        model_urls[valid_keys[-1]],
+        url,
         Path.home() / root,
         progress=progress,
         check_hash=False,
