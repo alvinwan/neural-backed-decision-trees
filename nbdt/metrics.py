@@ -15,9 +15,9 @@ class TopK:
         self.total = 0
 
     def forward(self, outputs, targets):
-        _, pred = torch.topk(outputs, self.k)
-        labels = targets.repeat((self.k, 1)).T
-        self.correct += (pred == labels).sum().item()
+        _, preds = torch.topk(outputs, self.k)
+        results = [(pred == target).any() for pred, target in zip(preds, targets)]
+        self.correct += sum(results).item()
         self.total += targets.size(0)
 
     def report(self):
