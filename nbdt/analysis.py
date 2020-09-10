@@ -10,7 +10,7 @@ import numpy as np
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules')
-keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric')
+keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'accepts_metric')
 
 
 def add_arguments(parser):
@@ -141,7 +141,7 @@ class DecisionRules(Noop):
 
     def update_batch(self, outputs, targets):
         super().update_batch(outputs, targets)
-
+        outputs = self.rules.forward(outputs)
         self.metric.forward(outputs, targets)
         accuracy = round(self.metric.correct / float(self.metric.total), 4) * 100
         return accuracy

@@ -262,6 +262,7 @@ def test(epoch, analyzer, checkpoint=True):
             metric.forward(outputs, targets)
 
             if device == 'cuda':
+                outputs = outputs.cpu()
                 targets = targets.cpu()
 
             stat = analyzer.update_batch(outputs, targets)
