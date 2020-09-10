@@ -3,13 +3,14 @@ from nbdt.model import (
     SoftEmbeddedDecisionRules as SoftRules,
     HardEmbeddedDecisionRules as HardRules
 )
+from nbdt import metrics
 import numpy as np
 
 
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules')
-keys = ('path_graph', 'path_wnids', 'classes', 'dataset')
+keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric')
 
 
 def add_arguments(parser):
@@ -127,30 +128,28 @@ class DecisionRules(Noop):
     accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
     accepts_path_graph = True
     accepts_path_wnids = True
+    accepts_metric = True
 
     name = 'NBDT'
 
-    def __init__(self, *args, Rules=HardRules, **kwargs):
+    def __init__(self, *args, Rules=HardRules, metric='top1', **kwargs):
         self.rules = Rules(*args, **kwargs)
-        self.total, self.correct = 0,0
+        self.metric = getattr(metrics, metric)()
 
     def start_test(self, epoch):
-        self.total, self.correct = 0,0
+        self.metric.clear()
 
     def update_batch(self, outputs, targets):
         super().update_batch(outputs, targets)
-        predicted = self.rules.forward(outputs).max(1)[1].to(targets.device)
-
-        n_samples = outputs.size(0)
-        self.total += n_samples
-        self.correct += (predicted == targets).sum().item()
-        accuracy = round(self.correct / float(self.total), 4) * 100
+        outputs = self.rules.forward(outputs)
+        self.metric.forward(outputs, targets)
+        accuracy = round(self.metric.correct / float(self.metric.total), 4) * 100
         return accuracy
 
     def end_test(self, epoch):
         super().end_test(epoch)
-        accuracy = round(self.correct / self.total * 100., 2)
-        print(f'{self.name} Accuracy: {accuracy}%, {self.correct}/{self.total}')
+        accuracy = round(self.metric.correct / self.metric.total * 100., 2)
+        print(f'{self.name} Accuracy: {accuracy}%, {self.metric.correct}/{self.metric.total}')
 
 
 class HardEmbeddedDecisionRules(DecisionRules):
