@@ -1,5 +1,5 @@
 from torch.hub import load_state_dict_from_url
-from utils import Colors
+from nbdt.utils import Colors
 from pathlib import Path
 import torch
 
