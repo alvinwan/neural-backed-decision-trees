@@ -4,6 +4,7 @@ from nbdt.model import (
     HardEmbeddedDecisionRules as HardRules
 )
 from nbdt import metrics
+import functools
 import numpy as np
 
 
@@ -17,6 +18,20 @@ def add_arguments(parser):
     pass
 
 
+def start_end_decorator(obj, name):
+    start = getattr(obj, f'start_{name}', None)
+    end = getattr(obj, f'end_{name}', None)
+    assert start and end
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapper(epoch, *args, **kwargs):
+            start(epoch)
+            f(epoch, *args, **kwargs)
+            end(epoch)
+        return wrapper
+    return decorator
+
+
 class Noop:
 
     accepts_classes = lambda trainset, **kwargs: trainset.classes
@@ -27,6 +42,18 @@ class Noop:
         self.classes = classes
         self.num_classes = len(classes)
         self.epoch = None
+
+    @property
+    def epoch_function(self):
+        return start_end_decorator(self, 'epoch')
+
+    @property
+    def train_function(self):
+        return start_end_decorator(self, 'train')
+
+    @property
+    def test_function(self):
+        return start_end_decorator(self, 'test')
 
     def start_epoch(self, epoch):
         self.epoch = epoch

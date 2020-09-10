@@ -3,6 +3,35 @@ from nbdt.utils import Colors
 from pathlib import Path
 import torch
 
+# TODO(alvin): fix checkpoint structure so that this isn't neededd
+def load_state_dict(net, state_dict):
+    try:
+        net.load_state_dict(state_dict)
+    except RuntimeError as e:
+        if 'Missing key(s) in state_dict:' in str(e):
+            net.load_state_dict({
+                key.replace('module.', '', 1): value
+                for key, value in state_dict.items()
+            })
+
+def make_kwarg_optional(init, **optional_kwargs):
+    """Returns wrapper function that attempts 'optional' kwargs.
+
+    If initialization fails, retries initialization without 'optional' kwargs.
+    """
+    def f(**kwargs):
+        try:
+            net = init(**optional_kwargs, **kwargs)
+        except TypeError as e:  # likely because `dataset` not allowed arg
+            print(e)
+
+            try:
+                net = init(**kwargs)
+            except Exception as e:
+                Colors.red(f'Fatal error: {e}')
+                exit()
+        return net
+    return f
 
 def get_pretrained_model(
         arch, dataset, model, model_urls,

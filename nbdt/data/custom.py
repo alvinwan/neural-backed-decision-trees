@@ -1,4 +1,3 @@
-import torchvision.datasets as datasets
 import torch
 import numpy as np
 from torch.utils.data import Dataset
@@ -12,6 +11,7 @@ from nbdt.utils import (
     dataset_to_default_path_wnids,
     hierarchy_to_path_graph)
 from . import imagenet
+from . import cifar
 import torch.nn as nn
 import random
 
@@ -125,7 +125,7 @@ class CIFAR10ResampleLabels(ResampleLabelsDataset):
 
     def __init__(self, *args, root='./data', probability_labels=1, **kwargs):
         super().__init__(
-            dataset=datasets.CIFAR10(*args, root=root, **kwargs),
+            dataset=cifar.CIFAR10(*args, root=root, **kwargs),
             probability_labels=probability_labels)
 
 
@@ -133,7 +133,7 @@ class CIFAR100ResampleLabels(ResampleLabelsDataset):
 
     def __init__(self, *args, root='./data', probability_labels=1, **kwargs):
         super().__init__(
-            dataset=datasets.CIFAR100(*args, root=root, **kwargs),
+            dataset=cifar.CIFAR100(*args, root=root, **kwargs),
             probability_labels=probability_labels)
 
 
@@ -172,7 +172,7 @@ class CIFAR10IncludeLabels(IncludeLabelsDataset):
 
     def __init__(self, *args, root='./data', include_labels=(0,), **kwargs):
         super().__init__(
-            dataset=datasets.CIFAR10(*args, root=root, **kwargs),
+            dataset=cifar.CIFAR10(*args, root=root, **kwargs),
             include_labels=include_labels)
 
 
@@ -180,7 +180,7 @@ class CIFAR100IncludeLabels(IncludeLabelsDataset):
 
     def __init__(self, *args, root='./data', include_labels=(0,), **kwargs):
         super().__init__(
-            dataset=datasets.CIFAR100(*args, root=root, **kwargs),
+            dataset=cifar.CIFAR100(*args, root=root, **kwargs),
             include_labels=include_labels)
 
 
@@ -217,7 +217,7 @@ class CIFAR10ExcludeLabels(ExcludeLabelsDataset):
 
     def __init__(self, *args, root='./data', exclude_labels=(0,), **kwargs):
         super().__init__(
-            dataset=datasets.CIFAR10(*args, root=root, **kwargs),
+            dataset=cifar.CIFAR10(*args, root=root, **kwargs),
             exclude_labels=exclude_labels)
 
 
@@ -225,7 +225,7 @@ class CIFAR100ExcludeLabels(ExcludeLabelsDataset):
 
     def __init__(self, *args, root='./data', exclude_labels=(0,), **kwargs):
         super().__init__(
-            dataset=datasets.CIFAR100(*args, root=root, **kwargs),
+            dataset=cifar.CIFAR100(*args, root=root, **kwargs),
             exclude_labels=exclude_labels)
 
 
