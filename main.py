@@ -20,7 +20,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-from nbdt import data, analysis, loss, models, metric
+from nbdt import data, analysis, loss, models, metrics
 
 import torchvision
 import torchvision.transforms as transforms
@@ -60,6 +60,7 @@ parser.add_argument('--eval', help='eval only', action='store_true')
 
 # options specific to this project and its dataloaders
 parser.add_argument('--loss', choices=loss.names, default='CrossEntropyLoss')
+parser.add_argument('--metric', choices=metrics.names, default='Top1')
 parser.add_argument('--analysis', choices=analysis.names, help='Run analysis after each epoch')
 parser.add_argument('--input-size', type=int,
                     help='Set transform train and val. Samples are resized to '
@@ -223,8 +224,7 @@ def train(epoch, analyzer):
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
-    correct = 0
-    total = 0
+    metric = getattr(metrics, args.metric)()
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
@@ -234,14 +234,14 @@ def train(epoch, analyzer):
         optimizer.step()
 
         train_loss += loss.item()
-        total += targets.size(0)
-        correct += metric.TopK(1).forward(outputs, targets)
+        metric.forward(outputs, targets)
 
         stat = analyzer.update_batch(outputs, targets)
         extra = f'| {stat}' if stat else ''
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s'
-            % (train_loss/(batch_idx+1), 100.*correct/total, correct, total, extra))
+            % (test_loss/(batch_idx+1), 100. * metric.report(),
+            metric.correct, metric.total, extra))
 
     analyzer.end_train(epoch)
 
@@ -251,8 +251,7 @@ def test(epoch, analyzer, checkpoint=True):
     global best_acc
     net.eval()
     test_loss = 0
-    correct = 0
-    total = 0
+    metric = getattr(metrics, args.metric)()
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
@@ -260,8 +259,7 @@ def test(epoch, analyzer, checkpoint=True):
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()
-            total += targets.size(0)
-            correct += metric.TopK(1).forward(outputs, targets)
+            metric.forward(outputs, targets)
 
             if device == 'cuda':
                 targets = targets.cpu()
@@ -270,10 +268,11 @@ def test(epoch, analyzer, checkpoint=True):
             extra = f'| {stat}' if stat else ''
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s'
-                % (test_loss/(batch_idx+1), 100.*correct/total, correct, total, extra))
+                % (test_loss/(batch_idx+1), 100. * metric.report(),
+                metric.correct, metric.total, extra))
 
     # Save checkpoint.
-    acc = 100.*correct/total
+    acc = 100. * metric.report()
     print("Accuracy: {}, {}/{}".format(acc, correct, total))
     if acc > best_acc and checkpoint:
         state = {
