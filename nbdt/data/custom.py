@@ -1,13 +1,17 @@
-import torchvision.datasets as datasets
 import torch
 import numpy as np
 from torch.utils.data import Dataset
 from collections import defaultdict
 from nbdt.utils import DATASET_TO_NUM_CLASSES, DATASETS
 from collections import defaultdict
-from nbdt.graph import get_wnids, read_graph, get_leaves, get_non_leaves, \
-    FakeSynset, get_leaf_to_path, wnid_to_synset, wnid_to_name
+from nbdt.thirdparty.wn import get_wnids, FakeSynset, wnid_to_synset, wnid_to_name
+from nbdt.thirdparty.nx import get_leaves, get_leaf_to_path, read_graph
+from nbdt.utils import (
+    dataset_to_default_path_graph,
+    dataset_to_default_path_wnids,
+    hierarchy_to_path_graph)
 from . import imagenet
+from . import cifar
 import torch.nn as nn
 import random
 
@@ -27,172 +31,6 @@ def add_arguments(parser):
     parser.add_argument('--include-labels', nargs='*', type=int)
     parser.add_argument('--exclude-labels', nargs='*', type=int)
     parser.add_argument('--include-classes', nargs='*', type=int)
-
-
-def dataset_to_dummy_classes(dataset):
-    assert dataset in DATASETS
-    num_classes = DATASET_TO_NUM_CLASSES[dataset]
-    return [FakeSynset.create_from_offset(i).wnid for i in range(num_classes)]
-
-
-class Node:
-
-    def __init__(self, wnid, classes, path_graph, path_wnids, other_class=False):
-        self.path_graph = path_graph
-        self.path_wnids = path_wnids
-
-        self.wnid = wnid
-        self.wnids = get_wnids(path_wnids)
-        self.G = read_graph(path_graph)
-        self.synset = wnid_to_synset(wnid)
-
-        self.original_classes = classes
-        self.num_original_classes = len(self.wnids)
-
-        assert not self.is_leaf(), 'Cannot build dataset for leaf'
-        self.has_other = other_class and not (self.is_root() or self.is_leaf())
-        self.num_children = len(self.get_children())
-        self.num_classes = self.num_children + int(self.has_other)
-
-        self.old_to_new_classes, self.new_to_old_classes = \
-            self.build_class_mappings()
-        self.classes = self.build_classes()
-
-        assert len(self.classes) == self.num_classes, (
-            f'Number of classes {self.num_classes} does not equal number of '
-            f'class names found ({len(self.classes)}): {self.classes}'
-        )
-
-        self.children = list(self.get_children())
-        self.leaves = list(self.get_leaves())
-        self.num_leaves = len(self.leaves)
-
-        self._probabilities = None
-        self._class_weights = None
-
-    def wnid_to_class_index(self, wnid):
-        return self.wnids.index(wnid)
-
-    def get_parents(self):
-        return self.G.pred[self.wnid]
-
-    def get_children(self):
-        return self.G.succ[self.wnid]
-
-    def get_leaves(self):
-        return get_leaves(self.G, self.wnid)
-
-    def is_leaf(self):
-        return len(self.get_children()) == 0
-
-    def is_root(self):
-        return len(self.get_parents()) == 0
-
-    def build_class_mappings(self):
-        old_to_new = defaultdict(lambda: [])
-        new_to_old = defaultdict(lambda: [])
-        for new_index, child in enumerate(self.get_children()):
-            for leaf in get_leaves(self.G, child):
-                old_index = self.wnid_to_class_index(leaf)
-                old_to_new[old_index].append(new_index)
-                new_to_old[new_index].append(old_index)
-        if not self.has_other:
-            return old_to_new, new_to_old
-
-        new_index = self.num_children
-        for old in range(self.num_original_classes):
-            if old not in old_to_new:
-                old_to_new[old].append(new_index)
-                new_to_old[new_index].append(old)
-        return old_to_new, new_to_old
-
-    def build_classes(self):
-        return [
-            ','.join([self.original_classes[old] for old in old_indices])
-            for new_index, old_indices in sorted(
-                self.new_to_old_classes.items(), key=lambda t: t[0])
-        ]
-
-    @property
-    def class_counts(self):
-        """Number of old classes in each new class"""
-        return [len(old_indices) for old_indices in self.new_to_old_classes]
-
-    @property
-    def probabilities(self):
-        """Calculates probability of training on the ith class.
-
-        If the class contains more than `resample_threshold` samples, the
-        probability is lower, as it is likely to cause severe class imbalance
-        issues.
-        """
-        if self._probabilities is None:
-            reference = min(self.class_counts)
-            self._probabilities = torch.Tensor([
-                min(1, reference / len(old_indices))
-                for old_indices in self.new_to_old_classes
-            ])
-        return self._probabilities
-
-    @probabilities.setter
-    def probabilities(self, probabilities):
-        self._probabilities = probabilities
-
-    @property
-    def class_weights(self):
-        if self._class_weights is None:
-            self._class_weights = self.probabilities
-        return self._class_weights
-
-    @class_weights.setter
-    def class_weights(self, class_weights):
-        self._class_weights = class_weights
-
-    @staticmethod
-    def get_wnid_to_node(path_graph, path_wnids, classes):
-        wnid_to_node = {}
-        G = read_graph(path_graph)
-        for wnid in get_non_leaves(G):
-            wnid_to_node[wnid] = Node(
-                wnid, classes, path_graph=path_graph, path_wnids=path_wnids)
-        return wnid_to_node
-
-    @staticmethod
-    def get_nodes(path_graph, path_wnids, classes):
-        wnid_to_node = Node.get_wnid_to_node(path_graph, path_wnids, classes)
-        wnids = sorted(wnid_to_node)
-        nodes = [wnid_to_node[wnid] for wnid in wnids]
-        return nodes
-
-    @staticmethod
-    def get_leaf_to_path(nodes):
-        node = nodes[0]
-        leaf_to_path = get_leaf_to_path(node.G)
-        wnid_to_node = {node.wnid: node for node in nodes}
-        leaf_to_path_nodes = {}
-        for leaf in leaf_to_path:
-            leaf_to_path_nodes[leaf] = [
-                {
-                    'node': wnid_to_node.get(wnid, None),
-                    'name': wnid_to_name(wnid)
-                }
-                for wnid in leaf_to_path[leaf]
-            ]
-        return leaf_to_path_nodes
-
-    @staticmethod
-    def get_root_node_wnid(path_graph):
-        raise UserWarning('Root node may have wnid now')
-        tree = ET.parse(path_graph)
-        for node in tree.iter():
-            wnid = node.get('wnid')
-            if wnid is not None:
-                return wnid
-        return None
-
-    @staticmethod
-    def dim(nodes):
-        return sum([node.num_classes for node in nodes])
 
 
 class ResampleLabelsDataset(Dataset):

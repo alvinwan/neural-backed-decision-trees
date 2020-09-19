@@ -6,6 +6,8 @@ from nbdt.model import (
 )
 from collections import defaultdict
 import torch
+from nbdt import metrics
+import functools
 import numpy as np
 
 
@@ -15,10 +17,44 @@ __all__ = names = (
     'Superclass', 'SuperclassNBDT')
 keys = ('path_graph', 'path_wnids', 'classes', 'dataset',
         'dataset_test', 'superclass_wnids')
+    'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules')
+keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric')
 
 
 def add_arguments(parser):
     parser.add_argument('--superclass-wnids', nargs='*', type=str)
+
+
+def start_end_decorator(obj, name):
+    start = getattr(obj, f'start_{name}', None)
+    end = getattr(obj, f'end_{name}', None)
+    assert start and end
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapper(epoch, *args, **kwargs):
+            start(epoch)
+            f(epoch, *args, **kwargs)
+            end(epoch)
+        return wrapper
+    return decorator
+
+
+class StartEndContext:
+
+    def __init__(self, obj, name, epoch=0):
+        self.obj = obj
+        self.name = name
+        self.epoch = epoch
+
+    def __call__(self, epoch):
+        self.epoch = epoch
+        return self
+
+    def __enter__(self):
+        return getattr(self.obj, f'start_{self.name}')(self.epoch)
+
+    def __exit__(self, type, value, traceback):
+        getattr(self.obj, f'end_{self.name}')(self.epoch)
 
 
 class Noop:
@@ -31,6 +67,22 @@ class Noop:
         self.classes = classes
         self.num_classes = len(classes)
         self.epoch = None
+
+    @property
+    def epoch_function(self):
+        return start_end_decorator(self, 'epoch')
+
+    @property
+    def train_function(self):
+        return start_end_decorator(self, 'train')
+
+    @property
+    def test_function(self):
+        return start_end_decorator(self, 'test')
+
+    @property
+    def epoch_context(self):
+        return StartEndContext(self, 'epoch')
 
     def start_epoch(self, epoch):
         self.epoch = epoch
@@ -119,6 +171,7 @@ class IgnoredSamples(Noop):
     def update_batch(self, outputs, targets):
         super().update_batch(outputs, targets)
         self.ignored += outputs[:,0].eq(-1).sum().item()
+        return self.ignored
 
     def end_test(self, epoch):
         super().end_test(epoch)
@@ -131,28 +184,29 @@ class DecisionRules(Noop):
     accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
     accepts_path_graph = True
     accepts_path_wnids = True
+    accepts_metric = True
 
     name = 'NBDT'
 
-    def __init__(self, *args, Rules=HardRules, **kwargs):
+    def __init__(self, *args, Rules=HardRules, metric='top1', **kwargs):
         self.rules = Rules(*args, **kwargs)
         super().__init__(self.rules.classes)
-        self.total, self.correct = 0,0
+        self.metric = getattr(metrics, metric)()
+
+    def start_test(self, epoch):
+        self.metric.clear()
 
     def update_batch(self, outputs, targets):
         super().update_batch(outputs, targets)
-        predicted = self.rules.forward(outputs).max(1)[1].to(targets.device)
-
-        n_samples = outputs.size(0)
-        self.total += n_samples
-        self.correct += (predicted == targets).sum().item()
-        accuracy = round(self.correct / float(self.total), 4) * 100
-        return f'{self.name}: {accuracy}%'
+        outputs = self.rules.forward(outputs)
+        self.metric.forward(outputs, targets)
+        accuracy = round(self.metric.correct / float(self.metric.total), 4) * 100
+        return accuracy
 
     def end_test(self, epoch):
         super().end_test(epoch)
-        accuracy = round(self.correct / self.total * 100., 2)
-        print(f'{self.name} Accuracy: {accuracy}%, {self.correct}/{self.total}')
+        accuracy = round(self.metric.correct / self.metric.total * 100., 2)
+        print(f'{self.name} Accuracy: {accuracy}%, {self.metric.correct}/{self.metric.total}')
 
 
 class HardEmbeddedDecisionRules(DecisionRules):

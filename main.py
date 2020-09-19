@@ -1,49 +1,33 @@
 """
-Neural-Backed Decision Trees training script on CIFAR10, CIFAR100, TinyImagenet200
+Neural-Backed Decision Trees training on CIFAR10, CIFAR100, TinyImagenet200
 
-The original version of this `main.py` was taken from
-
-    https://github.com/kuangliu/pytorch-cifar
-
-and extended in
-
-    https://github.com/alvinwan/pytorch-cifar-plus
-
+The original version of this `main.py` was taken from kuangliu/pytorch-cifar.
 The script has since been heavily modified to support a number of different
-configurations and options. See the current repository for a full description
-of its bells and whistles.
-
-    https://github.com/alvinwan/neural-backed-decision-trees
+configurations and options: alvinwan/neural-backed-decision-trees
 """
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-import torch.backends.cudnn as cudnn
-from nbdt import data, analysis, loss, models
-
-import torchvision
-import torchvision.transforms as transforms
-
 import os
 import argparse
 import numpy as np
+import torch
+from torch import nn, optim
+import torch.nn.functional as F
+import torch.backends.cudnn as cudnn
+import torchvision
+import torchvision.transforms as transforms
 
-from nbdt.utils import (
-    progress_bar, generate_fname, generate_kwargs, Colors, maybe_install_wordnet
-)
+from nbdt import data, analysis, loss, models, metrics
+from nbdt.utils import progress_bar, generate_checkpoint_fname, generate_kwargs, Colors
+from nbdt.thirdparty.wn import maybe_install_wordnet
+from nbdt.models.utils import load_state_dict, make_kwarg_optional
 
 maybe_install_wordnet()
-
-datasets = ('CIFAR10', 'CIFAR100') + data.imagenet.names + data.custom.names
-
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
 parser.add_argument('--batch-size', default=512, type=int,
                     help='Batch size used for training')
 parser.add_argument('--epochs', '-e', default=200, type=int,
                     help='By default, lr schedule is scaled accordingly')
-parser.add_argument('--dataset', default='CIFAR10', choices=datasets)
+parser.add_argument('--dataset', default='CIFAR10', choices=data.cifar.names + data.imagenet.names + data.custom.names)
 parser.add_argument('--arch', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
@@ -66,18 +50,15 @@ parser.add_argument('--disable-test-eval',
 
 # options specific to this project and its dataloaders
 parser.add_argument('--loss', choices=loss.names, default='CrossEntropyLoss')
+parser.add_argument('--metric', choices=metrics.names, default='top1')
 parser.add_argument('--analysis', choices=analysis.names, help='Run analysis after each epoch')
-parser.add_argument('--input-size', type=int,
-                    help='Set transform train and val. Samples are resized to '
-                    'input-size + 32.')
-parser.add_argument('--lr-decay-every', type=int, default=0)
 
+# other dataset, loss or analysis specific options
 data.custom.add_arguments(parser)
 loss.add_arguments(parser)
 analysis.add_arguments(parser)
 
 args = parser.parse_args()
-
 loss.set_default_values(args)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -85,52 +66,15 @@ best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 # Data
-print('==> Preparing training data..')
-transform_train = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
+print('==> Preparing data..')
+dataset = getattr(data, args.dataset)
 
-dataset_train_name = args.dataset
-dataset_train = getattr(data, dataset_train_name)
+transform_train = dataset.transform_train()
+transform_test = dataset.transform_val()
 
-if dataset_train_name in ('TinyImagenet200', 'Imagenet1000'):
-    default_input_size = 64 if dataset_train_name == 'TinyImagenet200' else 224
-    input_size = args.input_size or default_input_size
-    transform_train = dataset_train.transform_train(input_size)
-elif args.input_size is not None and args.input_size > 32:
-    transform_train = transforms.Compose([
-        transforms.Resize(args.input_size + 32),
-        transforms.RandomCrop(args.input_size),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
-
-    transform_test = transforms.Compose([
-        transforms.Resize(args.input_size + 32),
-        transforms.CenterCrop(args.input_size),
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
-
-dataset_train_kwargs = generate_kwargs(args, dataset_train,
-    name=f'Dataset {dataset_train_name}',
-    keys=data.custom.keys,
-    globals=globals())
-
-trainset = dataset_train(**dataset_train_kwargs, root='./data', train=True, download=True, transform=transform_train)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
-verb = 'Trained' if args.eval else 'Training'
-Colors.cyan(f'{verb} with dataset {dataset_train_name} and {len(trainset.classes)} classes')
-
-print('==> Preparing testing data..')
-transform_test = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
+dataset_kwargs = generate_kwargs(args, dataset, name=f'Dataset {args.dataset}', keys=data.custom.keys, globals=globals())
+trainset = dataset(**dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
+testset = dataset(**dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
 
 dataset_test_name = args.dataset_test or dataset_train_name
 dataset_test = getattr(data, dataset_test_name)
@@ -165,44 +109,22 @@ assert trainset.classes == testset.classes or args.disable_test_eval, (
 # Model
 print('==> Building model..')
 model = getattr(models, args.arch)
-model_kwargs = {'num_classes': len(trainset.classes) }
 
 if args.pretrained:
     print('==> Loading pretrained model..')
-    try:
-        net = model(pretrained=True, dataset=dataset_train_name, **model_kwargs)
-    except TypeError as e:  # likely because `dataset` not allowed arg
-        print(e)
-
-        try:
-            net = model(pretrained=True, **model_kwargs)
-        except Exception as e:
-            Colors.red(f'Fatal error: {e}')
-            exit()
+    model = make_kwarg_optional(model, dataset=args.dataset)
+    net = model(pretrained=True, num_classes=len(trainset.classes))
 else:
-    net = model(**model_kwargs)
+    net = model(num_classes=len(trainset.classes))
 
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
 
-checkpoint_fname = generate_fname(**vars(args))
+checkpoint_fname = generate_checkpoint_fname(**vars(args))
 checkpoint_path = './checkpoint/{}.pth'.format(checkpoint_fname)
 print(f'==> Checkpoints will be saved to: {checkpoint_path}')
-
-
-# TODO(alvin): fix checkpoint structure so that this isn't neededd
-def load_state_dict(state_dict):
-    try:
-        net.load_state_dict(state_dict)
-    except RuntimeError as e:
-        if 'Missing key(s) in state_dict:' in str(e):
-            net.load_state_dict({
-                key.replace('module.', '', 1): value
-                for key, value in state_dict.items()
-            })
-
 
 resume_path = args.path_resume or checkpoint_path
 if args.resume:
@@ -215,48 +137,37 @@ if args.resume:
         checkpoint = torch.load(resume_path, map_location=torch.device(device))
 
         if 'net' in checkpoint:
-            load_state_dict(checkpoint['net'])
+            load_state_dict(net, checkpoint['net'])
             best_acc = checkpoint['acc']
             start_epoch = checkpoint['epoch']
             Colors.cyan(f'==> Checkpoint found for epoch {start_epoch} with accuracy '
                   f'{best_acc} at {resume_path}')
         else:
-            load_state_dict(checkpoint)
+            load_state_dict(net, checkpoint)
             Colors.cyan(f'==> Checkpoint found at {resume_path}')
-
 
 criterion = nn.CrossEntropyLoss()
 class_criterion = getattr(loss, args.loss)
-loss_kwargs = generate_kwargs(args, class_criterion,
-    name=f'Loss {args.loss}',
-    keys=loss.keys,
-    globals=globals())
+loss_kwargs = generate_kwargs(args, class_criterion, name=f'Loss {args.loss}', keys=loss.keys, globals=globals())
 criterion = class_criterion(**loss_kwargs)
 
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer,
+    milestones=[int(3/7. * args.epochs), int(5/7. * args.epochs)])
 
-def adjust_learning_rate(epoch, lr):
-    if args.lr_decay_every:
-        steps = epoch // args.lr_decay_every
-        return lr / (10 ** steps)
-    if epoch <= 150 / 350. * args.epochs:  # 32k iterations
-        return lr
-    elif epoch <= 250 / 350. * args.epochs:  # 48k iterations
-        return lr/10
-    else:
-        return lr/100
+class_analysis = getattr(analysis, args.analysis or 'Noop')
+analyzer_kwargs = generate_kwargs(args, class_analysis, name=f'Analyzer {args.analysis}', keys=analysis.keys, globals=globals())
+analyzer = class_analysis(**analyzer_kwargs)
+
+metric = getattr(metrics, args.metric)()
 
 # Training
-def train(epoch, analyzer):
-    analyzer.start_train(epoch)
-    lr = adjust_learning_rate(epoch, args.lr)
-    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
-
-    print('\nEpoch: %d' % epoch)
+@analyzer.train_function
+def train(epoch):
+    print('\nEpoch: %d / LR: %.04f' % (epoch, scheduler.get_last_lr()[0]))
     net.train()
     train_loss = 0
-    correct = 0
-    total = 0
+    metric.clear()
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
@@ -266,76 +177,45 @@ def train(epoch, analyzer):
         optimizer.step()
 
         train_loss += loss.item()
-        _, predicted = outputs.max(1)
-        total += targets.size(0)
-        correct += predicted.eq(targets).sum().item()
-
+        metric.forward(outputs, targets)
         stat = analyzer.update_batch(outputs, targets)
-        extra = f'| {stat}' if stat else ''
 
-        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s'
-            % (train_loss/(batch_idx+1), 100.*correct/total, correct, total, extra))
+        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s' % (
+            train_loss / ( batch_idx + 1 ), 100. * metric.report(), metric.correct, metric.total, f'| {stat}' if stat else ''))
+    scheduler.step()
 
-    analyzer.end_train(epoch)
-
-def test(epoch, analyzer, checkpoint=True):
-    analyzer.start_test(epoch)
-
+@analyzer.test_function
+def test(epoch, checkpoint=True):
     global best_acc
     net.eval()
     test_loss = 0
-    correct = 0
-    total = 0
+    metric.clear()
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
 
             if not args.disable_test_eval:
-                loss = criterion(outputs, targets)
                 test_loss += loss.item()
-
-            _, predicted = outputs.max(1)
-            total += targets.size(0)
-
-            if not args.disable_test_eval:
-                correct += predicted.eq(targets).sum().item()
-
-            if device == 'cuda':
-                predicted = predicted.cpu()
-                targets = targets.cpu()
-
+                metric.forward(outputs, targets)
             stat = analyzer.update_batch(outputs, targets)
-            extra = f'| {stat}' if stat else ''
 
-            progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s'
-                % (test_loss/(batch_idx+1), 100.*correct/total, correct, total, extra))
+            progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s' % (
+                test_loss / ( batch_idx + 1 ), 100. * metric.report(), metric.correct, metric.total, f'| {stat}' if stat else ''))
 
     # Save checkpoint.
-    acc = 100.*correct/total
-    print("Accuracy: {}, {}/{}".format(acc, correct, total))
+    acc = 100. * metric.report()
+    print("Accuracy: {}, {}/{}".format(acc, metric.correct, metric.total))
     if acc > best_acc and checkpoint:
+        Colors.green(f'Saving to {checkpoint_fname} ({acc})..')
         state = {
             'net': net.state_dict(),
             'acc': acc,
             'epoch': epoch,
         }
-        if not os.path.isdir('checkpoint'):
-            os.mkdir('checkpoint')
-
-        print(f'Saving to {checkpoint_fname} ({acc})..')
+        os.makedirs('checkpoint', exist_ok=True)
         torch.save(state, f'./checkpoint/{checkpoint_fname}.pth')
         best_acc = acc
-
-    analyzer.end_test(epoch)
-
-
-class_analysis = getattr(analysis, args.analysis or 'Noop')
-analyzer_kwargs = generate_kwargs(args, class_analysis,
-    name=f'Analyzer {args.analysis}',
-    keys=analysis.keys,
-    globals=globals())
-analyzer = class_analysis(**analyzer_kwargs)
 
 if args.disable_test_eval and (not args.analysis or args.analysis == 'Noop'):
     Colors.red(
@@ -345,22 +225,14 @@ if args.disable_test_eval and (not args.analysis or args.analysis == 'Noop'):
 
 if args.eval:
     if not args.resume and not args.pretrained:
-        Colors.red(
-            ' * Warning: In eval mode but model is not loaded from checkpoint.'
-            ' Use --resume or --pretrained (if supported)')
+        Colors.red(' * Warning: Model is not loaded from checkpoint. '
+        'Use --resume or --pretrained (if supported)')
+    with analyzer.epoch_context(0):
+        test(0, checkpoint=False)
+else:
+    for epoch in range(start_epoch, args.epochs):
+        with analyzer.epoch_context(epoch):
+            train(epoch)
+            test(epoch)
 
-    analyzer.start_epoch(0)
-    test(0, analyzer, checkpoint=False)
-    exit()
-
-for epoch in range(start_epoch, args.epochs):
-    analyzer.start_epoch(epoch)
-    train(epoch, analyzer)
-    test(epoch, analyzer)
-    analyzer.end_epoch(epoch)
-
-if args.epochs == 0:
-    analyzer.start_epoch(0)
-    test(0, analyzer)
-    analyzer.end_epoch(0)
 print(f'Best accuracy: {best_acc} // Checkpoint name: {checkpoint_fname}')

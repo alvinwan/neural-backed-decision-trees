@@ -15,7 +15,6 @@ import torch.nn as nn
 import torch.nn.init as init
 from pathlib import Path
 import io
-import nltk
 
 # tree-generation consntants
 METHODS = ('wordnet', 'random', 'induced')
@@ -39,14 +38,6 @@ DATASET_TO_CLASSES = {
 }
 
 
-def maybe_install_wordnet():
-    try:
-        nltk.data.find('corpora/wordnet')
-    except Exception as e:
-        print(e)
-        nltk.download('wordnet')
-
-
 def fwd():
     """Get file's working directory"""
     return Path(__file__).parent.absolute()
@@ -62,6 +53,10 @@ def hierarchy_to_path_graph(dataset, hierarchy):
 
 def dataset_to_default_path_wnids(dataset):
     return os.path.join(fwd(), f'wnids/{dataset}.txt')
+
+
+def get_directory(dataset, root='./nbdt/hierarchies'):
+    return os.path.join(root, dataset)
 
 
 def generate_kwargs(args, object, name='Dataset', keys=(), globals={}, kwargs=None):
@@ -98,6 +93,11 @@ def load_image_from_path(path):
     else:
       file = path
     return Image.open(file)
+
+
+def makeparentdirs(path):
+    dir = Path(path).parent
+    os.makedirs(dir, exist_ok=True)
 
 
 class Colors:
@@ -244,7 +244,7 @@ def set_np_printoptions():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
 
-def generate_fname(dataset, arch, path_graph, wnid=None, name='',
+def generate_checkpoint_fname(dataset, arch, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
         include_classes=(), num_samples=0, tree_supervision_weight=0.5,
         fine_tune=False, loss='CrossEntropyLoss',
