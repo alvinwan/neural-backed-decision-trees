@@ -2,7 +2,7 @@
 
 from nbdt.hierarchy import generate_hierarchy, test_hierarchy, generate_hierarchy_vis
 from nbdt.graph import get_parser
-from nbdt.thirdparty.wordnet import maybe_install_wordnet
+from nbdt.thirdparty.wn import maybe_install_wordnet
 
 
 def main():
