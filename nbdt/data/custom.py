@@ -131,8 +131,8 @@ def get_resample_labels_dataset(dataset):
     return Cls
 
 
-CIFAR10ResampleLabels = get_resample_labels_dataset(datasets.CIFAR10)
-CIFAR100ResampleLabels = get_resample_labels_dataset(datasets.CIFAR100)
+CIFAR10ResampleLabels = get_resample_labels_dataset(cifar.CIFAR10)
+CIFAR100ResampleLabels = get_resample_labels_dataset(cifar.CIFAR100)
 TinyImagenet200ResampleLabels = get_resample_labels_dataset(imagenet.TinyImagenet200)
 Imagenet1000ResampleLabels = get_resample_labels_dataset(imagenet.Imagenet1000)
 
@@ -162,8 +162,8 @@ def get_include_labels_dataset(dataset):
     return Cls
 
 
-CIFAR10IncludeLabels = get_include_labels_dataset(datasets.CIFAR10)
-CIFAR100IncludeLabels = get_include_labels_dataset(datasets.CIFAR100)
+CIFAR10IncludeLabels = get_include_labels_dataset(cifar.CIFAR10)
+CIFAR100IncludeLabels = get_include_labels_dataset(cifar.CIFAR100)
 TinyImagenet200IncludeLabels = get_include_labels_dataset(imagenet.TinyImagenet200)
 Imagenet1000IncludeLabels = get_include_labels_dataset(imagenet.Imagenet1000)
 
@@ -191,7 +191,7 @@ def get_exclude_labels_dataset(dataset):
     return Cls
 
 
-CIFAR10ExcludeLabels = get_exclude_labels_dataset(datasets.CIFAR10)
-CIFAR100ExcludeLabels = get_exclude_labels_dataset(datasets.CIFAR100)
+CIFAR10ExcludeLabels = get_exclude_labels_dataset(cifar.CIFAR10)
+CIFAR100ExcludeLabels = get_exclude_labels_dataset(cifar.CIFAR100)
 TinyImagenet200ExcludeLabels = get_exclude_labels_dataset(imagenet.TinyImagenet200)
 Imagenet1000ExcludeLabels = get_exclude_labels_dataset(imagenet.Imagenet1000)
