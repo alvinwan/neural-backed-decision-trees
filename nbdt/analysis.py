@@ -15,10 +15,8 @@ __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules',
     'Superclass', 'SuperclassNBDT')
-keys = ('path_graph', 'path_wnids', 'classes', 'dataset',
+keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric',
         'dataset_test', 'superclass_wnids')
-    'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules')
-keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric')
 
 
 def add_arguments(parser):
@@ -190,7 +188,7 @@ class DecisionRules(Noop):
 
     def __init__(self, *args, Rules=HardRules, metric='top1', **kwargs):
         self.rules = Rules(*args, **kwargs)
-        super().__init__(self.rules.classes)
+        super().__init__(self.rules.tree.classes)
         self.metric = getattr(metrics, metric)()
 
     def start_test(self, epoch):
@@ -205,7 +203,7 @@ class DecisionRules(Noop):
 
     def end_test(self, epoch):
         super().end_test(epoch)
-        accuracy = round(self.metric.correct / self.metric.total * 100., 2)
+        accuracy = round(self.metric.correct / (self.metric.total or 1) * 100., 2)
         print(f'{self.name} Accuracy: {accuracy}%, {self.metric.correct}/{self.metric.total}')
 
 
@@ -238,13 +236,14 @@ class Superclass(DecisionRules):
     accepts_superclass_wnids = True
 
     def __init__(self, *args, superclass_wnids, dataset_test=None,
-            Rules=SoftRules, **kwargs):
+            Rules=SoftRules, metric=None, **kwargs):
         """Pass wnids to classify.
 
         Assumes index of each wnid is the index of the wnid in the rules.wnids
         list. This agrees with Node.wnid_to_class_index as of writing, since
         rules.wnids = get_wnids(...).
         """
+        # TODO: for now, ignores metric
         super().__init__(*args, **kwargs)
 
         kwargs['dataset'] = dataset_test
@@ -252,9 +251,10 @@ class Superclass(DecisionRules):
         kwargs.pop('path_wnids', '')
         self.rules_test = Rules(*args, **kwargs)
         self.superclass_wnids = superclass_wnids
+        self.total = self.correct = 0
 
-        self.mapping_target, self.new_to_old_classes_target = Superclass.build_mapping(self.rules_test.wnids, superclass_wnids)
-        self.mapping_pred, self.new_to_old_classes_pred = Superclass.build_mapping(self.rules.wnids, superclass_wnids)
+        self.mapping_target, self.new_to_old_classes_target = Superclass.build_mapping(self.rules_test.tree.wnids_leaves, superclass_wnids)
+        self.mapping_pred, self.new_to_old_classes_pred = Superclass.build_mapping(self.rules.tree.wnids_leaves, superclass_wnids)
 
         mapped_classes = [self.classes[i] for i in (self.mapping_target >= 0).nonzero()]
         Colors.cyan(
@@ -328,6 +328,9 @@ class SuperclassNBDT(Superclass):
             new_to_old_classes=self.new_to_old_classes_pred,
             num_classes=len(self.new_to_old_classes_pred))
         predicted = outputs.max(1)[1].to(targets.device)
+
+        if self.mapping_target.device != targets.device:
+            self.mapping_target = self.mapping_target.to(targets.device)
 
         targets = self.mapping_target[targets]
         predicted = predicted[targets >= 0]

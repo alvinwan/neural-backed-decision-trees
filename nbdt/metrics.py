@@ -21,7 +21,7 @@ class TopK:
         self.total += targets.size(0)
 
     def report(self):
-        return self.correct / self.total
+        return self.correct / (self.total or 1)
 
     def __repr__(self):
         return f'Top{self.k}: {self.report()}'

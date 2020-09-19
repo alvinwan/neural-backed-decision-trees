@@ -21,13 +21,13 @@ from nbdt.thirdparty.wn import maybe_install_wordnet
 from nbdt.models.utils import load_state_dict, make_kwarg_optional
 
 maybe_install_wordnet()
-
+datasets = data.cifar.names + data.imagenet.names + data.custom.names
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
 parser.add_argument('--batch-size', default=512, type=int,
                     help='Batch size used for training')
 parser.add_argument('--epochs', '-e', default=200, type=int,
                     help='By default, lr schedule is scaled accordingly')
-parser.add_argument('--dataset', default='CIFAR10', choices=data.cifar.names + data.imagenet.names + data.custom.names)
+parser.add_argument('--dataset', default='CIFAR10', choices=datasets)
 parser.add_argument('--arch', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
@@ -67,44 +67,24 @@ start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 # Data
 print('==> Preparing data..')
-dataset = getattr(data, args.dataset)
+dataset_train = getattr(data, args.dataset)
+dataset_test = getattr(data, args.dataset_test or args.dataset)
 
-transform_train = dataset.transform_train()
-transform_test = dataset.transform_val()
+transform_train = dataset_train.transform_train()
+transform_test = dataset_test.transform_val()
 
-dataset_kwargs = generate_kwargs(args, dataset, name=f'Dataset {args.dataset}', keys=data.custom.keys, globals=globals())
-trainset = dataset(**dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
-testset = dataset(**dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
-
-dataset_test_name = args.dataset_test or dataset_train_name
-dataset_test = getattr(data, dataset_test_name)
-
-if dataset_train_name in ('TinyImagenet200', 'Imagenet1000'):
-    default_input_size = 64 if dataset_test_name == 'TinyImagenet200' else 224
-    input_size = args.input_size or default_input_size
-    transform_test = dataset_test.transform_val(input_size)
-elif args.input_size is not None and args.input_size > 32:
-    transform_test = transforms.Compose([
-        transforms.Resize(args.input_size + 32),
-        transforms.CenterCrop(args.input_size),
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
-
-dataset_test_kwargs = generate_kwargs(args, dataset_test,
-    name=f'Dataset {dataset_test_name}',
-    keys=data.custom.keys,
-    globals=globals())
-
+dataset_train_kwargs = generate_kwargs(args, dataset_train, name=f'Dataset {dataset_train.__class__.__name__}', keys=data.custom.keys, globals=globals())
+dataset_test_kwargs = generate_kwargs(args, dataset_test, name=f'Dataset {dataset_test.__class__.__name__}', keys=data.custom.keys, globals=globals())
+trainset = dataset_train(**dataset_train_kwargs, root='./data', train=True, download=True, transform=transform_train)
 testset = dataset_test(**dataset_test_kwargs, root='./data', train=False, download=True, transform=transform_test)
-testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
-Colors.cyan(f'Evaluating with dataset {dataset_test_name} and {len(testset.classes)} classes')
 
-assert dataset_train_name == dataset_test_name or args.disable_test_eval, (
-    f'Either datasets need to be the same (train {dataset_train_name}, eval '
-    f'{dataset_test_name}) or you need to use `--disable_test_eval`')
-assert trainset.classes == testset.classes or args.disable_test_eval, (
-    trainset.classes, testset.classes)
+assert trainset.classes == testset.classes or args.disable_test_eval, (trainset.classes, testset.classes)
+
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
+
+Colors.cyan(f'Training with dataset {args.dataset} and {len(trainset.classes)} classes')
+Colors.cyan(f'Testing with dataset {args.dataset_test or args.dataset} and {len(testset.classes)} classes')
 
 # Model
 print('==> Building model..')
@@ -196,6 +176,7 @@ def test(epoch, checkpoint=True):
             outputs = net(inputs)
 
             if not args.disable_test_eval:
+                loss = criterion(outputs, targets)
                 test_loss += loss.item()
                 metric.forward(outputs, targets)
             stat = analyzer.update_batch(outputs, targets)

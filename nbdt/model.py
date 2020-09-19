@@ -64,11 +64,11 @@ class EmbeddedDecisionRules(nn.Module):
         """
         assert node or (new_to_old_classes and num_classes), \
             'Either pass node or (new_to_old_classes mapping and num_classes)'
-        new_to_old_classes = new_to_old_classes or node.new_to_old_classes
+        new_to_old_classes = new_to_old_classes or node.child_index_to_class_index
         num_classes = num_classes or node.num_classes
         return torch.stack([
-            outputs.T[node.child_index_to_class_index[child_index]].mean(dim=0)
-            for child_index in range(node.num_classes)
+            outputs.T[new_to_old_classes[child_index]].mean(dim=0)
+            for child_index in range(num_classes)
         ]).T
 
     @classmethod
