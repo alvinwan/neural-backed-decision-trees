@@ -301,6 +301,7 @@ class Superclass(DecisionRules):
         outputs = outputs[targets >= 0]
         targets = targets[targets >= 0]
 
+        outputs[:, self.mapping_pred < 0] = -100
         predicted = outputs.max(1)[1]
         predicted = self.mapping_pred[predicted].to(targets.device)
         return predicted, targets
@@ -326,7 +327,7 @@ class SuperclassNBDT(Superclass):
         outputs = self.rules.get_node_logits(
             outputs,
             new_to_old_classes=self.new_to_old_classes_pred,
-            num_classes=len(self.new_to_old_classes_pred))
+            num_classes=max(self.new_to_old_classes_pred) + 1)
         predicted = outputs.max(1)[1].to(targets.device)
 
         if self.mapping_target.device != targets.device:
