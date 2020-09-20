@@ -302,6 +302,8 @@ class Superclass(DecisionRules):
         targets = targets[targets >= 0]
 
         outputs[:, self.mapping_pred < 0] = -100
+        if outputs.size(0) == 0:
+            return torch.Tensor([]), torch.Tensor([])
         predicted = outputs.max(1)[1]
         predicted = self.mapping_pred[predicted].to(targets.device)
         return predicted, targets
