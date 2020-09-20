@@ -173,7 +173,7 @@ def test(epoch, checkpoint=True):
 
     # Save checkpoint.
     acc = 100. * metric.report()
-    print("Accuracy: {}, {}/{}".format(acc, metric.correct, metric.total))
+    print("Accuracy: {}, {}/{} | Best Accurracy: {}".format(acc, metric.correct, metric.total, best_acc))
     if acc > best_acc and checkpoint:
         Colors.green(f'Saving to {checkpoint_fname} ({acc})..')
         state = {
