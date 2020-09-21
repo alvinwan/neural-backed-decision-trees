@@ -35,5 +35,5 @@ outputs, decisions = model.forward_with_decisions(x)  # use `model(x)` to obtain
 _, predicted = outputs.max(1)
 cls = DATASET_TO_CLASSES['CIFAR10'][predicted[0]]
 print('Prediction:', cls, '// Decisions:', ', '.join([
-    '{} ({:.2f}%)'.format(info['name'], info['prob'] * 100) for info in decisions[0]
+    '{} (Confidence: {:.2f}%)'.format(info['name'], (1 - info['entropy']) * 100) for info in decisions[0]
 ][1:]))  # [1:] to skip the root

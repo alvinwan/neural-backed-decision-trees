@@ -16,6 +16,7 @@ from nbdt.models.utils import load_state_dict_from_key, coerce_state_dict
 from nbdt.tree import Node, Tree
 from nbdt.thirdparty.wn import get_wnids, synset_to_name
 from nbdt.thirdparty.nx import get_root
+from torch.distributions import Categorical
 
 import torch
 import torch.nn as nn
@@ -80,6 +81,8 @@ class EmbeddedDecisionRules(nn.Module):
             if len(node_logits.size()) > 1:
                 node_outputs['preds'] = torch.max(node_logits, dim=1)[1]
                 node_outputs['probs'] = F.softmax(node_logits, dim=1)
+                node_outputs['entropy'] = \
+                    Categorical(probs=node_outputs['probs']).entropy().item()
 
             wnid_to_outputs[node.wnid] = node_outputs
         return wnid_to_outputs
@@ -128,7 +131,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         decisions = []
         preds = []
         for index in range(n_samples):
-            decision = [{'node': tree.root, 'name': 'root', 'prob': 1}]
+            decision = [{'node': tree.root, 'name': 'root', 'prob': 1, 'entropy': 0}]
             node = tree.root
             while not node.is_leaf():
                 if node.wnid not in wnid_to_outputs:
@@ -142,7 +145,8 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
                     'node': node,
                     'name': node.name,
                     'prob': prob_child,
-                    'next_index': index_child
+                    'next_index': index_child,
+                    'entropy': outputs['entropy']
                 })
             preds.append(tree.wnid_to_class_index[node.wnid])
             decisions.append(decision)
@@ -217,12 +221,15 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
             leaf = self.tree.wnids_leaves[prediction]
             steps = leaf_to_steps[leaf]
             probs = [1]
+            entropies = [0]
             for step in steps[:-1]:
                 _out = wnid_to_outputs[step['node'].wnid]
                 _probs = _out['probs'][0]
                 probs.append(_probs[step['next_index']])
-            for step, prob in zip(steps, probs):
+                entropies.append(Categorical(probs=_probs).entropy().item())
+            for step, prob, entropy in zip(steps, probs, entropies):
                 step['prob'] = float(prob)
+                step['entropy'] = float(entropy)
             decisions.append(steps)
         return outputs, decisions
 

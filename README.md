@@ -40,7 +40,7 @@ nbdt https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compr
 This outputs both the class prediction and all the intermediate decisions, like below:
 
 ```
-Prediction: cat // Decisions: animal (99.47%), chordate (99.20%), carnivore (99.42%), cat (99.86%)
+Prediction: cat // Decisions: animal (Confidence: 99.47%), chordate (Confidence: 99.20%), carnivore (Confidence: 99.42%), cat (Confidence: 99.86%)
 ```
 
 By default, this evaluation utility uses WideResNet pretrained on CIFAR10. You can also pass classes not seen in CIFAR10. Below, we pass a picture of a bear and a zebra. This zebra is also pictured below.
@@ -53,8 +53,8 @@ nbdt https://images.pexels.com/photos/158109/kodiak-brown-bear-adult-portrait-wi
 Like before, this outputs the class prediction and intermediate decisions. Although the *Bear* and *Zebra* classes were not seen at train time, the model still correctly picks *Animal* over *Vehicle* for both. Note that for *Zebra*, the obvious closest class is *Horse*, matching the model's prediction below.
 
 ```
-Prediction: horse // Decisions: animal (99.31%), ungulate (99.25%), horse (99.62%)
-Prediction: dog // Decisions: animal (99.51%), chordate (99.35%), carnivore (99.69%), dog (99.22%)
+Prediction: horse // Decisions: animal (Confidence: 99.31%), ungulate (Confidence: 99.25%), horse (Confidence: 99.62%)
+Prediction: dog // Decisions: animal (Confidence: 99.51%), chordate (Confidence: 99.35%), carnivore (Confidence: 99.69%), dog (Confidence: 99.22%)
 ```
 
 <img src="https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=125" height=125 align=left>
