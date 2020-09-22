@@ -1,24 +1,22 @@
 #!/usr/bin/env python
-"""Run evaluation on a single image, using an NBDT"""
+"""Run evaluation on a single image, using a baseline neural network"""
 
 from nbdt.model import SoftNBDT, HardNBDT
 from pytorchcv.models.wrn_cifar import wrn28_10_cifar10
 from torchvision import transforms
 from nbdt.utils import DATASET_TO_CLASSES, load_image_from_path
 from nbdt.thirdparty.wn import maybe_install_wordnet
+import torch.nn.functional as F
+from torch.distributions import Categorical
 import sys
 
 maybe_install_wordnet()
 
 assert len(sys.argv) > 1, "Need to pass image URL or image path as argument"
 
-# load pretrained NBDT
-model = wrn28_10_cifar10()
-model = SoftNBDT(
-  pretrained=True,
-  dataset='CIFAR10',
-  arch='wrn28_10_cifar10',
-  model=model)
+# load pretrained model
+model = wrn28_10_cifar10(pretrained=True)
+model.eval()
 
 # load + transform image
 im = load_image_from_path(sys.argv[1])
@@ -30,10 +28,14 @@ transform = transforms.Compose([
 ])
 x = transform(im)[None]
 
-# run inference
-outputs, decisions = model.forward_with_decisions(x)  # use `model(x)` to obtain just logits
-_, predicted = outputs.max(1)
-cls = DATASET_TO_CLASSES['CIFAR10'][predicted[0]]
-print('Prediction:', cls, '// Decisions:', ', '.join([
-    '{} (Confidence: {:.2f}%)'.format(info['name'], (1 - info['entropy']) * 100) for info in decisions[0]
-][1:]))  # [1:] to skip the root
+model.eval()
+
+probs = F.softmax(model(x), dim=1)[0]
+confidence = (1 - Categorical(probs=probs).entropy()) * 100.
+
+print('Probabilities per class: ' + ', '.join([
+    f'{cls} ({p.item() * 100:.2f}%)'
+    for p, cls in sorted(zip(probs, DATASET_TO_CLASSES['CIFAR10']),
+        key=lambda t: t[0],
+        reverse=True)
+]) + f'// Confidence: {confidence:.2f}%')
