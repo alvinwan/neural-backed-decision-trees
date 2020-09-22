@@ -3,6 +3,8 @@ from nbdt.model import (
     SoftEmbeddedDecisionRules as SoftRules,
     HardEmbeddedDecisionRules as HardRules
 )
+from torch.distributions import Categorical
+import torch.nn.functional as F
 from nbdt import metrics
 import functools
 import numpy as np
@@ -10,7 +12,8 @@ import numpy as np
 
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
-    'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules')
+    'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules',
+    'EntropyStatistics')
 keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric')
 
 
@@ -214,3 +217,39 @@ class SoftEmbeddedDecisionRules(DecisionRules):
 
     def __init__(self, *args, Rules=None, **kwargs):
         super().__init__(*args, Rules=SoftRules, **kwargs)
+
+
+class EntropyStatistics(Noop):
+
+    def __init__(self, classes=(), k=20):
+        super().__init__(classes)
+        self.reset()
+        self.k = k
+
+    def start_test(self, epoch):
+        super().start_test(epoch)
+        self.reset()
+
+    def reset(self):
+        self.avg = 0
+        self.std = 0
+        self.max = []
+        self.min = []
+        self.i = 0
+
+    def update_batch(self, outputs, targets):
+        super().update_batch(outputs, targets)
+
+        probs = F.softmax(outputs, dim=1)
+        e = list(Categorical(probs=probs).entropy().cpu().detach().numpy())
+        for e_i in e:
+            self.i += 1
+            avg_i_minus_1 = self.avg
+            self.avg = avg_i_minus_1 + ((e_i - avg_i_minus_1) / self.i)
+            self.std = self.std + (e_i - avg_i_minus_1) * (e_i - self.avg)
+        self.max = list(sorted(self.max + e, reverse=True))[:self.k]
+        self.min = list(sorted(self.min + e))[:self.k]
+
+    def end_test(self, epoch):
+        super().end_test(epoch)
+        print(f'[Entropy] avg {self.avg:.2e}, std {self.std:.2e}, max {max(self.max):.2e}, min {min(self.min):.2e}')
