@@ -16,7 +16,7 @@ from pathlib import Path
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules',
-    'EntropyStatistics')
+    'Entropy', 'NBDTEntropy')
 keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric')
 
 
@@ -225,9 +225,9 @@ class SoftEmbeddedDecisionRules(DecisionRules):
         super().__init__(*args, Rules=SoftRules, **kwargs)
 
 
-class EntropyStatistics(Noop):
+class Entropy(Noop):
 
-    def __init__(self, classes=(), k=20, path='out/entropy-{epoch}/image-{suffix}-{i}-{entropy:.2e}.jpg'):
+    def __init__(self, classes=(), k=20, path='out/entropy-{epoch}/image-{suffix}-{i}-{score:.2e}.jpg'):
         super().__init__(classes)
         self.reset()
         self.k = k
@@ -244,24 +244,28 @@ class EntropyStatistics(Noop):
         self.min = []
         self.i = 0
 
+    def score(self, entropy ,outputs, images):
+        return entropy
+
     @staticmethod
-    def first(t):
-        return t[0]
+    def last(t):
+        return t[-1]
 
     def update_batch(self, outputs, targets, images):
         super().update_batch(outputs, targets, images)
 
         probs = F.softmax(outputs, dim=1)
-        e = list(Categorical(probs=probs).entropy().cpu().detach().numpy())
-        for e_i in e:
+        entropies = list(Categorical(probs=probs).entropy().cpu().detach().numpy())
+        for e_i in entropies:
             self.i += 1
             avg_i_minus_1 = self.avg
             self.avg = avg_i_minus_1 + ((e_i - avg_i_minus_1) / self.i)
             self.std = self.std + (e_i - avg_i_minus_1) * (e_i - self.avg)
 
-        e_images = list(zip(e, images))
-        self.max = list(sorted(self.max + e_images, reverse=True, key=EntropyStatistics.first))[:self.k]
-        self.min = list(sorted(self.min + e_images, key=EntropyStatistics.first))[:self.k]
+        scores = self.score(entropies, outputs, images)
+        eois = list(zip(entropies, outputs, images, scores))
+        self.max = list(sorted(self.max + eois, reverse=True, key=Entropy.last))[:self.k]
+        self.min = list(sorted(self.min + eois, key=Entropy.last))[:self.k]
 
     def end_test(self, epoch):
         super().end_test(epoch)
@@ -270,7 +274,26 @@ class EntropyStatistics(Noop):
         os.makedirs(str(self.path.parent).format(epoch=self.epoch), exist_ok=True)
         for name, suffix, lst in (('highest', 'max', self.max), ('lowest', 'min', self.min)):
             print(f'==> Saving {self.k} {name} entropy images in {self.path}')
-            for i, (e, image) in enumerate(lst):
+            for i, (_, _, image, score) in enumerate(lst):
                 Image.fromarray(
                     (image.permute(1, 2, 0) * 255).cpu().detach().numpy().astype(np.uint8)
-                ).save(str(self.path).format(epoch=self.epoch, i=i, suffix=suffix, entropy=e))
+                ).save(str(self.path).format(epoch=self.epoch, i=i, suffix=suffix, score=score))
+
+
+class NBDTEntropy(Entropy):
+    """Collect and log samples according to NBDT path entropy difference"""
+
+    accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
+    accepts_path_graph = True
+    accepts_path_wnids = True
+
+    def __init__(self, *args, Rules=HardRules, path_graph=None,
+            path_wnids=None, dataset=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.rules = Rules(
+            path_graph=path_graph, path_wnids=path_wnids, dataset=dataset)
+
+    def score(self, entropy, outputs, images):
+        decisions = self.rules.forward_with_decisions(outputs)
+        entropies = [[node['entropy'] for node in path] for path in decisions[1]]
+        return [max(ent) - min(ent) for ent in entropies]
