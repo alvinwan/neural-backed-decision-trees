@@ -20,13 +20,15 @@ import time
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules',
-    'Entropy', 'NBDTEntropy', 'Superclass', 'SuperclassNBDT')
+    'Entropy', 'NBDTEntropy', 'Superclass', 'SuperclassNBDT',
+    'VisualizeDecisionNode')
 keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric',
-        'dataset_test', 'superclass_wnids')
+        'dataset_test', 'superclass_wnids', 'visualize_decision_node_wnid')
 
 
 def add_arguments(parser):
     parser.add_argument('--superclass-wnids', nargs='*', type=str)
+    parser.add_argument('--visualize-decision-node-wnid', '--vdnw', type=str)
 
 
 def start_end_decorator(obj, name):
@@ -449,3 +451,27 @@ class SuperclassNBDT(Superclass):
         predicted = predicted[targets >= 0]
         targets = targets[targets >= 0]
         return predicted, targets
+
+
+class VisualizeDecisionNode(ScoreSave):
+    """Compute node similarity and save most/least similar samples"""
+
+    accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
+    accepts_path_graph = True
+    accepts_path_wnids = True
+    accepts_visualize_decision_node_wnid = True
+
+    def __init__(self, visualize_decision_node_wnid, *args,
+            Rules=HardRules, path_graph=None, path_wnids=None, dataset=None,
+            path='out/vis-nbdt-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg',
+            **kwargs):
+        super().__init__(*args, **kwargs)
+        self.rules = Rules(
+            path_graph=path_graph, path_wnids=path_wnids, dataset=dataset)
+        self.wnid = visualize_decision_node_wnid
+
+    def score(self, outputs, images):
+        node = self.rules.tree.wnid_to_node[self.wnid]
+        logits = self.rules.get_node_logits(outputs, node=node.parent)
+        child_index = node.parent.wnid_to_child_index(node.wnid)
+        return [float(p) for p in logits[:, child_index].detach().cpu().numpy()]
