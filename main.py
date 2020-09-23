@@ -179,8 +179,7 @@ def test(epoch, checkpoint=True):
                 test_loss += loss.item()
                 metric.forward(outputs, targets)
                 stat = analyzer.update_batch(outputs, targets, testset.transform_val_inverse()(inputs))
-            stat = analyzer.update_batch(outputs, targets)
-
+            
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s' % (
                 test_loss / ( batch_idx + 1 ), 100. * metric.report(), metric.correct, metric.total, f'| {stat}' if stat else ''))
 
