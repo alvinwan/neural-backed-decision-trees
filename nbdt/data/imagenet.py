@@ -1,6 +1,7 @@
 import os
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+from . import transforms as transforms_custom
 from torch.utils.data import Dataset
 from pathlib import Path
 import zipfile
@@ -47,6 +48,10 @@ class TinyImagenet200(Dataset):
             transforms.ToTensor(),
             transforms.Normalize([0.4802, 0.4481, 0.3975], [0.2302, 0.2265, 0.2262]),
         ])
+
+    @staticmethod
+    def transform_val_inverse():
+        return transforms_custom.InverseNormalize([0.4802, 0.4481, 0.3975], [0.2302, 0.2265, 0.2262])
 
     def download(self, root='./'):
         """Download and unzip Imagenet200 files in the `root` directory."""
@@ -154,6 +159,10 @@ class Imagenet1000(Dataset):
             transforms.ToTensor(),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ])
+
+    @staticmethod
+    def transform_val_inverse():
+        return transforms_custom.InverseNormalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
 
     def __getitem__(self, i):
         return self.dataset[i]

@@ -4,17 +4,23 @@ from nbdt.model import (
     SoftEmbeddedDecisionRules as SoftRules,
     HardEmbeddedDecisionRules as HardRules
 )
+from torch.distributions import Categorical
+import torch.nn.functional as F
 from collections import defaultdict
 import torch
 from nbdt import metrics
 import functools
 import numpy as np
+import os
+from PIL import Image
+from pathlib import Path
+import time
 
 
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules',
-    'Superclass', 'SuperclassNBDT')
+    'Entropy', 'NBDTEntropy', 'Superclass', 'SuperclassNBDT')
 keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric',
         'dataset_test', 'superclass_wnids')
 
@@ -88,7 +94,10 @@ class Noop:
     def start_train(self, epoch):
         assert epoch == self.epoch
 
-    def update_batch(self, outputs, targets):
+    def update_batch(self, outputs, targets, images):
+        self._update_batch(outputs, targets)
+
+    def _update_batch(self, outputs, targets):
         pass
 
     def end_train(self, epoch):
@@ -119,8 +128,8 @@ class ConfusionMatrix(Noop):
         super().start_test(epoch)
         self.m = np.zeros((self.k, self.k))
 
-    def update_batch(self, outputs, targets):
-        super().update_batch(outputs, targets)
+    def _update_batch(self, outputs, targets):
+        super()._update_batch(outputs, targets)
         _, predicted = outputs.max(1)
         if len(predicted.shape) == 1:
             predicted = predicted.numpy().ravel()
@@ -166,8 +175,8 @@ class IgnoredSamples(Noop):
         super().start_test(epoch)
         self.ignored = 0
 
-    def update_batch(self, outputs, targets):
-        super().update_batch(outputs, targets)
+    def _update_batch(self, outputs, targets):
+        super()._update_batch(outputs, targets)
         self.ignored += outputs[:,0].eq(-1).sum().item()
         return self.ignored
 
@@ -194,8 +203,8 @@ class DecisionRules(Noop):
     def start_test(self, epoch):
         self.metric.clear()
 
-    def update_batch(self, outputs, targets):
-        super().update_batch(outputs, targets)
+    def _update_batch(self, outputs, targets):
+        super()._update_batch(outputs, targets)
         outputs = self.rules.forward(outputs)
         self.metric.forward(outputs, targets)
         accuracy = round(self.metric.correct / float(self.metric.total), 4) * 100
@@ -204,7 +213,7 @@ class DecisionRules(Noop):
     def end_test(self, epoch):
         super().end_test(epoch)
         accuracy = round(self.metric.correct / (self.metric.total or 1) * 100., 2)
-        print(f'{self.name} Accuracy: {accuracy}%, {self.metric.correct}/{self.metric.total}')
+        print(f'[{self.name}] Acc: {accuracy}%, {self.metric.correct}/{self.metric.total}')
 
 
 class HardEmbeddedDecisionRules(DecisionRules):
@@ -220,6 +229,107 @@ class SoftEmbeddedDecisionRules(DecisionRules):
 
     def __init__(self, *args, Rules=None, **kwargs):
         super().__init__(*args, Rules=SoftRules, **kwargs)
+
+
+class ScoreSave(Noop):
+    """Score each sample and save the highest/lowest scorers"""
+
+    def __init__(self, classes=(), k=20, path='out/score-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg'):
+        super().__init__(classes)
+        self.reset()
+        self.k = k
+        self.path = Path(path)
+        self.time = int(time.time())
+
+    def start_test(self, epoch):
+        super().start_test(epoch)
+        self.reset()
+
+    def reset(self):
+        self.max = []
+        self.min = []
+
+    def score(self, outputs, images):
+        raise NotImplementedError()
+
+    @staticmethod
+    def last(t):
+        return t[-1]
+
+    def update_batch(self, outputs, targets, images):
+        super().update_batch(outputs, targets, images)
+
+        scores = self.score(outputs, images)
+        ois = list(zip(outputs, images, scores))
+        self.max = list(sorted(self.max + ois, reverse=True, key=ScoreSave.last))[:self.k]
+        self.min = list(sorted(self.min + ois, key=ScoreSave.last))[:self.k]
+
+    def end_test(self, epoch):
+        directory = str(self.path.parent).format(time=self.time, epoch=self.epoch)
+        os.makedirs(directory, exist_ok=True)
+        for name, suffix, lst in (('highest', 'max', self.max), ('lowest', 'min', self.min)):
+            print(f'==> Saving {self.k} {name} scored images in {directory}')
+            for i, (_, image, score) in enumerate(lst):
+                Image.fromarray(
+                    (image.permute(1, 2, 0) * 255).cpu().detach().numpy().astype(np.uint8)
+                ).save(str(self.path).format(
+                    epoch=self.epoch, i=i, suffix=suffix, score=score,
+                    time=self.time))
+
+
+class Entropy(ScoreSave):
+    """Compute entropy statistics and save highest/lowest entropy samples"""
+
+    def __init__(self, classes=(), k=20, path='out/entropy-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg'):
+        super().__init__(classes, k=k, path=path)
+
+    def reset(self):
+        super().reset()
+        self.avg = 0
+        self.std = 0
+        self.i = 0
+
+    def score(self, outputs, images):
+        probs = F.softmax(outputs, dim=1)
+        entropies = list(Categorical(probs=probs).entropy().cpu().detach().numpy())
+        return entropies
+
+    def update_batch(self, outputs, targets, images):
+        super().update_batch(outputs, targets, images)
+
+        probs = F.softmax(outputs, dim=1)
+        entropies = list(Categorical(probs=probs).entropy().cpu().detach().numpy())
+        for e_i in entropies:
+            self.i += 1
+            avg_i_minus_1 = self.avg
+            self.avg = avg_i_minus_1 + ((e_i - avg_i_minus_1) / self.i)
+            self.std = self.std + (e_i - avg_i_minus_1) * (e_i - self.avg)
+
+
+    def end_test(self, epoch):
+        super().end_test(epoch)
+        print(f'[Entropy] avg {self.avg:.2e}, std {self.std:.2e}, max {self.max[0][0]:.2e}, min {self.min[0][0]:.2e}')
+
+
+class NBDTEntropy(Entropy):
+    """Collect and log samples according to NBDT path entropy difference"""
+
+    accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
+    accepts_path_graph = True
+    accepts_path_wnids = True
+
+    def __init__(self, *args, Rules=HardRules, path_graph=None,
+            path_wnids=None, dataset=None,
+            path='out/entropy-nbdt-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg',
+            **kwargs):
+        super().__init__(*args, **kwargs)
+        self.rules = Rules(
+            path_graph=path_graph, path_wnids=path_wnids, dataset=dataset)
+
+    def score(self, outputs, images):
+        decisions = self.rules.forward_with_decisions(outputs)
+        entropies = [[node['entropy'] for node in path] for path in decisions[1]]
+        return [max(ent) - min(ent) for ent in entropies]
 
 
 class Superclass(DecisionRules):

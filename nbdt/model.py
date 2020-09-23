@@ -87,7 +87,7 @@ class EmbeddedDecisionRules(nn.Module):
                 node_outputs['preds'] = torch.max(node_logits, dim=1)[1]
                 node_outputs['probs'] = F.softmax(node_logits, dim=1)
                 node_outputs['entropy'] = \
-                    Categorical(probs=node_outputs['probs']).entropy().item()
+                    Categorical(probs=node_outputs['probs']).entropy()
 
             wnid_to_outputs[node.wnid] = node_outputs
         return wnid_to_outputs
@@ -151,7 +151,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
                     'name': node.name,
                     'prob': prob_child,
                     'next_index': index_child,
-                    'entropy': outputs['entropy']
+                    'entropy': float(outputs['entropy'][index])
                 })
             preds.append(tree.wnid_to_class_index[node.wnid])
             decisions.append(decision)

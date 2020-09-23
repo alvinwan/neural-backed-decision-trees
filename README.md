@@ -383,7 +383,24 @@ python main.py --dataset=CIFAR10 --arch=wrn28_10_cifar10 --hierarchy=induced-wrn
 </div>
 </details>
 
-<details><summary><b>Running zero-shot evaluation on superclasses.</summary>
+<details><summary><b>Logging maximum and minimum 'path entropy' samples.</b></summary>
+
+```
+# get min and max entropy samples for baseline neural network
+python main.py --dataset=CIFAR10 --arch=ResNet18 --pretrained --eval --dataset-test=Imagenet1000 --disable-test-eval --analysis=Entropy  # CIFAR10 network on Imagenet
+python main.py --dataset=TinyImagenet200 --arch=ResNet18 --pretrained --eval --analysis=Entropy  # TinyImagenet network on TinyImagenet
+
+# download public checkpoint
+wget https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR10-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth -O checkpoint/ckpt-CIFAR10-ResNet18-induced-SoftTreeSupLoss.pth
+
+# get min and max 'path entropy' samples for NBDT
+python main.py --dataset=CIFAR10 --arch=ResNet18  --eval --dataset-test=Imagenet1000 --disable-test-eval --analysis=NBDTEntropy --loss=SoftTreeSupLoss --resume --hierarchy=induced-ResNet18  # CIFAR10 network on Imagenet
+python main.py --dataset=TinyImagenet200 --arch=ResNet18  --eval --analysis=NBDTEntropy --loss=SoftTreeSupLoss --resume --hierarchy=induced-ResNet18 --tree-supervision-weight 10  # TinyImagenet network on TinyImagenet
+```
+
+</details>
+
+<details><summary><b>Running zero-shot evaluation on superclasses.</b></summary>
 
 ```
 # get wnids for animal and vehicle -- use the outputted wnids for below commands
