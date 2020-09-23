@@ -231,9 +231,10 @@ class SoftEmbeddedDecisionRules(DecisionRules):
         super().__init__(*args, Rules=SoftRules, **kwargs)
 
 
-class Entropy(Noop):
+class ScoreSave(Noop):
+    """Score each sample and save the highest/lowest scorers"""
 
-    def __init__(self, classes=(), k=20, path='out/entropy-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg'):
+    def __init__(self, classes=(), k=20, path='out/score-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg'):
         super().__init__(classes)
         self.reset()
         self.k = k
@@ -245,18 +246,53 @@ class Entropy(Noop):
         self.reset()
 
     def reset(self):
-        self.avg = 0
-        self.std = 0
         self.max = []
         self.min = []
-        self.i = 0
 
-    def score(self, entropy ,outputs, images):
-        return entropy
+    def score(self, outputs, images):
+        raise NotImplementedError()
 
     @staticmethod
     def last(t):
         return t[-1]
+
+    def update_batch(self, outputs, targets, images):
+        super().update_batch(outputs, targets, images)
+
+        scores = self.score(outputs, images)
+        ois = list(zip(outputs, images, scores))
+        self.max = list(sorted(self.max + ois, reverse=True, key=ScoreSave.last))[:self.k]
+        self.min = list(sorted(self.min + ois, key=ScoreSave.last))[:self.k]
+
+    def end_test(self, epoch):
+        directory = str(self.path.parent).format(time=self.time, epoch=self.epoch)
+        os.makedirs(directory, exist_ok=True)
+        for name, suffix, lst in (('highest', 'max', self.max), ('lowest', 'min', self.min)):
+            print(f'==> Saving {self.k} {name} scored images in {directory}')
+            for i, (_, image, score) in enumerate(lst):
+                Image.fromarray(
+                    (image.permute(1, 2, 0) * 255).cpu().detach().numpy().astype(np.uint8)
+                ).save(str(self.path).format(
+                    epoch=self.epoch, i=i, suffix=suffix, score=score,
+                    time=self.time))
+
+
+class Entropy(ScoreSave):
+    """Compute entropy statistics and save highest/lowest entropy samples"""
+
+    def __init__(self, classes=(), k=20, path='out/entropy-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg'):
+        super().__init__(classes, k=k, path=path)
+
+    def reset(self):
+        super().reset()
+        self.avg = 0
+        self.std = 0
+        self.i = 0
+
+    def score(self, outputs, images):
+        probs = F.softmax(outputs, dim=1)
+        entropies = list(Categorical(probs=probs).entropy().cpu().detach().numpy())
+        return entropies
 
     def update_batch(self, outputs, targets, images):
         super().update_batch(outputs, targets, images)
@@ -269,25 +305,10 @@ class Entropy(Noop):
             self.avg = avg_i_minus_1 + ((e_i - avg_i_minus_1) / self.i)
             self.std = self.std + (e_i - avg_i_minus_1) * (e_i - self.avg)
 
-        scores = self.score(entropies, outputs, images)
-        eois = list(zip(entropies, outputs, images, scores))
-        self.max = list(sorted(self.max + eois, reverse=True, key=Entropy.last))[:self.k]
-        self.min = list(sorted(self.min + eois, key=Entropy.last))[:self.k]
 
     def end_test(self, epoch):
         super().end_test(epoch)
         print(f'[Entropy] avg {self.avg:.2e}, std {self.std:.2e}, max {self.max[0][0]:.2e}, min {self.min[0][0]:.2e}')
-
-        directory = str(self.path.parent).format(time=self.time, epoch=self.epoch)
-        os.makedirs(directory, exist_ok=True)
-        for name, suffix, lst in (('highest', 'max', self.max), ('lowest', 'min', self.min)):
-            print(f'==> Saving {self.k} {name} entropy images in {directory}')
-            for i, (_, _, image, score) in enumerate(lst):
-                Image.fromarray(
-                    (image.permute(1, 2, 0) * 255).cpu().detach().numpy().astype(np.uint8)
-                ).save(str(self.path).format(
-                    epoch=self.epoch, i=i, suffix=suffix, score=score,
-                    time=self.time))
 
 
 class NBDTEntropy(Entropy):
@@ -298,12 +319,14 @@ class NBDTEntropy(Entropy):
     accepts_path_wnids = True
 
     def __init__(self, *args, Rules=HardRules, path_graph=None,
-            path_wnids=None, dataset=None, **kwargs):
+            path_wnids=None, dataset=None,
+            path='out/entropy-nbdt-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg',
+            **kwargs):
         super().__init__(*args, **kwargs)
         self.rules = Rules(
             path_graph=path_graph, path_wnids=path_wnids, dataset=dataset)
 
-    def score(self, entropy, outputs, images):
+    def score(self, outputs, images):
         decisions = self.rules.forward_with_decisions(outputs)
         entropies = [[node['entropy'] for node in path] for path in decisions[1]]
         return [max(ent) - min(ent) for ent in entropies]
