@@ -227,7 +227,7 @@ class SoftEmbeddedDecisionRules(DecisionRules):
 
 class EntropyStatistics(Noop):
 
-    def __init__(self, classes=(), k=20, path='out/entropy-{epoch}/image-{suffix}-{i}.jpg'):
+    def __init__(self, classes=(), k=20, path='out/entropy-{epoch}/image-{suffix}-{i}-{entropy:.2e}.jpg'):
         super().__init__(classes)
         self.reset()
         self.k = k
@@ -273,4 +273,4 @@ class EntropyStatistics(Noop):
             for i, (e, image) in enumerate(lst):
                 Image.fromarray(
                     (image.permute(1, 2, 0) * 255).cpu().detach().numpy().astype(np.uint8)
-                ).save(str(self.path).format(epoch=self.epoch, i=i, suffix=suffix))
+                ).save(str(self.path).format(epoch=self.epoch, i=i, suffix=suffix, entropy=e))
