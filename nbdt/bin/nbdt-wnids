@@ -20,24 +20,30 @@ datasets = ('CIFAR10', 'CIFAR100', 'Cityscapes') + data.imagenet.names + \
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', choices=datasets, default='CIFAR10')
 parser.add_argument('--root', default='./nbdt/wnids')
+parser.add_argument('--classes', type=str, nargs='*',
+                    help='INSTEAD of writing WNIDs for a dataset, convert JUST'
+                    ' this class name to a WNID.')
 data.custom.add_arguments(parser)
 args = parser.parse_args()
 
-dataset = getattr(data, args.dataset)
-dataset_kwargs = generate_kwargs(args, dataset,
-    name=f'Dataset {args.dataset}',
-    keys=data.custom.keys,
-    globals=globals())
-if args.dataset not in ['Cityscapes', 'PascalContext', 'LookIntoPerson', 'ADE20K']:
-    dataset_kwargs['download'] = True
+if args.classes:
+    classes = args.classes
+else:
+    dataset = getattr(data, args.dataset)
+    dataset_kwargs = generate_kwargs(args, dataset,
+        name=f'Dataset {args.dataset}',
+        keys=data.custom.keys,
+        globals=globals())
+    if args.dataset not in ['Cityscapes', 'PascalContext', 'LookIntoPerson', 'ADE20K']:
+        dataset_kwargs['download'] = True
 
-dataset = dataset(**dataset_kwargs, root='./data', download=True)
+    dataset = dataset(**dataset_kwargs, root='./data')
 
-classes = dataset.classes
-if args.dataset == 'Cityscapes':
-    classes = [cls.name for cls in dataset.classes if not cls.ignore_in_eval]
-if args.dataset == 'PascalContext':
-    classes = [cls for cls in dataset.classes if cls != 'background']
+    classes = dataset.classes
+    if args.dataset == 'Cityscapes':
+        classes = [cls.name for cls in dataset.classes if not cls.ignore_in_eval]
+    if args.dataset == 'PascalContext':
+        classes = [cls for cls in dataset.classes if cls != 'background']
 
 path = Path(os.path.join(args.root, f'{args.dataset}.txt'))
 os.makedirs(path.parent, exist_ok=True)
@@ -105,7 +111,7 @@ hardcoded_mapping = {
 }
 
 wnids = []
-for i, cls in enumerate(dataset.classes):
+for i, cls in enumerate(classes):
     if cls in hardcoded_mapping:
         synset = hardcoded_mapping[cls]
     else:
@@ -119,8 +125,9 @@ for i, cls in enumerate(dataset.classes):
     print(f'{wnid}: ({cls}) {synset.definition()}')
     wnids.append(wnid)
 
-write_wnids(wnids, path)
+if not args.classes:
+    write_wnids(wnids, path)
+    Colors.green(f'==> Wrote to {path}')
 
 if failures:
     Colors.red(f'==> Warning: failed to find wordnet IDs for {failures}')
-Colors.green(f'==> Wrote to {path}')
