@@ -12,4 +12,5 @@ class InverseNormalize:
 
     def to(self, device):
         self.mean = self.mean.to(device)
-        selff.std = self.std.to(device)
+        self.std = self.std.to(device)
+        return self

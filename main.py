@@ -163,6 +163,7 @@ def train(epoch):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s' % (
             train_loss / ( batch_idx + 1 ), 100. * metric.report(), metric.correct, metric.total, f'| {stat}' if stat else ''))
+        break
     scheduler.step()
 
 @analyzer.test_function
@@ -177,6 +178,7 @@ def test(epoch, checkpoint=True):
             outputs = net(inputs)
 
             if not args.disable_test_eval:
+                loss = criterion(outputs, targets)
                 test_loss += loss.item()
                 metric.forward(outputs, targets)
             transform = testset.transform_val_inverse().to(device)
@@ -184,6 +186,7 @@ def test(epoch, checkpoint=True):
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s' % (
                 test_loss / ( batch_idx + 1 ), 100. * metric.report(), metric.correct, metric.total, f'| {stat}' if stat else ''))
+            break
 
     # Save checkpoint.
     acc = 100. * metric.report()
