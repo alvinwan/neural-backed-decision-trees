@@ -21,13 +21,13 @@ from nbdt.thirdparty.wn import maybe_install_wordnet
 from nbdt.models.utils import load_state_dict, make_kwarg_optional
 
 maybe_install_wordnet()
-
+datasets = data.cifar.names + data.imagenet.names + data.custom.names
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
 parser.add_argument('--batch-size', default=512, type=int,
                     help='Batch size used for training')
 parser.add_argument('--epochs', '-e', default=200, type=int,
                     help='By default, lr schedule is scaled accordingly')
-parser.add_argument('--dataset', default='CIFAR10', choices=data.cifar.names + data.imagenet.names + data.custom.names)
+parser.add_argument('--dataset', default='CIFAR10', choices=datasets)
 parser.add_argument('--arch', default='ResNet18', choices=list(models.get_model_choices()))
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
@@ -40,6 +40,15 @@ parser.add_argument('--name', default='',
 parser.add_argument('--pretrained', action='store_true',
                     help='Download pretrained model. Not all models support this.')
 parser.add_argument('--eval', help='eval only', action='store_true')
+parser.add_argument('--dataset-test', choices=datasets,
+                    help='If not set, automatically set to train dataset')
+parser.add_argument('--disable-test-eval',
+                    help='Allows you to run model inference on a test dataset '
+                    ' different from train dataset. Use an anlayzer to define '
+                    'a metric.',
+                    action='store_true')
+
+# options specific to this project and its dataloaders
 parser.add_argument('--loss', choices=loss.names, default='CrossEntropyLoss')
 parser.add_argument('--metric', choices=metrics.names, default='top1')
 parser.add_argument('--analysis', choices=analysis.names, help='Run analysis after each epoch')
@@ -58,21 +67,24 @@ start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 # Data
 print('==> Preparing data..')
-dataset = getattr(data, args.dataset)
+dataset_train = getattr(data, args.dataset)
+dataset_test = getattr(data, args.dataset_test or args.dataset)
 
-transform_train = dataset.transform_train()
-transform_test = dataset.transform_val()
+transform_train = dataset_train.transform_train()
+transform_test = dataset_test.transform_val()
 
-dataset_kwargs = generate_kwargs(args, dataset, name=f'Dataset {args.dataset}', keys=data.custom.keys, globals=globals())
-trainset = dataset(**dataset_kwargs, root='./data', train=True, download=True, transform=transform_train)
-testset = dataset(**dataset_kwargs, root='./data', train=False, download=True, transform=transform_test)
+dataset_train_kwargs = generate_kwargs(args, dataset_train, name=f'Dataset {dataset_train.__class__.__name__}', keys=data.custom.keys, globals=globals())
+dataset_test_kwargs = generate_kwargs(args, dataset_test, name=f'Dataset {dataset_test.__class__.__name__}', keys=data.custom.keys, globals=globals())
+trainset = dataset_train(**dataset_train_kwargs, root='./data', train=True, download=True, transform=transform_train)
+testset = dataset_test(**dataset_test_kwargs, root='./data', train=False, download=True, transform=transform_test)
 
-assert trainset.classes == testset.classes, (trainset.classes, testset.classes)
+assert trainset.classes == testset.classes or args.disable_test_eval, (trainset.classes, testset.classes)
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
 Colors.cyan(f'Training with dataset {args.dataset} and {len(trainset.classes)} classes')
+Colors.cyan(f'Testing with dataset {args.dataset_test or args.dataset} and {len(testset.classes)} classes')
 
 # Model
 print('==> Building model..')
@@ -162,11 +174,12 @@ def test(epoch, checkpoint=True):
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
-            loss = criterion(outputs, targets)
 
-            test_loss += loss.item()
-            metric.forward(outputs, targets)
-            stat = analyzer.update_batch(outputs, targets, testset.transform_val_inverse()(inputs))
+            if not args.disable_test_eval:
+                test_loss += loss.item()
+                metric.forward(outputs, targets)
+                stat = analyzer.update_batch(outputs, targets, testset.transform_val_inverse()(inputs))
+            stat = analyzer.update_batch(outputs, targets)
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s' % (
                 test_loss / ( batch_idx + 1 ), 100. * metric.report(), metric.correct, metric.total, f'| {stat}' if stat else ''))
@@ -184,6 +197,12 @@ def test(epoch, checkpoint=True):
         os.makedirs('checkpoint', exist_ok=True)
         torch.save(state, f'./checkpoint/{checkpoint_fname}.pth')
         best_acc = acc
+
+if args.disable_test_eval and (not args.analysis or args.analysis == 'Noop'):
+    Colors.red(
+        ' * Warning: `disable_test_eval` is used but no custom metric '
+        '`--analysis` is supplied. I suggest supplying an analysis to perform '
+        ' custom loss and accuracy calculation.')
 
 if args.eval:
     if not args.resume and not args.pretrained:

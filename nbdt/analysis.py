@@ -1,10 +1,13 @@
-from nbdt.utils import set_np_printoptions
+from nbdt.utils import set_np_printoptions, Colors
+from nbdt.graph import wnid_to_synset, synset_to_wnid
 from nbdt.model import (
     SoftEmbeddedDecisionRules as SoftRules,
     HardEmbeddedDecisionRules as HardRules
 )
 from torch.distributions import Categorical
 import torch.nn.functional as F
+from collections import defaultdict
+import torch
 from nbdt import metrics
 import functools
 import numpy as np
@@ -16,12 +19,13 @@ from pathlib import Path
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules',
-    'Entropy', 'NBDTEntropy')
-keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric')
+    'Entropy', 'NBDTEntropy', 'Superclass', 'SuperclassNBDT')
+keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric',
+        'dataset_test', 'superclass_wnids')
 
 
 def add_arguments(parser):
-    pass
+    parser.add_argument('--superclass-wnids', nargs='*', type=str)
 
 
 def start_end_decorator(obj, name):
@@ -58,7 +62,7 @@ class StartEndContext:
 
 class Noop:
 
-    accepts_classes = lambda trainset, **kwargs: trainset.classes
+    accepts_classes = lambda testset, **kwargs: testset.classes
 
     def __init__(self, classes=()):
         set_np_printoptions()
@@ -192,6 +196,7 @@ class DecisionRules(Noop):
 
     def __init__(self, *args, Rules=HardRules, metric='top1', **kwargs):
         self.rules = Rules(*args, **kwargs)
+        super().__init__(self.rules.tree.classes)
         self.metric = getattr(metrics, metric)()
 
     def start_test(self, epoch):
@@ -206,7 +211,7 @@ class DecisionRules(Noop):
 
     def end_test(self, epoch):
         super().end_test(epoch)
-        accuracy = round(self.metric.correct / self.metric.total * 100., 2)
+        accuracy = round(self.metric.correct / (self.metric.total or 1) * 100., 2)
         print(f'[{self.name}] Acc: {accuracy}%, {self.metric.correct}/{self.metric.total}')
 
 
@@ -297,3 +302,122 @@ class NBDTEntropy(Entropy):
         decisions = self.rules.forward_with_decisions(outputs)
         entropies = [[node['entropy'] for node in path] for path in decisions[1]]
         return [max(ent) - min(ent) for ent in entropies]
+
+
+class Superclass(DecisionRules):
+    """Evaluate provided model on superclasses
+
+    Each wnid must be a hypernym of at least one label in the test set.
+    This metric will convert each predicted class into the corrresponding
+    wnid and report accuracy on this len(wnids)-class problem.
+    """
+
+    accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
+    accepts_dataset_test = lambda testset, **kwargs: testset.__class__.__name__
+    name = 'Superclass'
+    accepts_superclass_wnids = True
+
+    def __init__(self, *args, superclass_wnids, dataset_test=None,
+            Rules=SoftRules, metric=None, **kwargs):
+        """Pass wnids to classify.
+
+        Assumes index of each wnid is the index of the wnid in the rules.wnids
+        list. This agrees with Node.wnid_to_class_index as of writing, since
+        rules.wnids = get_wnids(...).
+        """
+        # TODO: for now, ignores metric
+        super().__init__(*args, **kwargs)
+
+        kwargs['dataset'] = dataset_test
+        kwargs.pop('path_graph', '')
+        kwargs.pop('path_wnids', '')
+        self.rules_test = Rules(*args, **kwargs)
+        self.superclass_wnids = superclass_wnids
+        self.total = self.correct = 0
+
+        self.mapping_target, self.new_to_old_classes_target = Superclass.build_mapping(self.rules_test.tree.wnids_leaves, superclass_wnids)
+        self.mapping_pred, self.new_to_old_classes_pred = Superclass.build_mapping(self.rules.tree.wnids_leaves, superclass_wnids)
+
+        mapped_classes = [self.classes[i] for i in (self.mapping_target >= 0).nonzero()]
+        Colors.cyan(
+            f'==> Mapped {len(mapped_classes)} classes to your superclasses: '
+            f'{mapped_classes}')
+
+    @staticmethod
+    def build_mapping(dataset_wnids, superclass_wnids):
+        new_to_old_classes = defaultdict(lambda: [])
+        mapping = []
+        for old_index, dataset_wnid in enumerate(dataset_wnids):
+            synset = wnid_to_synset(dataset_wnid)
+            hypernyms = Superclass.all_hypernyms(synset)
+            hypernym_wnids = list(map(synset_to_wnid, hypernyms))
+
+            value = -1
+            for new_index, superclass_wnid in enumerate(superclass_wnids):
+                if superclass_wnid in hypernym_wnids:
+                    value = new_index
+                    break
+            mapping.append(value)
+            new_to_old_classes[value].append(old_index)
+        mapping = torch.Tensor(mapping)
+        return mapping, new_to_old_classes
+
+    @staticmethod
+    def all_hypernyms(synset):
+        hypernyms = []
+        frontier = [synset]
+        while frontier:
+            current = frontier.pop(0)
+            hypernyms.append(current)
+            frontier.extend(current.hypernyms())
+        return hypernyms
+
+    def forward(self, outputs, targets):
+        if self.mapping_target.device != targets.device:
+            self.mapping_target = self.mapping_target.to(targets.device)
+
+        if self.mapping_pred.device != outputs.device:
+            self.mapping_pred = self.mapping_pred.to(outputs.device)
+
+        targets = self.mapping_target[targets]
+        outputs = outputs[targets >= 0]
+        targets = targets[targets >= 0]
+
+        outputs[:, self.mapping_pred < 0] = -100
+        if outputs.size(0) == 0:
+            return torch.Tensor([]), torch.Tensor([])
+        predicted = outputs.max(1)[1]
+        predicted = self.mapping_pred[predicted].to(targets.device)
+        return predicted, targets
+
+    def update_batch(self, outputs, targets):
+        predicted, targets = self.forward(outputs, targets)
+
+        n_samples = predicted.size(0)
+        self.total += n_samples
+        self.correct += (predicted == targets).sum().item()
+        accuracy = round(self.correct / (float(self.total) or 1), 4) * 100
+        return f'{self.name}: {accuracy}%'
+
+
+class SuperclassNBDT(Superclass):
+
+    name = 'Superclass-NBDT'
+
+    def __init__(self, *args, Rules=None, **kwargs):
+        super().__init__(*args, Rules=SoftRules, **kwargs)
+
+    def forward(self, outputs, targets):
+        outputs = self.rules.get_node_logits(
+            outputs,
+            new_to_old_classes=self.new_to_old_classes_pred,
+            num_classes=max(self.new_to_old_classes_pred) + 1)
+        predicted = outputs.max(1)[1].to(targets.device)
+
+        if self.mapping_target.device != targets.device:
+            self.mapping_target = self.mapping_target.to(targets.device)
+
+        targets = self.mapping_target[targets]
+        predicted = predicted[targets >= 0]
+        targets = targets[targets >= 0]
+        return predicted, targets
