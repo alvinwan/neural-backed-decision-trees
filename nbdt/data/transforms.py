@@ -9,3 +9,7 @@ class InverseNormalize:
 
     def __call__(self, sample):
         return (sample * self.std) + self.mean
+
+    def to(self, device):
+        self.mean = self.mean.to(device)
+        selff.std = self.std.to(device)
