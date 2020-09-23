@@ -383,7 +383,7 @@ python main.py --dataset=CIFAR10 --arch=wrn28_10_cifar10 --hierarchy=induced-wrn
 </div>
 </details>
 
-<details><summary><b>Logging maximum and minimum 'path entropy' samples.</summary>
+<details><summary><b>Logging maximum and minimum 'path entropy' samples.</b></summary>
 
 ```
 # get min and max entropy samples for baseline neural network
@@ -400,7 +400,7 @@ python main.py --dataset=TinyImagenet200 --arch=ResNet18  --eval --analysis=NBDT
 
 </details>
 
-<details><summary><b>Running zero-shot evaluation on superclasses.</summary>
+<details><summary><b>Running zero-shot evaluation on superclasses.</b></summary>
 
 ```
 # get wnids for animal and vehicle -- use the outputted wnids for below commands
