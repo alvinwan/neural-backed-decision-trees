@@ -465,7 +465,7 @@ class VisualizeDecisionNode(ScoreSave):
             Rules=HardRules, path_graph=None, path_wnids=None, dataset=None,
             path='out/vis-nbdt-{wnid}-{{epoch}}-{{time}}/image-{{suffix}}-{{i}}-{{score:.2e}}.jpg',
             **kwargs):
-        super().__init__(*args, path=path.format(wnid=wnid), **kwargs)
+        super().__init__(*args, path=path.format(wnid=visualize_decision_node_wnid), **kwargs)
         self.rules = Rules(
             path_graph=path_graph, path_wnids=path_wnids, dataset=dataset)
         self.wnid = visualize_decision_node_wnid
