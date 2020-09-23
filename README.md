@@ -383,7 +383,7 @@ python main.py --dataset=CIFAR10 --arch=wrn28_10_cifar10 --hierarchy=induced-wrn
 </div>
 </details>
 
-<details><summary><b>Logging maximum and minimum 'path entropy' samples.</b></summary>
+<details><summary><b>Logging maximum and minimum 'path entropy' samples.</b> <i>[click to expand]</i></summary>
 
 ```
 # get min and max entropy samples for baseline neural network
@@ -400,7 +400,7 @@ python main.py --dataset=TinyImagenet200 --arch=ResNet18  --eval --analysis=NBDT
 
 </details>
 
-<details><summary><b>Running zero-shot evaluation on superclasses.</b></summary>
+<details><summary><b>Running zero-shot evaluation on superclasses.</b> <i>[click to expand]</i></summary>
 
 ```
 # get wnids for animal and vehicle -- use the outputted wnids for below commands
@@ -414,6 +414,23 @@ wget https://github.com/alvinwan/neural-backed-decision-trees/releases/download/
 
 # evaluate CIFAR10-trained NBDT-ResNet18 on "Animal vs. Vehicle" superclasses, with images from TinyImagenet200
 python main.py --dataset-test=TinyImagenet200 --dataset=CIFAR10 --disable-test-eval --eval --analysis=SuperclassNBDT --superclass-wnids n00015388 n04524313  --loss=SoftTreeSupLoss --resume
+```
+</details>
+
+<details><summary><b>Visualize decision nodes using 'prototypical' samples.</b> <i>[click to expand]</i></summary>
+
+```
+# get wnids for animal and vehicle -- use the outputted wnids for below commands
+nbdt-wnids --classes animal vehicle
+
+# find samples representative of the "animal" node for CIFAR10-trained ResNet18
+python main.py --dataset-test=TinyImagenet200 --dataset=CIFAR10 --disable-test-eval --eval --analysis=VisualizeDecisionNode --vdnw=n00015388 --pretrained
+
+# download public checkpoint
+wget https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR100-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth -O checkpoint/ckpt-CIFAR10-ResNet18-induced-SoftTreeSupLoss.pth
+
+# find samples representative of the "animal" node for CIFAR10-trained NBDT with ResNet18 backbone
+python main.py --dataset-test=TinyImagenet200 --dataset=CIFAR10 --disable-test-eval --eval --analysis=VisualizeDecisionNode --vdnw=n00015388 --loss=SoftTreeSupLoss --resume --hierarchy=induced-ResNet18
 ```
 
 </details>
