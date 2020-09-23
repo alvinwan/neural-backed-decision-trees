@@ -475,4 +475,4 @@ class VisualizeDecisionNode(ScoreSave, Superclass):
 
         similarity = logits[:, child_index].detach().cpu().numpy()
         labels = self.mapping_target[targets]
-        return [float(s) for s, l in zip(similarity, labels) if l >= 0]
+        return [float(s) if l >= 0 else 0 for s, l in zip(similarity, labels)]
