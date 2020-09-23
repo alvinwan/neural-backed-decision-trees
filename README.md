@@ -424,13 +424,14 @@ python main.py --dataset-test=TinyImagenet200 --dataset=CIFAR10 --disable-test-e
 nbdt-wnids --classes animal vehicle
 
 # find samples representative of the "animal" node for CIFAR10-trained ResNet18
-python main.py --dataset-test=TinyImagenet200 --dataset=CIFAR10 --disable-test-eval --eval --analysis=VisualizeDecisionNode --vdnw=n00015388 --pretrained
+python main.py --dataset-test=Imagenet1000 --dataset=CIFAR10 --disable-test-eval --eval --analysis=VisualizeDecisionNode --vdnw=n00015388 --pretrained
 
 # download public checkpoint
 wget https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR100-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth -O checkpoint/ckpt-CIFAR10-ResNet18-induced-SoftTreeSupLoss.pth
 
 # find samples representative of the "animal" node for CIFAR10-trained NBDT with ResNet18 backbone
-python main.py --dataset-test=TinyImagenet200 --dataset=CIFAR10 --disable-test-eval --eval --analysis=VisualizeDecisionNode --vdnw=n00015388 --loss=SoftTreeSupLoss --resume --hierarchy=induced-ResNet18
+python main.py --dataset-test=Imagenet1000 --dataset=CIFAR10 --disable-test-eval --eval --analysis=VisualizeDecisionNode --vdnw=n00015388 --loss=SoftTreeSupLoss --resume  # option 1 - use wrn hierarchy
+python main.py --dataset-test=Imagenet1000 --dataset=CIFAR10 --disable-test-eval --eval --analysis=VisualizeDecisionNode --vdnw=n01466257 --loss=SoftTreeSupLoss --resume --hierarchy=induced-ResNet18  # option 2 - use hierarchy model was actually trained on (note wnid changes)
 ```
 
 </details>
