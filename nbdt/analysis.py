@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from nbdt import metrics
 import functools
 import numpy as np
+import os
 
 
 __all__ = names = (
@@ -86,7 +87,10 @@ class Noop:
     def start_train(self, epoch):
         assert epoch == self.epoch
 
-    def update_batch(self, outputs, targets):
+    def update_batch(self, outputs, targets, images):
+        self._update_batch(outputs, targets)
+
+    def _update_batch(self, outputs, targets):
         pass
 
     def end_train(self, epoch):
@@ -117,8 +121,8 @@ class ConfusionMatrix(Noop):
         super().start_test(epoch)
         self.m = np.zeros((self.k, self.k))
 
-    def update_batch(self, outputs, targets):
-        super().update_batch(outputs, targets)
+    def _update_batch(self, outputs, targets):
+        super()._update_batch(outputs, targets)
         _, predicted = outputs.max(1)
         if len(predicted.shape) == 1:
             predicted = predicted.numpy().ravel()
@@ -164,8 +168,8 @@ class IgnoredSamples(Noop):
         super().start_test(epoch)
         self.ignored = 0
 
-    def update_batch(self, outputs, targets):
-        super().update_batch(outputs, targets)
+    def _update_batch(self, outputs, targets):
+        super()._update_batch(outputs, targets)
         self.ignored += outputs[:,0].eq(-1).sum().item()
         return self.ignored
 
@@ -191,8 +195,8 @@ class DecisionRules(Noop):
     def start_test(self, epoch):
         self.metric.clear()
 
-    def update_batch(self, outputs, targets):
-        super().update_batch(outputs, targets)
+    def _update_batch(self, outputs, targets):
+        super()._update_batch(outputs, targets)
         outputs = self.rules.forward(outputs)
         self.metric.forward(outputs, targets)
         accuracy = round(self.metric.correct / float(self.metric.total), 4) * 100
@@ -201,7 +205,7 @@ class DecisionRules(Noop):
     def end_test(self, epoch):
         super().end_test(epoch)
         accuracy = round(self.metric.correct / self.metric.total * 100., 2)
-        print(f'{self.name} Accuracy: {accuracy}%, {self.metric.correct}/{self.metric.total}')
+        print(f'[{self.name}] Acc: {accuracy}%, {self.metric.correct}/{self.metric.total}')
 
 
 class HardEmbeddedDecisionRules(DecisionRules):
@@ -237,8 +241,12 @@ class EntropyStatistics(Noop):
         self.min = []
         self.i = 0
 
-    def update_batch(self, outputs, targets):
-        super().update_batch(outputs, targets)
+    @staticmethod
+    def first(t):
+        return t[0]
+
+    def update_batch(self, outputs, targets, images):
+        super().update_batch(outputs, targets, images)
 
         probs = F.softmax(outputs, dim=1)
         e = list(Categorical(probs=probs).entropy().cpu().detach().numpy())
@@ -247,9 +255,13 @@ class EntropyStatistics(Noop):
             avg_i_minus_1 = self.avg
             self.avg = avg_i_minus_1 + ((e_i - avg_i_minus_1) / self.i)
             self.std = self.std + (e_i - avg_i_minus_1) * (e_i - self.avg)
-        self.max = list(sorted(self.max + e, reverse=True))[:self.k]
-        self.min = list(sorted(self.min + e))[:self.k]
+
+        e_images = list(zip(e, images))
+        self.max = list(sorted(self.max + e_images, reverse=True, key=EntropyStatistics.first))[:self.k]
+        self.min = list(sorted(self.min + e_images, key=EntropyStatistics.first))[:self.k]
 
     def end_test(self, epoch):
         super().end_test(epoch)
-        print(f'[Entropy] avg {self.avg:.2e}, std {self.std:.2e}, max {max(self.max):.2e}, min {min(self.min):.2e}')
+        _max = max(self.max, key=EntropyStatistics.first)[0]
+        _min = min(self.min, key=EntropyStatistics.first)[0]
+        print(f'[Entropy] avg {self.avg:.2e}, std {self.std:.2e}, max {_max:.2e}, min {_min:.2e}')
