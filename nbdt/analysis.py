@@ -9,6 +9,8 @@ from nbdt import metrics
 import functools
 import numpy as np
 import os
+from PIL import Image
+from pathlib import Path
 
 
 __all__ = names = (
@@ -225,10 +227,11 @@ class SoftEmbeddedDecisionRules(DecisionRules):
 
 class EntropyStatistics(Noop):
 
-    def __init__(self, classes=(), k=20):
+    def __init__(self, classes=(), k=20, path='out/entropy-{epoch}/image-{suffix}-{i}.jpg'):
         super().__init__(classes)
         self.reset()
         self.k = k
+        self.path = Path(path)
 
     def start_test(self, epoch):
         super().start_test(epoch)
@@ -262,6 +265,12 @@ class EntropyStatistics(Noop):
 
     def end_test(self, epoch):
         super().end_test(epoch)
-        _max = max(self.max, key=EntropyStatistics.first)[0]
-        _min = min(self.min, key=EntropyStatistics.first)[0]
-        print(f'[Entropy] avg {self.avg:.2e}, std {self.std:.2e}, max {_max:.2e}, min {_min:.2e}')
+        print(f'[Entropy] avg {self.avg:.2e}, std {self.std:.2e}, max {self.max[0][0]:.2e}, min {self.min[0][0]:.2e}')
+
+        os.makedirs(str(self.path.parent).format(epoch=self.epoch), exist_ok=True)
+        for name, suffix, lst in (('highest', 'max', self.max), ('lowest', 'min', self.min)):
+            print(f'==> Saving {self.k} {name} entropy images in {self.path}')
+            for i, (e, image) in enumerate(lst):
+                Image.fromarray(
+                    (image.permute(1, 2, 0) * 255).cpu().detach().numpy().astype(np.uint8)
+                ).save(str(self.path).format(epoch=self.epoch, i=i, suffix=suffix))
