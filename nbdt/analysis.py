@@ -20,13 +20,15 @@ import time
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules',
-    'Entropy', 'NBDTEntropy', 'Superclass', 'SuperclassNBDT')
+    'Entropy', 'NBDTEntropy', 'Superclass', 'SuperclassNBDT',
+    'VisualizeDecisionNode')
 keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric',
-        'dataset_test', 'superclass_wnids')
+        'dataset_test', 'superclass_wnids', 'visualize_decision_node_wnid')
 
 
 def add_arguments(parser):
     parser.add_argument('--superclass-wnids', nargs='*', type=str)
+    parser.add_argument('--visualize-decision-node-wnid', '--vdnw', type=str)
 
 
 def start_end_decorator(obj, name):
@@ -234,8 +236,8 @@ class SoftEmbeddedDecisionRules(DecisionRules):
 class ScoreSave(Noop):
     """Score each sample and save the highest/lowest scorers"""
 
-    def __init__(self, classes=(), k=20, path='out/score-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg'):
-        super().__init__(classes)
+    def __init__(self, *args, classes=(), k=20, path='out/score-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg', **kwargs):
+        super().__init__(*args, classes=classes, **kwargs)
         self.reset()
         self.k = k
         self.path = Path(path)
@@ -249,7 +251,7 @@ class ScoreSave(Noop):
         self.max = []
         self.min = []
 
-    def score(self, outputs, images):
+    def score(self, outputs, targets, images):
         raise NotImplementedError()
 
     @staticmethod
@@ -259,12 +261,13 @@ class ScoreSave(Noop):
     def update_batch(self, outputs, targets, images):
         super().update_batch(outputs, targets, images)
 
-        scores = self.score(outputs, images)
+        scores = self.score(outputs, targets, images)
         ois = list(zip(outputs, images, scores))
         self.max = list(sorted(self.max + ois, reverse=True, key=ScoreSave.last))[:self.k]
         self.min = list(sorted(self.min + ois, key=ScoreSave.last))[:self.k]
 
     def end_test(self, epoch):
+        super().end_test(epoch)
         directory = str(self.path.parent).format(time=self.time, epoch=self.epoch)
         os.makedirs(directory, exist_ok=True)
         for name, suffix, lst in (('highest', 'max', self.max), ('lowest', 'min', self.min)):
@@ -289,7 +292,7 @@ class Entropy(ScoreSave):
         self.std = 0
         self.i = 0
 
-    def score(self, outputs, images):
+    def score(self, outputs, targets, images):
         probs = F.softmax(outputs, dim=1)
         entropies = list(Categorical(probs=probs).entropy().cpu().detach().numpy())
         return entropies
@@ -326,7 +329,7 @@ class NBDTEntropy(Entropy):
         self.rules = Rules(
             path_graph=path_graph, path_wnids=path_wnids, dataset=dataset)
 
-    def score(self, outputs, images):
+    def score(self, outputs, targets, images):
         decisions = self.rules.forward_with_decisions(outputs)
         entropies = [[node['entropy'] for node in path] for path in decisions[1]]
         return [max(ent) - min(ent) for ent in entropies]
@@ -418,7 +421,7 @@ class Superclass(DecisionRules):
         predicted = self.mapping_pred[predicted].to(targets.device)
         return predicted, targets
 
-    def update_batch(self, outputs, targets):
+    def _update_batch(self, outputs, targets):
         predicted, targets = self.forward(outputs, targets)
 
         n_samples = predicted.size(0)
@@ -449,3 +452,27 @@ class SuperclassNBDT(Superclass):
         predicted = predicted[targets >= 0]
         targets = targets[targets >= 0]
         return predicted, targets
+
+
+class VisualizeDecisionNode(ScoreSave, Superclass):
+    """Compute node similarity and save most/least similar samples"""
+
+    accepts_visualize_decision_node_wnid = True
+
+    def __init__(self, visualize_decision_node_wnid, *args,
+            path='out/vdn-{wnid}-{{epoch}}-{{time}}/image-{{suffix}}-{{i}}-{{score:.2e}}.jpg',
+            **kwargs):
+        super().__init__(
+            *args, path=path.format(wnid=visualize_decision_node_wnid), **kwargs)
+        self.wnid = visualize_decision_node_wnid
+
+    def score(self, outputs, targets, images):
+        assert self.wnid in self.rules.tree.wnid_to_node, [
+            (node.name, node.wnid) for node in self.rules.tree.wnid_to_node.values()]
+        node = self.rules.tree.wnid_to_node[self.wnid]
+        logits = self.rules.get_node_logits(outputs, node=node.parent)
+        child_index = node.parent.wnid_to_child_index(node.wnid)
+
+        similarity = logits[:, child_index].detach().cpu().numpy()
+        labels = self.mapping_target[targets]
+        return [float(s) if l >= 0 else 0 for s, l in zip(similarity, labels)]

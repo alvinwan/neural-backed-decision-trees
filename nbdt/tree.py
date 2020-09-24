@@ -54,6 +54,9 @@ class Node:
     def wnid_to_class_index(self, wnid):
         return self.tree.wnids_leaves.index(wnid)
 
+    def wnid_to_child_index(self, wnid):
+        return [child.wnid for child in self.children].index(wnid)
+
     @property
     def parent(self):
         if not self.parents:
