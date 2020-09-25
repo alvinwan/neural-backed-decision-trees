@@ -254,7 +254,7 @@ def generate_checkpoint_fname(dataset, arch, path_graph, wnid=None, name='',
     fname += '-' + arch
     if name:
         fname += '-' + name
-    if path_graph:
+    if path_graph and 'TreeSupLoss' in loss:
         path = Path(path_graph)
         fname += '-' + path.stem.replace('graph-', '', 1)
     if include_labels:

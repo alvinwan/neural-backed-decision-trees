@@ -28,8 +28,6 @@ def add_arguments(parser):
 def set_default_values(args):
     assert not (args.hierarchy and args.path_graph), \
         'Only one, between --hierarchy and --path-graph can be provided.'
-    if 'TreeSupLoss' not in args.loss:
-        return
     if args.hierarchy and not args.path_graph:
         args.path_graph = hierarchy_to_path_graph(args.dataset, args.hierarchy)
     if not args.path_graph:
