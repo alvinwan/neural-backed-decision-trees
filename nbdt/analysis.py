@@ -20,7 +20,9 @@ import time
 __all__ = names = (
     'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
     'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules',
-    'Entropy', 'NBDTEntropy', 'Superclass', 'SuperclassNBDT')
+    'Entropy', 'NBDTEntropy', 'Superclass', 'SuperclassNBDT',
+    'VisualizeDecisionNode', 'NBDTEntropyMaxMin', 'NBDTEntropyBottom',
+    'TopEntropy', 'TopDifference')
 keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric',
         'dataset_test', 'superclass_wnids')
 
@@ -280,8 +282,8 @@ class ScoreSave(Noop):
 class Entropy(ScoreSave):
     """Compute entropy statistics and save highest/lowest entropy samples"""
 
-    def __init__(self, classes=(), k=20, path='out/entropy-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg'):
-        super().__init__(classes, k=k, path=path)
+    def __init__(self, classes=(), k=100, path='out/entropy-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg'):
+        super().__init__(classes=classes, k=k, path=path)
 
     def reset(self):
         super().reset()
@@ -311,7 +313,7 @@ class Entropy(ScoreSave):
         print(f'[Entropy] avg {self.avg:.2e}, std {self.std:.2e}, max {self.max[0][0]:.2e}, min {self.min[0][0]:.2e}')
 
 
-class NBDTEntropy(Entropy):
+class NBDTEntropyMaxMin(Entropy):
     """Collect and log samples according to NBDT path entropy difference"""
 
     accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
@@ -330,6 +332,43 @@ class NBDTEntropy(Entropy):
         decisions = self.rules.forward_with_decisions(outputs)
         entropies = [[node['entropy'] for node in path] for path in decisions[1]]
         return [max(ent) - min(ent) for ent in entropies]
+
+
+class NBDTEntropyBottom(NBDTEntropyMaxMin):
+
+    def score(self, outputs, targets, images):
+        decisions = self.rules.forward_with_decisions(outputs)
+
+        scores = []
+        for path in decisions[1]:
+            entropies = sorted([node['entropy'] for node in path])
+            bot1, bot2 = entropies[:2]
+        scores.append(bot2 - bot1)
+
+        return scores
+
+
+class TopEntropy(Entropy):
+    """Collect and log samples according to 'top2' entropy'"""
+
+    def score(self, outputs, targets, images):
+        probs = F.softmax(outputs, dim=1)
+        sorted, _ = torch.sort(probs, dim=1)
+        top2 = Categorical(probs=sorted[:, :2]).entropy()
+
+        rest = torch.cat( (sorted[:, :2].mean(dim=1, keepdims=True), sorted[:, 2:]), dim=1)
+        rest2 = Categorical(probs=rest).entropy()
+
+        return list( (top2 - rest2).cpu().detach().numpy() )
+
+
+class TopDifference(ScoreSave):
+    """Collect and log samples according top2 difference"""
+
+    def score(self, outputs, targets, images):
+        probs = F.softmax(outputs, dim=1)
+        sorted, _ = torch.sort(probs, dim=1)
+        return list( (sorted[:, -1] - sorted[:, -2]).cpu().detach().numpy() )
 
 
 class Superclass(DecisionRules):
