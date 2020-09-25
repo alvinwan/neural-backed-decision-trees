@@ -413,6 +413,24 @@ wget https://github.com/alvinwan/neural-backed-decision-trees/releases/download/
 # evaluate CIFAR10-trained NBDT-ResNet18 on "Animal vs. Vehicle" superclasses, with images from TinyImagenet200
 python main.py --dataset-test=TinyImagenet200 --dataset=CIFAR10 --disable-test-eval --eval --analysis=SuperclassNBDT --superclass-wnids n00015388 n04524313  --loss=SoftTreeSupLoss --resume
 ```
+</details>
+
+<details><summary><b>Visualize decision nodes using 'prototypical' samples.</b> <i>[click to expand]</i></summary>
+
+```
+# get wnids for animal and vehicle -- use the outputted wnids for below commands
+nbdt-wnids --classes animal vehicle
+
+# find samples representative for CIFAR10-trained ResNet18, from animal and vehicle ImageNet images
+python main.py --dataset-test=Imagenet1000 --dataset=CIFAR10 --disable-test-eval --eval --analysis=VisualizeDecisionNode --vdnw=n00015388 --pretrained --superclass-wnids n00015388 n04524313  # samples for "animal" node
+python main.py --dataset-test=Imagenet1000 --dataset=CIFAR10 --disable-test-eval --eval --analysis=VisualizeDecisionNode --vdnw=n00015388 --pretrained --superclass-wnids n00015388 n04524313  # samples for "ungulate" node
+
+# download public checkpoint
+wget https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR100-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth -O checkpoint/ckpt-CIFAR10-ResNet18-induced-SoftTreeSupLoss.pth
+
+# find samples representative for CIFAR10-trained NBDT with ResNet18 backbone, from animal and vehicle ImageNet images
+python main.py --dataset-test=Imagenet1000 --dataset=CIFAR10 --disable-test-eval --eval --analysis=VisualizeDecisionNode --vdnw=n01466257 --loss=SoftTreeSupLoss --resume --hierarchy=induced-ResNet18 --superclass-wnids n00015388 n04524313  # samples for "animal" node
+```
 
 </details>
 
