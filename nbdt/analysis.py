@@ -24,11 +24,12 @@ __all__ = names = (
     'VisualizeDecisionNode', 'NBDTEntropyMaxMin', 'NBDTEntropyBottom',
     'TopEntropy', 'TopDifference')
 keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric',
-        'dataset_test', 'superclass_wnids')
+        'dataset_test', 'superclass_wnids', 'save_k')
 
 
 def add_arguments(parser):
     parser.add_argument('--superclass-wnids', nargs='*', type=str)
+    parser.add_argument('--save-k', type=int, default=20)
 
 
 def start_end_decorator(obj, name):
@@ -236,10 +237,12 @@ class SoftEmbeddedDecisionRules(DecisionRules):
 class ScoreSave(Noop):
     """Score each sample and save the highest/lowest scorers"""
 
-    def __init__(self, classes=(), k=20, path='out/score-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg'):
+    accepts_save_k = True
+
+    def __init__(self, classes=(), path='out/score-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg', save_k=20):
         super().__init__(classes)
         self.reset()
-        self.k = k
+        self.k = save_k
         self.path = Path(path)
         self.time = int(time.time())
 
@@ -282,8 +285,8 @@ class ScoreSave(Noop):
 class Entropy(ScoreSave):
     """Compute entropy statistics and save highest/lowest entropy samples"""
 
-    def __init__(self, classes=(), k=100, path='out/entropy-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg'):
-        super().__init__(classes=classes, k=k, path=path)
+    def __init__(self, *args, path='out/entropy-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg', **kwargs):
+        super().__init__(*args, path=path, **kwargs)
 
     def reset(self):
         super().reset()
@@ -309,7 +312,7 @@ class Entropy(ScoreSave):
 
     def end_test(self, epoch):
         super().end_test(epoch)
-        print(f'[Entropy] avg {self.avg:.2e}, std {self.std:.2e}, max {self.max[0][0]:.2e}, min {self.min[0][0]:.2e}')
+        print(f'[Entropy] avg {self.avg:.2e}, std {self.std:.2e}, max {float(self.max[0][-1]):.2e}, min {float(self.min[0][-1]):.2e}')
 
 
 class NBDTEntropyMaxMin(Entropy):
