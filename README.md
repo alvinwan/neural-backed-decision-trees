@@ -387,15 +387,17 @@ python main.py --dataset=CIFAR10 --arch=wrn28_10_cifar10 --hierarchy=induced-wrn
 
 ```
 # get min and max entropy samples for baseline neural network
-python main.py --dataset=CIFAR10 --arch=ResNet18 --pretrained --eval --dataset-test=Imagenet1000 --disable-test-eval --analysis=Entropy  # CIFAR10 network on Imagenet
-python main.py --dataset=TinyImagenet200 --arch=ResNet18 --pretrained --eval --analysis=Entropy  # TinyImagenet network on TinyImagenet
+python main.py --pretrained --dataset=TinyImagenet200 --eval --dataset-test=Imagenet1000 --disable-test-eval --analysis=TopEntropy  
 
 # download public checkpoint
-wget https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR10-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth -O checkpoint/ckpt-CIFAR10-ResNet18-induced-SoftTreeSupLoss.pth
+wget https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-TinyImagenet200-ResNet18-induced-ResNet18-SoftTreeSupLoss-tsw10.0.pth -O checkpoint/ckpt-TinyImagenet200-ResNet18-induced-ResNet18-SoftTreeSupLoss-tsw10.0.pth
 
 # get min and max 'path entropy' samples for NBDT
-python main.py --dataset=CIFAR10 --arch=ResNet18  --eval --dataset-test=Imagenet1000 --disable-test-eval --analysis=NBDTEntropy --loss=SoftTreeSupLoss --resume --hierarchy=induced-ResNet18  # CIFAR10 network on Imagenet
-python main.py --dataset=TinyImagenet200 --arch=ResNet18  --eval --analysis=NBDTEntropy --loss=SoftTreeSupLoss --resume --hierarchy=induced-ResNet18 --tree-supervision-weight 10  # TinyImagenet network on TinyImagenet
+python main.py --dataset TinyImagenet200 --resume --path-resume checkpoint/ckpt-TinyImagenet200-ResNet18-induced-ResNet18-SoftTreeSupLoss-tsw10.0.pth --eval --analysis NBDTEntropyMaxMin --dataset-test=Imagenet1000 --disable-test-eval --hierarchy induced-ResNet18
+
+# CIFAR10
+wget https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR100-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth -O checkpoint/ckpt-CIFAR10-ResNet18-induced-SoftTreeSupLoss.pth
+python main.py --resume --path-resume checkpoint/ckpt-CIFAR10-ResNet18-induced-SoftTreeSupLoss.pth --eval --analysis NBDTEntropyMaxMin --dataset-test=Imagenet1000 --disable-test-eval --hierarchy induced-ResNet18
 ```
 
 </details>
