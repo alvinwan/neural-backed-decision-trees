@@ -383,26 +383,22 @@ python main.py --dataset=CIFAR10 --arch=wrn28_10_cifar10 --hierarchy=induced-wrn
 </div>
 </details>
 
-<details><summary><b>Logging maximum and minimum 'path entropy' samples.</b></summary>
+<details><summary><b>Logging maximum and minimum 'path entropy' samples.</b> <i>[click to expand]</i></summary>
 
 ```
 # get min and max entropy samples for baseline neural network
-python main.py --pretrained --dataset=TinyImagenet200 --eval --dataset-test=Imagenet1000 --disable-test-eval --analysis=TopEntropy  
+python main.py --pretrained --dataset=TinyImagenet200 --eval --dataset-test=Imagenet1000 --disable-test-eval --analysis=TopEntropy  # or Entropy, or TopDifference
 
 # download public checkpoint
 wget https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-TinyImagenet200-ResNet18-induced-ResNet18-SoftTreeSupLoss-tsw10.0.pth -O checkpoint/ckpt-TinyImagenet200-ResNet18-induced-ResNet18-SoftTreeSupLoss-tsw10.0.pth
 
 # get min and max 'path entropy' samples for NBDT
 python main.py --dataset TinyImagenet200 --resume --path-resume checkpoint/ckpt-TinyImagenet200-ResNet18-induced-ResNet18-SoftTreeSupLoss-tsw10.0.pth --eval --analysis NBDTEntropyMaxMin --dataset-test=Imagenet1000 --disable-test-eval --hierarchy induced-ResNet18
-
-# CIFAR10
-wget https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR100-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth -O checkpoint/ckpt-CIFAR10-ResNet18-induced-SoftTreeSupLoss.pth
-python main.py --resume --path-resume checkpoint/ckpt-CIFAR10-ResNet18-induced-SoftTreeSupLoss.pth --eval --analysis NBDTEntropyMaxMin --dataset-test=Imagenet1000 --disable-test-eval --hierarchy induced-ResNet18
 ```
 
 </details>
 
-<details><summary><b>Running zero-shot evaluation on superclasses.</b></summary>
+<details><summary><b>Running zero-shot evaluation on superclasses.</b> <i>[click to expand]</i></summary>
 
 ```
 # get wnids for animal and vehicle -- use the outputted wnids for below commands
