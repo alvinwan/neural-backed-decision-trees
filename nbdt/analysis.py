@@ -251,7 +251,7 @@ class ScoreSave(Noop):
         self.max = []
         self.min = []
 
-    def score(self, outputs, images):
+    def score(self, outputs, targets, images):
         raise NotImplementedError()
 
     @staticmethod
@@ -261,7 +261,7 @@ class ScoreSave(Noop):
     def update_batch(self, outputs, targets, images):
         super().update_batch(outputs, targets, images)
 
-        scores = self.score(outputs, images)
+        scores = self.score(outputs, targets, images)
         ois = list(zip(outputs, images, scores))
         self.max = list(sorted(self.max + ois, reverse=True, key=ScoreSave.last))[:self.k]
         self.min = list(sorted(self.min + ois, key=ScoreSave.last))[:self.k]
@@ -291,7 +291,7 @@ class Entropy(ScoreSave):
         self.std = 0
         self.i = 0
 
-    def score(self, outputs, images):
+    def score(self, outputs, targets, images):
         probs = F.softmax(outputs, dim=1)
         entropies = list(Categorical(probs=probs).entropy().cpu().detach().numpy())
         return entropies
@@ -306,7 +306,6 @@ class Entropy(ScoreSave):
             avg_i_minus_1 = self.avg
             self.avg = avg_i_minus_1 + ((e_i - avg_i_minus_1) / self.i)
             self.std = self.std + (e_i - avg_i_minus_1) * (e_i - self.avg)
-
 
     def end_test(self, epoch):
         super().end_test(epoch)
@@ -328,7 +327,7 @@ class NBDTEntropyMaxMin(Entropy):
         self.rules = Rules(
             path_graph=path_graph, path_wnids=path_wnids, dataset=dataset)
 
-    def score(self, outputs, images):
+    def score(self, outputs, targets, images):
         decisions = self.rules.forward_with_decisions(outputs)
         entropies = [[node['entropy'] for node in path] for path in decisions[1]]
         return [max(ent) - min(ent) for ent in entropies]
