@@ -6,6 +6,7 @@ from nbdt.utils import DATASET_TO_NUM_CLASSES, DATASETS
 from collections import defaultdict
 from nbdt.thirdparty.wn import get_wnids, FakeSynset, wnid_to_synset, wnid_to_name
 from nbdt.thirdparty.nx import get_leaves, get_leaf_to_path, read_graph
+from nbdt.tree import Tree
 from nbdt.utils import (
     dataset_to_default_path_graph,
     dataset_to_default_path_wnids,
@@ -23,7 +24,9 @@ __all__ = names = ('CIFAR10IncludeLabels',
                    'Imagenet1000ExcludeLabels', 'CIFAR10ResampleLabels',
                    'CIFAR100ResampleLabels', 'TinyImagenet200ResampleLabels',
                    'Imagenet1000ResampleLabels')
-keys = ('include_labels', 'exclude_labels', 'include_classes', 'probability_labels')
+keys = (
+    'include_labels', 'exclude_labels', 'include_classes', 'probability_labels',
+)
 
 
 def add_arguments(parser):

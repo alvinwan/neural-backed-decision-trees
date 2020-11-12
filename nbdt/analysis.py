@@ -204,6 +204,7 @@ class DecisionRules(Noop):
         self.rules = Rules(*args, **kwargs)
         super().__init__(self.rules.tree.classes)
         self.metric = getattr(metrics, metric)()
+        self.best_accuracy = 0
 
     def start_test(self, epoch):
         self.metric.clear()
@@ -217,8 +218,9 @@ class DecisionRules(Noop):
 
     def end_test(self, epoch):
         super().end_test(epoch)
-        accuracy = round(self.metric.correct / (self.metric.total or 1) * 100., 2)
-        print(f'[{self.name}] Acc: {accuracy}%, {self.metric.correct}/{self.metric.total}')
+        accuracy = round(self.metric.correct / self.metric.total * 100., 2)
+        self.best_accuracy = max(accuracy, self.best_accuracy)
+        print(f'[{self.name}] Accuracy: {accuracy}%, {self.metric.correct}/{self.metric.total} | {self.name} Best Accuracy: {self.best_accuracy}%')
 
 
 class HardEmbeddedDecisionRules(DecisionRules):

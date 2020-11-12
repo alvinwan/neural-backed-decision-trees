@@ -72,10 +72,10 @@ def generate_kwargs(args, object, name='Dataset', keys=(), globals={}, kwargs=No
         if callable(accepts_key):
             kwargs[key] = accepts_key(**globals)
             Colors.cyan(f'{key}:\t(callable)')
-        elif accepts_key and value:
+        elif accepts_key and value is not None:
             kwargs[key] = value
             Colors.cyan(f'{key}:\t{value}')
-        elif value:
+        elif value is not None:
             Colors.red(
                 f'Warning: {name} does not support custom '
                 f'{key}: {value}')
@@ -246,12 +246,16 @@ def set_np_printoptions():
 
 def generate_checkpoint_fname(dataset, arch, path_graph, wnid=None, name='',
         trainset=None, include_labels=(), exclude_labels=(),
-        include_classes=(), num_samples=0, tree_supervision_weight=0.5,
+        include_classes=(), num_samples=0, tree_supervision_weight=1,
         fine_tune=False, loss='CrossEntropyLoss',
+        lr=0.1, tree_supervision_weight_end=None, tree_supervision_weight_power=1,
+        xent_weight=1, xent_weight_end=None, xent_weight_power=1,
         **kwargs):
     fname = 'ckpt'
     fname += '-' + dataset
     fname += '-' + arch
+    if lr != 0.1:
+        fname += f'-lr{lr}'
     if name:
         fname += '-' + name
     if path_graph and 'TreeSupLoss' in loss:
@@ -268,10 +272,20 @@ def generate_checkpoint_fname(dataset, arch, path_graph, wnid=None, name='',
         fname += f'-incc{labels}'
     if num_samples != 0 and num_samples is not None:
         fname += f'-samples{num_samples}'
-    if loss != 'CrossEntropyLoss':
-        fname += f'-{loss}'
-        if tree_supervision_weight is not None and tree_supervision_weight != 1:
+    if len(loss) > 1 or loss[0] != 'CrossEntropyLoss':
+        fname += f'-{",".join(loss)}'
+        if tree_supervision_weight not in (None, 1):
             fname += f'-tsw{tree_supervision_weight}'
+        if tree_supervision_weight_end not in (tree_supervision_weight, None):
+            fname += f'-tswe{tree_supervision_weight_end}'
+        if tree_supervision_weight_power != 1:
+            fname += f'-tswp{tree_supervision_weight_power}'
+        if xent_weight not in (None, 1):
+            fname += f'-xw{xent_weight}'
+        if xent_weight_end not in (xent_weight, None):
+            fname += f'-xwe{xent_weight_end}'
+        if xent_weight_power != 1:
+            fname += f'-xwp{xent_weight_power}'
     return fname
 
 

@@ -49,7 +49,7 @@ parser.add_argument('--disable-test-eval',
                     action='store_true')
 
 # options specific to this project and its dataloaders
-parser.add_argument('--loss', choices=loss.names, default='CrossEntropyLoss')
+parser.add_argument('--loss', choices=loss.names, default=['CrossEntropyLoss'], nargs='+')
 parser.add_argument('--metric', choices=metrics.names, default='top1')
 parser.add_argument('--analysis', choices=analysis.names, help='Run analysis after each epoch')
 
@@ -126,10 +126,13 @@ if args.resume:
             load_state_dict(net, checkpoint)
             Colors.cyan(f'==> Checkpoint found at {resume_path}')
 
-criterion = nn.CrossEntropyLoss()
-class_criterion = getattr(loss, args.loss)
-loss_kwargs = generate_kwargs(args, class_criterion, name=f'Loss {args.loss}', keys=loss.keys, globals=globals())
-criterion = class_criterion(**loss_kwargs)
+criterion = None
+for _loss in args.loss:
+    if criterion is None and not hasattr(nn, _loss):
+        criterion = nn.CrossEntropyLoss()
+    class_criterion = getattr(loss, _loss)
+    loss_kwargs = generate_kwargs(args, class_criterion, name=f'Loss {args.loss}', keys=loss.keys, globals=globals())
+    criterion = class_criterion(**loss_kwargs)
 
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 scheduler = optim.lr_scheduler.MultiStepLR(optimizer,
@@ -144,6 +147,9 @@ metric = getattr(metrics, args.metric)()
 # Training
 @analyzer.train_function
 def train(epoch):
+    if hasattr(criterion, 'set_epoch'):
+        criterion.set_epoch(epoch, args.epochs)
+
     print('\nEpoch: %d / LR: %.04f' % (epoch, scheduler.get_last_lr()[0]))
     net.train()
     train_loss = 0
@@ -158,11 +164,11 @@ def train(epoch):
 
         train_loss += loss.item()
         metric.forward(outputs, targets)
-        transform = trainset.transform_val_inverse()
+        transform = trainset.transform_val_inverse().to(device)
         stat = analyzer.update_batch(outputs, targets, transform(inputs))
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s' % (
-            train_loss / ( batch_idx + 1 ), 100. * metric.report(), metric.correct, metric.total, f'| {stat}' if stat else ''))
+            train_loss / ( batch_idx + 1 ), 100. * metric.report(), metric.correct, metric.total, f'| {analyzer.name}: {stat}' if stat else ''))
     scheduler.step()
 
 @analyzer.test_function
@@ -184,7 +190,7 @@ def test(epoch, checkpoint=True):
             stat = analyzer.update_batch(outputs, targets, transform(inputs))
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d) %s' % (
-                test_loss / ( batch_idx + 1 ), 100. * metric.report(), metric.correct, metric.total, f'| {stat}' if stat else ''))
+                test_loss / ( batch_idx + 1 ), 100. * metric.report(), metric.correct, metric.total, f'| {analyzer.name}: {stat}' if stat else ''))
 
     # Save checkpoint.
     acc = 100. * metric.report()

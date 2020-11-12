@@ -1,7 +1,8 @@
 pytorchcv
-torch==1.4.0
+torch==1.6.0
 torchvision
 nltk
 scikit-learn
 networkx
 pytest
+opencv-python==4.4.0.42

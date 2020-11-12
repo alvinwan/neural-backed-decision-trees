@@ -4,15 +4,20 @@ import torch.nn.functional as F
 from collections import defaultdict
 from nbdt.tree import Node, Tree
 from nbdt.model import HardEmbeddedDecisionRules, SoftEmbeddedDecisionRules
+from math import log
 from nbdt.utils import (
     Colors, dataset_to_default_path_graph, dataset_to_default_path_wnids,
     hierarchy_to_path_graph, coerce_tensor, uncoerce_tensor
 )
 
-__all__ = names = ('HardTreeSupLoss', 'SoftTreeSupLoss', 'CrossEntropyLoss')
+__all__ = names = (
+    'HardTreeSupLoss', 'SoftTreeSupLoss', 'CrossEntropyLoss',
+)
 keys = (
     'path_graph', 'path_wnids', 'tree_supervision_weight',
-    'classes', 'dataset', 'criterion'
+    'classes', 'dataset', 'criterion',
+    'tree_supervision_weight_end', 'tree_supervision_weight_power',
+    'xent_weight', 'xent_weight_end', 'xent_weight_power',
 )
 
 def add_arguments(parser):
@@ -21,8 +26,21 @@ def add_arguments(parser):
                         'generate --path-graph. --path-graph takes precedence.')
     parser.add_argument('--path-graph', help='Path to graph-*.json file.')  # WARNING: hard-coded suffix -build in generate_checkpoint_fname
     parser.add_argument('--path-wnids', help='Path to wnids.txt file.')
-    parser.add_argument('--tree-supervision-weight', type=float, default=1,
+    parser.add_argument('--xent-weight', '--xw', type=float,
+                        help='Weight for cross entropy term')
+    parser.add_argument('--xent-weight-end', '--xwe', type=float,
+                        help='Weight for cross entropy term at end of training.'
+                        'If not set, set to cew')
+    parser.add_argument('--xent-weight-power', '--xwp', type=float,
+                        help='Raise progress to this power.')
+    parser.add_argument('--tree-supervision-weight', '--tsw', type=float, default=1,
                         help='Weight assigned to tree supervision losses')
+    parser.add_argument('--tree-supervision-weight-end', '--tswe', type=float,
+                        help='Weight assigned to tree supervision losses at '
+                        'end of training. If not set, this is equal to tsw')
+    parser.add_argument('--tree-supervision-weight-power', '--tswp', type=float,
+                        help='Raise progress to this power. > 1 to trend '
+                        'towards tswe more slowly. < 1 to trend more quickly')
 
 
 def set_default_values(args):
@@ -45,9 +63,14 @@ class TreeSupLoss(nn.Module):
     accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
     accepts_path_graph = True
     accepts_path_wnids = True
-    accepts_classes = True
     accepts_tree_supervision_weight = True
     accepts_classes = lambda trainset, **kwargs: trainset.classes
+    accepts_hierarchy = True
+    accepts_tree_supervision_weight_end = True
+    accepts_tree_supervision_weight_power = True
+    accepts_xent_weight = True
+    accepts_xent_weight_end = True
+    accepts_xent_weight_power = True
 
     def __init__(self,
             dataset,
@@ -58,7 +81,13 @@ class TreeSupLoss(nn.Module):
             hierarchy=None,
             Rules=HardEmbeddedDecisionRules,
             tree=None,
-            tree_supervision_weight=1.):
+            tree_supervision_weight=1.,
+            tree_supervision_weight_end=None,
+            tree_supervision_weight_power=1,  # 1 for linear
+            xent_weight=1,
+            xent_weight_end=None,
+            xent_weight_power=1,
+            ):
         super().__init__()
 
         if not tree:
@@ -67,7 +96,15 @@ class TreeSupLoss(nn.Module):
         self.tree = tree
         self.rules = Rules(tree=tree)
         self.tree_supervision_weight = tree_supervision_weight
+        self.tree_supervision_weight_end = tree_supervision_weight_end \
+            if tree_supervision_weight_end is not None else tree_supervision_weight
+        self.tree_supervision_weight_power = tree_supervision_weight_power
+        self.xent_weight = xent_weight
+        self.xent_weight_end = xent_weight_end \
+            if xent_weight_end is not None else xent_weight
+        self.xent_weight_power = xent_weight_power
         self.criterion = criterion
+        self.progress = 1
 
     @staticmethod
     def assert_output_not_nbdt(outputs):
@@ -99,10 +136,30 @@ class TreeSupLoss(nn.Module):
             " Check out github.com/alvinwan/nbdt#convert-neural-networks-to-decision-trees"
             " for examples and instructions.")
 
+    def forward_tree(self, outputs, targets):
+        raise NotImplementedError()
+
+    def get_weight(self, start, end, power=1):
+        progress = self.progress ** power
+        return (1 - progress) * start + progress * end
+
+    def forward(self, outputs, targets):
+        loss_xent = self.criterion(outputs, targets)
+        loss_tree = self.forward_tree(outputs, targets)
+
+        tree_weight = self.get_weight(self.tree_supervision_weight, self.tree_supervision_weight_end, self.tree_supervision_weight_power)
+        xent_weight = self.get_weight(self.xent_weight, self.xent_weight_end, self.xent_weight_power)
+        return loss_xent * xent_weight + loss_tree * tree_weight
+
+    def set_epoch(self, cur, total):
+        self.progress = cur / total
+        if hasattr(super(), 'set_epoch'):
+            super().set_epoch(cur, total)
+
 
 class HardTreeSupLoss(TreeSupLoss):
 
-    def forward(self, outputs, targets):
+    def forward_tree(self, outputs, targets):
         """
         The supplementary losses are all uniformly down-weighted so that on
         average, each sample incurs half of its loss from standard cross entropy
@@ -116,7 +173,7 @@ class HardTreeSupLoss(TreeSupLoss):
         """
         self.assert_output_not_nbdt(outputs)
 
-        loss = self.criterion(outputs, targets)
+        loss = 0
         num_losses = outputs.size(0) * len(self.tree.inodes) / 2.
 
         outputs_subs = defaultdict(lambda: [])
@@ -149,13 +206,9 @@ class SoftTreeSupLoss(TreeSupLoss):
     def __init__(self, *args, Rules=None, **kwargs):
         super().__init__(*args, Rules=SoftEmbeddedDecisionRules, **kwargs)
 
-    def forward(self, outputs, targets):
+    def forward_tree(self, outputs, targets):
         self.assert_output_not_nbdt(outputs)
-
-        loss = self.criterion(outputs, targets)
-        bayesian_outputs = self.rules(outputs)
-        loss += self.criterion(bayesian_outputs, targets) * self.tree_supervision_weight
-        return loss
+        return self.criterion(self.rules(outputs), targets)
 
 
 class SoftSegTreeSupLoss(SoftTreeSupLoss):
