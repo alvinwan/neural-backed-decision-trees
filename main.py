@@ -101,14 +101,12 @@ dataset_train_kwargs = generate_kwargs(
     args,
     dataset_train,
     name=f"Dataset {dataset_train.__class__.__name__}",
-    keys=data.custom.keys,
     globals=globals(),
 )
 dataset_test_kwargs = generate_kwargs(
     args,
     dataset_test,
     name=f"Dataset {dataset_test.__class__.__name__}",
-    keys=data.custom.keys,
     globals=globals(),
 )
 trainset = dataset_train(
@@ -194,7 +192,6 @@ for _loss in args.loss:
         args,
         class_criterion,
         name=f"Loss {args.loss}",
-        keys=loss.keys,
         globals=globals(),
     )
     criterion = class_criterion(**loss_kwargs)
@@ -209,7 +206,6 @@ analyzer_kwargs = generate_kwargs(
     args,
     class_analysis,
     name=f"Analyzer {args.analysis}",
-    keys=analysis.keys,
     globals=globals(),
 )
 analyzer = class_analysis(**analyzer_kwargs)

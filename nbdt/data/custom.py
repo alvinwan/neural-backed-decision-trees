@@ -32,12 +32,6 @@ __all__ = names = (
     "TinyImagenet200ResampleLabels",
     "Imagenet1000ResampleLabels",
 )
-keys = (
-    "include_labels",
-    "exclude_labels",
-    "include_classes",
-    "probability_labels",
-)
 
 
 def add_arguments(parser):

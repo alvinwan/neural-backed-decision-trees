@@ -75,13 +75,14 @@ def get_directory(dataset, root="./nbdt/hierarchies"):
     return os.path.join(root, dataset)
 
 
-def generate_kwargs(args, object, name="Dataset", keys=(), globals={}, kwargs=None):
+def generate_kwargs(args, object, name="Dataset", globals={}, kwargs=None):
     kwargs = kwargs or {}
 
-    for key in keys:
-        accepts_key = getattr(object, f"accepts_{key}", False)
-        if not accepts_key:
+    for key in dir(object):
+        accepts_key = getattr(object, key, False)
+        if not key.startswith("accepts_") or not accepts_key:
             continue
+        key = key.replace("accepts_", "", 1)
         assert key in args or callable(accepts_key)
 
         value = getattr(args, key, None)
