@@ -35,17 +35,6 @@ __all__ = names = (
     "TopDifference",
     "VisualizeDecisionNode",
 )
-keys = (
-    "path_graph",
-    "path_wnids",
-    "classes",
-    "dataset",
-    "metric",
-    "dataset_test",
-    "superclass_wnids",
-    "visualize_decision_node_wnid",
-    "save_k",
-)
 
 
 def add_arguments(parser):

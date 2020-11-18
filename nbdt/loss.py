@@ -19,20 +19,6 @@ __all__ = names = (
     "SoftTreeSupLoss",
     "CrossEntropyLoss",
 )
-keys = (
-    "path_graph",
-    "path_wnids",
-    "tree_supervision_weight",
-    "classes",
-    "dataset",
-    "criterion",
-    "tree_supervision_weight_end",
-    "tree_supervision_weight_power",
-    "xent_weight",
-    "xent_weight_end",
-    "xent_weight_power",
-)
-
 
 def add_arguments(parser):
     parser.add_argument(
