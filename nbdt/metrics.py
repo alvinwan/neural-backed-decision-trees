@@ -1,11 +1,10 @@
 import torch
 
 
-__all__ = names = ('top1', 'top2', 'top5', 'top10')
+__all__ = names = ("top1", "top2", "top5", "top10")
 
 
 class TopK:
-
     def __init__(self, k=1):
         self.k = k
         self.clear()
@@ -24,7 +23,7 @@ class TopK:
         return self.correct / (self.total or 1)
 
     def __repr__(self):
-        return f'Top{self.k}: {self.report()}'
+        return f"Top{self.k}: {self.report()}"
 
     def __str__(self):
         return repr(self)

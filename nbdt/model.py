@@ -11,7 +11,8 @@ from nbdt.utils import (
     dataset_to_default_path_wnids,
     hierarchy_to_path_graph,
     coerce_tensor,
-    uncoerce_tensor)
+    uncoerce_tensor,
+)
 from nbdt.models.utils import load_state_dict_from_key, coerce_state_dict
 from nbdt.tree import Node, Tree
 from nbdt.thirdparty.wn import get_wnids, synset_to_name
@@ -24,13 +25,35 @@ import torch.nn.functional as F
 
 
 model_urls = {
-    ('ResNet18', 'CIFAR10'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR10-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth',
-    ('wrn28_10_cifar10', 'CIFAR10'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR10-wrn28_10_cifar10-induced-wrn28_10_cifar10-SoftTreeSupLoss.pth',
-    ('wrn28_10_cifar10', 'CIFAR10', 'wordnet'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR10-wrn28_10_cifar10-wordnet-SoftTreeSupLoss.pth',
-    ('ResNet18', 'CIFAR100'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR100-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth',
-    ('wrn28_10_cifar100', 'CIFAR100'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR100-wrn28_10_cifar100-induced-wrn28_10_cifar100-SoftTreeSupLoss.pth',
-    ('ResNet18', 'TinyImagenet200'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-TinyImagenet200-ResNet18-induced-ResNet18-SoftTreeSupLoss-tsw10.0.pth',
-    ('wrn28_10', 'TinyImagenet200'): 'https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-TinyImagenet200-wrn28_10-induced-wrn28_10-SoftTreeSupLoss-tsw10.0.pth',
+    (
+        "ResNet18",
+        "CIFAR10",
+    ): "https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR10-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth",
+    (
+        "wrn28_10_cifar10",
+        "CIFAR10",
+    ): "https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR10-wrn28_10_cifar10-induced-wrn28_10_cifar10-SoftTreeSupLoss.pth",
+    (
+        "wrn28_10_cifar10",
+        "CIFAR10",
+        "wordnet",
+    ): "https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR10-wrn28_10_cifar10-wordnet-SoftTreeSupLoss.pth",
+    (
+        "ResNet18",
+        "CIFAR100",
+    ): "https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR100-ResNet18-induced-ResNet18-SoftTreeSupLoss.pth",
+    (
+        "wrn28_10_cifar100",
+        "CIFAR100",
+    ): "https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-CIFAR100-wrn28_10_cifar100-induced-wrn28_10_cifar100-SoftTreeSupLoss.pth",
+    (
+        "ResNet18",
+        "TinyImagenet200",
+    ): "https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-TinyImagenet200-ResNet18-induced-ResNet18-SoftTreeSupLoss-tsw10.0.pth",
+    (
+        "wrn28_10",
+        "TinyImagenet200",
+    ): "https://github.com/alvinwan/neural-backed-decision-trees/releases/download/0.0.1/ckpt-TinyImagenet200-wrn28_10-induced-wrn28_10-SoftTreeSupLoss-tsw10.0.pth",
 }
 
 
@@ -40,14 +63,15 @@ model_urls = {
 
 
 class EmbeddedDecisionRules(nn.Module):
-
-    def __init__(self,
-            dataset=None,
-            path_graph=None,
-            path_wnids=None,
-            classes=(),
-            hierarchy=None,
-            tree=None):
+    def __init__(
+        self,
+        dataset=None,
+        path_graph=None,
+        path_wnids=None,
+        classes=(),
+        hierarchy=None,
+        tree=None,
+    ):
         super().__init__()
         if not tree:
             tree = Tree(dataset, path_graph, path_wnids, classes, hierarchy=hierarchy)
@@ -57,20 +81,22 @@ class EmbeddedDecisionRules(nn.Module):
         self.I = torch.eye(len(self.tree.classes))
 
     @staticmethod
-    def get_node_logits(outputs, node=None,
-            new_to_old_classes=None, num_classes=None):
+    def get_node_logits(outputs, node=None, new_to_old_classes=None, num_classes=None):
         """Get output for a particular node
 
         This `outputs` above are the output of the neural network.
         """
-        assert node or (new_to_old_classes and num_classes), \
-            'Either pass node or (new_to_old_classes mapping and num_classes)'
+        assert node or (
+            new_to_old_classes and num_classes
+        ), "Either pass node or (new_to_old_classes mapping and num_classes)"
         new_to_old_classes = new_to_old_classes or node.child_index_to_class_index
         num_classes = num_classes or node.num_classes
-        return torch.stack([
-            outputs.T[new_to_old_classes[child_index]].mean(dim=0)
-            for child_index in range(num_classes)
-        ]).T
+        return torch.stack(
+            [
+                outputs.T[new_to_old_classes[child_index]].mean(dim=0)
+                for child_index in range(num_classes)
+            ]
+        ).T
 
     @classmethod
     def get_all_node_outputs(cls, outputs, nodes):
@@ -81,13 +107,14 @@ class EmbeddedDecisionRules(nn.Module):
         wnid_to_outputs = {}
         for node in nodes:
             node_logits = cls.get_node_logits(outputs, node)
-            node_outputs = {'logits': node_logits}
+            node_outputs = {"logits": node_logits}
 
             if len(node_logits.size()) > 1:
-                node_outputs['preds'] = torch.max(node_logits, dim=1)[1]
-                node_outputs['probs'] = F.softmax(node_logits, dim=1)
-                node_outputs['entropy'] = \
-                    Categorical(probs=node_outputs['probs']).entropy()
+                node_outputs["preds"] = torch.max(node_logits, dim=1)[1]
+                node_outputs["probs"] = F.softmax(node_logits, dim=1)
+                node_outputs["entropy"] = Categorical(
+                    probs=node_outputs["probs"]
+                ).entropy()
 
             wnid_to_outputs[node.wnid] = node_outputs
         return wnid_to_outputs
@@ -97,7 +124,6 @@ class EmbeddedDecisionRules(nn.Module):
 
 
 class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
-
     @classmethod
     def get_node_logits_filtered(cls, node, outputs, targets):
         """'Smarter' inference for a hard node.
@@ -111,7 +137,7 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
 
         outputs = outputs[selector]
         if outputs.size(0) == 0:
-            return selector, outputs[:, :node.num_classes], targets_sub
+            return selector, outputs[:, : node.num_classes], targets_sub
 
         outputs_sub = cls.get_node_logits(outputs, node)
         return selector, outputs_sub, targets_sub
@@ -125,34 +151,36 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
         """
         # move all to CPU, detach from computation graph
         example = wnid_to_outputs[tree.inodes[0].wnid]
-        n_samples = int(example['logits'].size(0))
-        device = example['logits'].device
+        n_samples = int(example["logits"].size(0))
+        device = example["logits"].device
 
         for wnid in tuple(wnid_to_outputs.keys()):
             outputs = wnid_to_outputs[wnid]
-            outputs['preds'] = list(map(int, outputs['preds'].cpu()))
-            outputs['probs'] = outputs['probs'].detach().cpu()
+            outputs["preds"] = list(map(int, outputs["preds"].cpu()))
+            outputs["probs"] = outputs["probs"].detach().cpu()
 
         decisions = []
         preds = []
         for index in range(n_samples):
-            decision = [{'node': tree.root, 'name': 'root', 'prob': 1, 'entropy': 0}]
+            decision = [{"node": tree.root, "name": "root", "prob": 1, "entropy": 0}]
             node = tree.root
             while not node.is_leaf():
                 if node.wnid not in wnid_to_outputs:
                     node = None
                     break
                 outputs = wnid_to_outputs[node.wnid]
-                index_child = outputs['preds'][index]
-                prob_child = float(outputs['probs'][index][index_child])
+                index_child = outputs["preds"][index]
+                prob_child = float(outputs["probs"][index][index_child])
                 node = node.children[index_child]
-                decision.append({
-                    'node': node,
-                    'name': node.name,
-                    'prob': prob_child,
-                    'next_index': index_child,
-                    'entropy': float(outputs['entropy'][index])
-                })
+                decision.append(
+                    {
+                        "node": node,
+                        "name": node.name,
+                        "prob": prob_child,
+                        "next_index": index_child,
+                        "entropy": float(outputs["entropy"][index]),
+                    }
+                )
             preds.append(tree.wnid_to_class_index[node.wnid])
             decisions.append(decision)
         return torch.Tensor(preds).long().to(device), decisions
@@ -176,7 +204,6 @@ class HardEmbeddedDecisionRules(EmbeddedDecisionRules):
 
 
 class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
-
     @classmethod
     def traverse_tree(cls, wnid_to_outputs, tree):
         """
@@ -193,9 +220,9 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
         (I think. Need to check nbdt.data.custom.Node)
         """
         example = wnid_to_outputs[tree.inodes[0].wnid]
-        num_samples = example['logits'].size(0)
+        num_samples = example["logits"].size(0)
         num_classes = len(tree.classes)
-        device = example['logits'].device
+        device = example["logits"].device
         class_probs = torch.ones((num_samples, num_classes)).to(device)
 
         for node in tree.inodes:
@@ -208,10 +235,10 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
                 new_indices.extend([index_child] * len(old))
 
             assert len(set(old_indices)) == len(old_indices), (
-                'All old indices must be unique in order for this operation '
-                'to be correct.'
+                "All old indices must be unique in order for this operation "
+                "to be correct."
             )
-            class_probs[:,old_indices] *= outputs['probs'][:,new_indices]
+            class_probs[:, old_indices] *= outputs["probs"][:, new_indices]
         return class_probs
 
     def forward_with_decisions(self, outputs):
@@ -228,13 +255,13 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
             probs = [1]
             entropies = [0]
             for step in steps[:-1]:
-                _out = wnid_to_outputs[step['node'].wnid]
-                _probs = _out['probs'][0]
-                probs.append(_probs[step['next_index']])
+                _out = wnid_to_outputs[step["node"].wnid]
+                _probs = _out["probs"][0]
+                probs.append(_probs[step["next_index"]])
                 entropies.append(Categorical(probs=_probs).entropy().item())
             for step, prob, entropy in zip(steps, probs, entropies):
-                step['prob'] = float(prob)
-                step['entropy'] = float(entropy)
+                step["prob"] = float(prob)
+                step["entropy"] = float(entropy)
             decisions.append(steps)
         return outputs, decisions
 
@@ -252,42 +279,53 @@ class SoftEmbeddedDecisionRules(EmbeddedDecisionRules):
 
 
 class NBDT(nn.Module):
-
-    def __init__(self,
-            dataset,
-            model,
-            arch=None,
-            path_graph=None,
-            path_wnids=None,
-            classes=None,
-            hierarchy=None,
-            pretrained=None,
-            **kwargs):
+    def __init__(
+        self,
+        dataset,
+        model,
+        arch=None,
+        path_graph=None,
+        path_wnids=None,
+        classes=None,
+        hierarchy=None,
+        pretrained=None,
+        **kwargs,
+    ):
         super().__init__()
 
         if dataset and not hierarchy and not path_graph:
-            assert arch, 'Must specify `arch` if no `hierarchy` or `path_graph`'
-            hierarchy = f'induced-{arch}'
+            assert arch, "Must specify `arch` if no `hierarchy` or `path_graph`"
+            hierarchy = f"induced-{arch}"
         if pretrained and not arch:
             raise UserWarning(
-                'To load a pretrained NBDT, you need to specify the `arch`. '
-                '`arch` is the name of the architecture. e.g., ResNet18')
+                "To load a pretrained NBDT, you need to specify the `arch`. "
+                "`arch` is the name of the architecture. e.g., ResNet18"
+            )
         if isinstance(model, str):
-            raise NotImplementedError('Model must be nn.Module')
+            raise NotImplementedError("Model must be nn.Module")
 
         tree = Tree(dataset, path_graph, path_wnids, classes, hierarchy=hierarchy)
-        self.init(dataset, model, tree,
-            arch=arch, pretrained=pretrained, hierarchy=hierarchy, **kwargs)
-
-    def init(self,
+        self.init(
             dataset,
             model,
             tree,
-            arch=None,
-            pretrained=False,
-            hierarchy=None,
-            eval=True,
-            Rules=HardEmbeddedDecisionRules):
+            arch=arch,
+            pretrained=pretrained,
+            hierarchy=hierarchy,
+            **kwargs,
+        )
+
+    def init(
+        self,
+        dataset,
+        model,
+        tree,
+        arch=None,
+        pretrained=False,
+        hierarchy=None,
+        eval=True,
+        Rules=HardEmbeddedDecisionRules,
+    ):
         """
         Extra init method makes clear which arguments are finally necessary for
         this class to function. The constructor for this class may generate
@@ -299,8 +337,7 @@ class NBDT(nn.Module):
         if pretrained:
             assert arch is not None
             keys = [(arch, dataset), (arch, dataset, hierarchy)]
-            state_dict = load_state_dict_from_key(
-                keys, model_urls, pretrained=True)
+            state_dict = load_state_dict_from_key(keys, model_urls, pretrained=True)
             self.load_state_dict(state_dict)
 
         if eval:
@@ -325,30 +362,23 @@ class NBDT(nn.Module):
 
 
 class HardNBDT(NBDT):
-
     def __init__(self, *args, **kwargs):
-        kwargs.update({
-            'Rules': HardEmbeddedDecisionRules
-        })
+        kwargs.update({"Rules": HardEmbeddedDecisionRules})
         super().__init__(*args, **kwargs)
 
 
 class SoftNBDT(NBDT):
-
     def __init__(self, *args, **kwargs):
-        kwargs.update({
-            'Rules': SoftEmbeddedDecisionRules
-        })
+        kwargs.update({"Rules": SoftEmbeddedDecisionRules})
         super().__init__(*args, **kwargs)
 
 
 class SegNBDT(NBDT):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def forward(self, x):
-        assert len(x.shape) == 4, 'Input must be of shape (N,C,H,W) for segmentation'
+        assert len(x.shape) == 4, "Input must be of shape (N,C,H,W) for segmentation"
         x = self.model(x)
         original_shape = x.shape
         x = coerce_tensor(x)
@@ -358,18 +388,12 @@ class SegNBDT(NBDT):
 
 
 class HardSegNBDT(SegNBDT):
-
     def __init__(self, *args, **kwargs):
-        kwargs.update({
-            'Rules': HardEmbeddedDecisionRules
-        })
+        kwargs.update({"Rules": HardEmbeddedDecisionRules})
         super().__init__(*args, **kwargs)
 
 
 class SoftSegNBDT(SegNBDT):
-
     def __init__(self, *args, **kwargs):
-        kwargs.update({
-            'Rules': SoftEmbeddedDecisionRules
-        })
+        kwargs.update({"Rules": SoftEmbeddedDecisionRules})
         super().__init__(*args, **kwargs)

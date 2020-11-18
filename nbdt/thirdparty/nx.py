@@ -33,7 +33,7 @@ def get_roots(G):
 
 def get_root(G):
     roots = list(get_roots(G))
-    assert len(roots) == 1, f'Multiple ({len(roots)}) found'
+    assert len(roots) == 1, f"Multiple ({len(roots)}) found"
     return roots[0]
 
 
@@ -42,6 +42,7 @@ def get_depth(G):
         if not G.succ[node]:
             return 1
         return max([_get_depth(child) for child in G.succ[node]]) + 1
+
     return max([_get_depth(root) for root in get_roots(G)])
 
 
@@ -61,14 +62,14 @@ def get_leaf_to_path(G):
 
 def write_graph(G, path):
     makeparentdirs(path)
-    with open(str(path), 'w') as f:
+    with open(str(path), "w") as f:
         json.dump(node_link_data(G), f)
 
 
 def read_graph(path):
     if not os.path.exists(path):
         parent = Path(fwd()).parent
-        print(f'No such file or directory: {path}. Looking in {str(parent)}')
+        print(f"No such file or directory: {path}. Looking in {str(parent)}")
         path = parent / path
     with open(path) as f:
         return node_link_graph(json.load(f))

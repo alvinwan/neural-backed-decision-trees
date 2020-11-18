@@ -11,7 +11,8 @@ from nbdt.thirdparty.nx import read_graph, get_leaves, get_leaf_to_path
 from nbdt.utils import (
     dataset_to_default_path_graph,
     dataset_to_default_path_wnids,
-    hierarchy_to_path_graph)
+    hierarchy_to_path_graph,
+)
 from nbdt.data import imagenet
 import torch.nn as nn
 import random
@@ -24,7 +25,6 @@ def dataset_to_dummy_classes(dataset):
 
 
 class Node:
-
     def __init__(self, tree, wnid, other_class=False):
         self.tree = tree
 
@@ -40,12 +40,15 @@ class Node:
 
         self.num_classes = self.num_children + int(self.has_other)
 
-        self.class_index_to_child_index, self.child_index_to_class_index = self.build_class_mappings()
+        (
+            self.class_index_to_child_index,
+            self.child_index_to_class_index,
+        ) = self.build_class_mappings()
         self.classes = self.build_classes()
 
         assert len(self.classes) == self.num_classes, (
-            f'Number of classes {self.num_classes} does not equal number of '
-            f'class names found ({len(self.classes)}): {self.classes}'
+            f"Number of classes {self.num_classes} does not equal number of "
+            f"class names found ({len(self.classes)}): {self.classes}"
         )
 
         self.leaves = list(self.get_leaves())
@@ -112,9 +115,10 @@ class Node:
 
     def build_classes(self):
         return [
-            ','.join([self.original_classes[old] for old in old_indices])
+            ",".join([self.original_classes[old] for old in old_indices])
             for new_index, old_indices in sorted(
-                self.child_index_to_class_index.items(), key=lambda t: t[0])
+                self.child_index_to_class_index.items(), key=lambda t: t[0]
+            )
         ]
 
     @property
@@ -128,10 +132,9 @@ class Node:
 
 
 class Tree:
-
     def __init__(
-            self, dataset, path_graph=None, path_wnids=None, classes=None,
-            hierarchy=None):
+        self, dataset, path_graph=None, path_wnids=None, classes=None, hierarchy=None
+    ):
         if dataset and hierarchy and not path_graph:
             path_graph = hierarchy_to_path_graph(dataset, hierarchy)
         if dataset and not path_graph:
@@ -147,7 +150,9 @@ class Tree:
         self.classes = classes
         self.G = read_graph(path_graph)
         self.wnids_leaves = get_wnids(path_wnids)
-        self.wnid_to_class = {wnid: cls for wnid, cls in zip(self.wnids_leaves, self.classes)}
+        self.wnid_to_class = {
+            wnid: cls for wnid, cls in zip(self.wnids_leaves, self.classes)
+        }
         self.wnid_to_class_index = {wnid: i for i, wnid in enumerate(self.wnids_leaves)}
         self.wnid_to_node = self.get_wnid_to_node()
         self.nodes = [self.wnid_to_node[wnid] for wnid in sorted(self.wnid_to_node)]
@@ -159,7 +164,7 @@ class Tree:
         for node in self.inodes:
             if node.is_root():
                 return node
-        raise UserWarning('Should not be reachable. Tree should always have root')
+        raise UserWarning("Should not be reachable. Tree should always have root")
 
     def get_wnid_to_node(self):
         wnid_to_node = {}
@@ -175,9 +180,9 @@ class Tree:
             next_indices = [index for index, _ in leaf_to_path[leaf][1:]] + [-1]
             leaf_to_steps[leaf] = [
                 {
-                    'node': self.wnid_to_node[wnid],
-                    'name': self.wnid_to_node[wnid].name,
-                    'next_index': next_index,  # curr node's next child index to traverse
+                    "node": self.wnid_to_node[wnid],
+                    "name": self.wnid_to_node[wnid].name,
+                    "next_index": next_index,  # curr node's next child index to traverse
                 }
                 for next_index, (_, wnid) in zip(next_indices, leaf_to_path[leaf])
             ]

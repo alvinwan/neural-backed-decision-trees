@@ -2,7 +2,7 @@ from nbdt.utils import set_np_printoptions, Colors
 from nbdt.graph import wnid_to_synset, synset_to_wnid
 from nbdt.model import (
     SoftEmbeddedDecisionRules as SoftRules,
-    HardEmbeddedDecisionRules as HardRules
+    HardEmbeddedDecisionRules as HardRules,
 )
 from torch.distributions import Categorical
 import torch.nn.functional as F
@@ -18,38 +18,60 @@ import time
 
 
 __all__ = names = (
-    'Noop', 'ConfusionMatrix', 'ConfusionMatrixJointNodes',
-    'IgnoredSamples', 'HardEmbeddedDecisionRules', 'SoftEmbeddedDecisionRules',
-    'Entropy', 'NBDTEntropy', 'Superclass', 'SuperclassNBDT',
-    'VisualizeDecisionNode', 'NBDTEntropyMaxMin', 'NBDTEntropyBottom',
-    'TopEntropy', 'TopDifference', 'VisualizeDecisionNode')
-keys = ('path_graph', 'path_wnids', 'classes', 'dataset', 'metric',
-        'dataset_test', 'superclass_wnids', 'visualize_decision_node_wnid',
-        'save_k')
+    "Noop",
+    "ConfusionMatrix",
+    "ConfusionMatrixJointNodes",
+    "IgnoredSamples",
+    "HardEmbeddedDecisionRules",
+    "SoftEmbeddedDecisionRules",
+    "Entropy",
+    "NBDTEntropy",
+    "Superclass",
+    "SuperclassNBDT",
+    "VisualizeDecisionNode",
+    "NBDTEntropyMaxMin",
+    "NBDTEntropyBottom",
+    "TopEntropy",
+    "TopDifference",
+    "VisualizeDecisionNode",
+)
+keys = (
+    "path_graph",
+    "path_wnids",
+    "classes",
+    "dataset",
+    "metric",
+    "dataset_test",
+    "superclass_wnids",
+    "visualize_decision_node_wnid",
+    "save_k",
+)
 
 
 def add_arguments(parser):
-    parser.add_argument('--superclass-wnids', nargs='*', type=str)
-    parser.add_argument('--save-k', type=int, default=20)
-    parser.add_argument('--visualize-decision-node-wnid', '--vdnw', type=str)
+    parser.add_argument("--superclass-wnids", nargs="*", type=str)
+    parser.add_argument("--save-k", type=int, default=20)
+    parser.add_argument("--visualize-decision-node-wnid", "--vdnw", type=str)
 
 
 def start_end_decorator(obj, name):
-    start = getattr(obj, f'start_{name}', None)
-    end = getattr(obj, f'end_{name}', None)
+    start = getattr(obj, f"start_{name}", None)
+    end = getattr(obj, f"end_{name}", None)
     assert start and end
+
     def decorator(f):
         @functools.wraps(f)
         def wrapper(epoch, *args, **kwargs):
             start(epoch)
             f(epoch, *args, **kwargs)
             end(epoch)
+
         return wrapper
+
     return decorator
 
 
 class StartEndContext:
-
     def __init__(self, obj, name, epoch=0):
         self.obj = obj
         self.name = name
@@ -60,10 +82,10 @@ class StartEndContext:
         return self
 
     def __enter__(self):
-        return getattr(self.obj, f'start_{self.name}')(self.epoch)
+        return getattr(self.obj, f"start_{self.name}")(self.epoch)
 
     def __exit__(self, type, value, traceback):
-        getattr(self.obj, f'end_{self.name}')(self.epoch)
+        getattr(self.obj, f"end_{self.name}")(self.epoch)
 
 
 class Noop:
@@ -79,19 +101,19 @@ class Noop:
 
     @property
     def epoch_function(self):
-        return start_end_decorator(self, 'epoch')
+        return start_end_decorator(self, "epoch")
 
     @property
     def train_function(self):
-        return start_end_decorator(self, 'train')
+        return start_end_decorator(self, "train")
 
     @property
     def test_function(self):
-        return start_end_decorator(self, 'test')
+        return start_end_decorator(self, "test")
 
     @property
     def epoch_context(self):
-        return StartEndContext(self, 'epoch')
+        return StartEndContext(self, "epoch")
 
     def start_epoch(self, epoch):
         self.epoch = epoch
@@ -119,7 +141,6 @@ class Noop:
 
 
 class ConfusionMatrix(Noop):
-
     def __init__(self, classes):
         super().__init__(classes)
         self.k = len(classes)
@@ -146,7 +167,7 @@ class ConfusionMatrix(Noop):
         recall = self.recall()
         for row, cls in zip(recall, self.classes):
             print(row, cls)
-        print(recall.diagonal(), '(diagonal)')
+        print(recall.diagonal(), "(diagonal)")
 
     @staticmethod
     def update(confusion_matrix, preds, labels):
@@ -182,7 +203,7 @@ class IgnoredSamples(Noop):
 
     def _update_batch(self, outputs, targets):
         super()._update_batch(outputs, targets)
-        self.ignored += outputs[:,0].eq(-1).sum().item()
+        self.ignored += outputs[:, 0].eq(-1).sum().item()
         return self.ignored
 
     def end_test(self, epoch):
@@ -198,9 +219,9 @@ class DecisionRules(Noop):
     accepts_path_wnids = True
     accepts_metric = True
 
-    name = 'NBDT'
+    name = "NBDT"
 
-    def __init__(self, *args, Rules=HardRules, metric='top1', **kwargs):
+    def __init__(self, *args, Rules=HardRules, metric="top1", **kwargs):
         self.rules = Rules(*args, **kwargs)
         super().__init__(self.rules.tree.classes)
         self.metric = getattr(metrics, metric)()
@@ -218,21 +239,23 @@ class DecisionRules(Noop):
 
     def end_test(self, epoch):
         super().end_test(epoch)
-        accuracy = round(self.metric.correct / self.metric.total * 100., 2)
+        accuracy = round(self.metric.correct / self.metric.total * 100.0, 2)
         self.best_accuracy = max(accuracy, self.best_accuracy)
-        print(f'[{self.name}] Accuracy: {accuracy}%, {self.metric.correct}/{self.metric.total} | {self.name} Best Accuracy: {self.best_accuracy}%')
+        print(
+            f"[{self.name}] Accuracy: {accuracy}%, {self.metric.correct}/{self.metric.total} | {self.name} Best Accuracy: {self.best_accuracy}%"
+        )
 
 
 class HardEmbeddedDecisionRules(DecisionRules):
     """Evaluation is hard."""
 
-    name = 'NBDT-Hard'
+    name = "NBDT-Hard"
 
 
 class SoftEmbeddedDecisionRules(DecisionRules):
     """Evaluation is soft."""
 
-    name = 'NBDT-Soft'
+    name = "NBDT-Soft"
 
     def __init__(self, *args, Rules=None, **kwargs):
         super().__init__(*args, Rules=SoftRules, **kwargs)
@@ -241,7 +264,14 @@ class SoftEmbeddedDecisionRules(DecisionRules):
 class ScoreSave(Noop):
     """Score each sample and save the highest/lowest scorers"""
 
-    def __init__(self, *args, classes=(), save_k=20, path='out/score-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg', **kwargs):
+    def __init__(
+        self,
+        *args,
+        classes=(),
+        save_k=20,
+        path="out/score-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg",
+        **kwargs,
+    ):
         super().__init__(*args, classes=classes, **kwargs)
         self.reset()
         self.k = save_k
@@ -268,27 +298,47 @@ class ScoreSave(Noop):
 
         scores = self.score(outputs, targets, images)
         ois = list(zip(outputs, images, scores))
-        self.max = list(sorted(self.max + ois, reverse=True, key=ScoreSave.last))[:self.k]
-        self.min = list(sorted(self.min + ois, key=ScoreSave.last))[:self.k]
+        self.max = list(sorted(self.max + ois, reverse=True, key=ScoreSave.last))[
+            : self.k
+        ]
+        self.min = list(sorted(self.min + ois, key=ScoreSave.last))[: self.k]
 
     def end_test(self, epoch):
         super().end_test(epoch)
         directory = str(self.path.parent).format(time=self.time, epoch=self.epoch)
         os.makedirs(directory, exist_ok=True)
-        for name, suffix, lst in (('highest', 'max', self.max), ('lowest', 'min', self.min)):
-            print(f'==> Saving {self.k} {name} scored images in {directory}')
+        for name, suffix, lst in (
+            ("highest", "max", self.max),
+            ("lowest", "min", self.min),
+        ):
+            print(f"==> Saving {self.k} {name} scored images in {directory}")
             for i, (_, image, score) in enumerate(lst):
                 Image.fromarray(
-                    (image.permute(1, 2, 0) * 255).cpu().detach().numpy().astype(np.uint8)
-                ).save(str(self.path).format(
-                    epoch=self.epoch, i=i, suffix=suffix, score=score,
-                    time=self.time))
+                    (image.permute(1, 2, 0) * 255)
+                    .cpu()
+                    .detach()
+                    .numpy()
+                    .astype(np.uint8)
+                ).save(
+                    str(self.path).format(
+                        epoch=self.epoch,
+                        i=i,
+                        suffix=suffix,
+                        score=score,
+                        time=self.time,
+                    )
+                )
 
 
 class Entropy(ScoreSave):
     """Compute entropy statistics and save highest/lowest entropy samples"""
 
-    def __init__(self, *args, path='out/entropy-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg', **kwargs):
+    def __init__(
+        self,
+        *args,
+        path="out/entropy-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg",
+        **kwargs,
+    ):
         super().__init__(*args, path=path, **kwargs)
 
     def reset(self):
@@ -315,7 +365,9 @@ class Entropy(ScoreSave):
 
     def end_test(self, epoch):
         super().end_test(epoch)
-        print(f'[Entropy] avg {self.avg:.2e}, std {self.std:.2e}, max {float(self.max[0][-1]):.2e}, min {float(self.min[0][-1]):.2e}')
+        print(
+            f"[Entropy] avg {self.avg:.2e}, std {self.std:.2e}, max {float(self.max[0][-1]):.2e}, min {float(self.min[0][-1]):.2e}"
+        )
 
 
 class NBDTEntropyMaxMin(Entropy):
@@ -325,28 +377,34 @@ class NBDTEntropyMaxMin(Entropy):
     accepts_path_graph = True
     accepts_path_wnids = True
 
-    def __init__(self, *args, Rules=HardRules, path_graph=None,
-            path_wnids=None, dataset=None,
-            path='out/entropy-nbdt-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg',
-            **kwargs):
+    def __init__(
+        self,
+        *args,
+        Rules=HardRules,
+        path_graph=None,
+        path_wnids=None,
+        dataset=None,
+        path="out/entropy-nbdt-{epoch}-{time}/image-{suffix}-{i}-{score:.2e}.jpg",
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.rules = Rules(
-            path_graph=path_graph, path_wnids=path_wnids, dataset=dataset)
+            path_graph=path_graph, path_wnids=path_wnids, dataset=dataset
+        )
 
     def score(self, outputs, targets, images):
         decisions = self.rules.forward_with_decisions(outputs)
-        entropies = [[node['entropy'] for node in path] for path in decisions[1]]
+        entropies = [[node["entropy"] for node in path] for path in decisions[1]]
         return [max(ent) - min(ent) for ent in entropies]
 
 
 class NBDTEntropyBottom(NBDTEntropyMaxMin):
-
     def score(self, outputs, targets, images):
         decisions = self.rules.forward_with_decisions(outputs)
 
         scores = []
         for path in decisions[1]:
-            entropies = sorted([node['entropy'] for node in path])
+            entropies = sorted([node["entropy"] for node in path])
             bot1, bot2 = entropies[:2]
         scores.append(bot2 - bot1)
 
@@ -361,10 +419,12 @@ class TopEntropy(Entropy):
         sorted, _ = torch.sort(probs, dim=1)
         top2 = Categorical(probs=sorted[:, :2]).entropy()
 
-        rest = torch.cat( (sorted[:, :2].mean(dim=1, keepdims=True), sorted[:, 2:]), dim=1)
+        rest = torch.cat(
+            (sorted[:, :2].mean(dim=1, keepdims=True), sorted[:, 2:]), dim=1
+        )
         rest2 = Categorical(probs=rest).entropy()
 
-        return list( (top2 - rest2).cpu().detach().numpy() )
+        return list((top2 - rest2).cpu().detach().numpy())
 
 
 class TopDifference(ScoreSave):
@@ -373,7 +433,7 @@ class TopDifference(ScoreSave):
     def score(self, outputs, targets, images):
         probs = F.softmax(outputs, dim=1)
         sorted, _ = torch.sort(probs, dim=1)
-        return list( (sorted[:, -1] - sorted[:, -2]).cpu().detach().numpy() )
+        return list((sorted[:, -1] - sorted[:, -2]).cpu().detach().numpy())
 
 
 class Superclass(DecisionRules):
@@ -386,11 +446,18 @@ class Superclass(DecisionRules):
 
     accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
     accepts_dataset_test = lambda testset, **kwargs: testset.__class__.__name__
-    name = 'Superclass'
+    name = "Superclass"
     accepts_superclass_wnids = True
 
-    def __init__(self, *args, superclass_wnids, dataset_test=None,
-            Rules=SoftRules, metric=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        superclass_wnids,
+        dataset_test=None,
+        Rules=SoftRules,
+        metric=None,
+        **kwargs,
+    ):
         """Pass wnids to classify.
 
         Assumes index of each wnid is the index of the wnid in the rules.wnids
@@ -400,20 +467,25 @@ class Superclass(DecisionRules):
         # TODO: for now, ignores metric
         super().__init__(*args, **kwargs)
 
-        kwargs['dataset'] = dataset_test
-        kwargs.pop('path_graph', '')
-        kwargs.pop('path_wnids', '')
+        kwargs["dataset"] = dataset_test
+        kwargs.pop("path_graph", "")
+        kwargs.pop("path_wnids", "")
         self.rules_test = Rules(*args, **kwargs)
         self.superclass_wnids = superclass_wnids
         self.total = self.correct = 0
 
-        self.mapping_target, self.new_to_old_classes_target = Superclass.build_mapping(self.rules_test.tree.wnids_leaves, superclass_wnids)
-        self.mapping_pred, self.new_to_old_classes_pred = Superclass.build_mapping(self.rules.tree.wnids_leaves, superclass_wnids)
+        self.mapping_target, self.new_to_old_classes_target = Superclass.build_mapping(
+            self.rules_test.tree.wnids_leaves, superclass_wnids
+        )
+        self.mapping_pred, self.new_to_old_classes_pred = Superclass.build_mapping(
+            self.rules.tree.wnids_leaves, superclass_wnids
+        )
 
         mapped_classes = [self.classes[i] for i in (self.mapping_target >= 0).nonzero()]
         Colors.cyan(
-            f'==> Mapped {len(mapped_classes)} classes to your superclasses: '
-            f'{mapped_classes}')
+            f"==> Mapped {len(mapped_classes)} classes to your superclasses: "
+            f"{mapped_classes}"
+        )
 
     @staticmethod
     def build_mapping(dataset_wnids, superclass_wnids):
@@ -469,12 +541,12 @@ class Superclass(DecisionRules):
         self.total += n_samples
         self.correct += (predicted == targets).sum().item()
         accuracy = round(self.correct / (float(self.total) or 1), 4) * 100
-        return f'{self.name}: {accuracy}%'
+        return f"{self.name}: {accuracy}%"
 
 
 class SuperclassNBDT(Superclass):
 
-    name = 'Superclass-NBDT'
+    name = "Superclass-NBDT"
 
     def __init__(self, *args, Rules=None, **kwargs):
         super().__init__(*args, Rules=SoftRules, **kwargs)
@@ -483,7 +555,8 @@ class SuperclassNBDT(Superclass):
         outputs = self.rules.get_node_logits(
             outputs,
             new_to_old_classes=self.new_to_old_classes_pred,
-            num_classes=max(self.new_to_old_classes_pred) + 1)
+            num_classes=max(self.new_to_old_classes_pred) + 1,
+        )
         predicted = outputs.max(1)[1].to(targets.device)
 
         if self.mapping_target.device != targets.device:
@@ -500,16 +573,22 @@ class VisualizeDecisionNode(ScoreSave, Superclass):
 
     accepts_visualize_decision_node_wnid = True
 
-    def __init__(self, visualize_decision_node_wnid, *args,
-            path='out/vdn-{wnid}-{{epoch}}-{{time}}/image-{{suffix}}-{{i}}-{{score:.2e}}.jpg',
-            **kwargs):
+    def __init__(
+        self,
+        visualize_decision_node_wnid,
+        *args,
+        path="out/vdn-{wnid}-{{epoch}}-{{time}}/image-{{suffix}}-{{i}}-{{score:.2e}}.jpg",
+        **kwargs,
+    ):
         super().__init__(
-            *args, path=path.format(wnid=visualize_decision_node_wnid), **kwargs)
+            *args, path=path.format(wnid=visualize_decision_node_wnid), **kwargs
+        )
         self.wnid = visualize_decision_node_wnid
 
     def score(self, outputs, targets, images):
         assert self.wnid in self.rules.tree.wnid_to_node, [
-            (node.name, node.wnid) for node in self.rules.tree.wnid_to_node.values()]
+            (node.name, node.wnid) for node in self.rules.tree.wnid_to_node.values()
+        ]
         node = self.rules.tree.wnid_to_node[self.wnid]
         logits = self.rules.get_node_logits(outputs, node=node.parent)
         child_index = node.parent.wnid_to_child_index(node.wnid)

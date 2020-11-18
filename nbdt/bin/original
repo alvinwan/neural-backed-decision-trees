@@ -20,22 +20,32 @@ model.eval()
 
 # load + transform image
 im = load_image_from_path(sys.argv[1])
-transform = transforms.Compose([
-  transforms.Resize(32),
-  transforms.CenterCrop(32),
-  transforms.ToTensor(),
-  transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
+transform = transforms.Compose(
+    [
+        transforms.Resize(32),
+        transforms.CenterCrop(32),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ]
+)
 x = transform(im)[None]
 
 model.eval()
 
 probs = F.softmax(model(x), dim=1)[0]
-confidence = (1 - Categorical(probs=probs).entropy()) * 100.
+confidence = (1 - Categorical(probs=probs).entropy()) * 100.0
 
-print('Probabilities per class: ' + ', '.join([
-    f'{cls} ({p.item() * 100:.2f}%)'
-    for p, cls in sorted(zip(probs, DATASET_TO_CLASSES['CIFAR10']),
-        key=lambda t: t[0],
-        reverse=True)
-]) + f'// Confidence: {confidence:.2f}%')
+print(
+    "Probabilities per class: "
+    + ", ".join(
+        [
+            f"{cls} ({p.item() * 100:.2f}%)"
+            for p, cls in sorted(
+                zip(probs, DATASET_TO_CLASSES["CIFAR10"]),
+                key=lambda t: t[0],
+                reverse=True,
+            )
+        ]
+    )
+    + f"// Confidence: {confidence:.2f}%"
+)
