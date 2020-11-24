@@ -344,7 +344,7 @@ def image_to_base64_encode(image, format="jpeg"):
 def generate_vis(
     path_template,
     data,
-    fname,
+    path_html,
     zoom=2,
     straight_lines=True,
     show_sublabels=False,
@@ -364,7 +364,10 @@ def generate_vis(
     bg="#FFFFFF",
     text_rect="rgba(255,255,255,0.8)",
     stroke_width=0.45,
+    verbose=False,
 ):
+    fname = Path(path_html).stem
+    out_dir = Path(path_html).parent
     with open(path_template) as f:
         html = (
             f.read()
@@ -401,11 +404,11 @@ def generate_vis(
         )
 
     os.makedirs(out_dir, exist_ok=True)
-    path_html = f"{out_dir}/{fname}.html"
     with open(path_html, "w") as f:
         f.write(html)
 
-    Colors.green("==> Wrote HTML to {}".format(path_html))
+    if verbose:
+        Colors.green("==> Wrote HTML to {}".format(path_html))
 
 
 def get_color_info(
@@ -488,71 +491,115 @@ def generate_node_conf(node_conf):
 
 
 def generate_hierarchy_vis(args):
-    path = get_graph_path_from_args(**vars(args))
-    print("==> Reading from {}".format(path))
+    path_hie = get_graph_path_from_args(**vars(args))
+    print("==> Reading from {}".format(path_hie))
+    G = read_graph(path_hie)
 
-    G = read_graph(path)
-
-    roots = list(get_roots(G))
-    num_roots = len(roots)
-    root = args.vis_root or next(get_roots(G))
-
-    assert root in G, f"Node {root} is not a valid node. Nodes: {G.nodes}"
+    path_html = f"./{generate_vis_fname(**vars(args))}.html"
+    kwargs = vars(args)
 
     dataset = None
     if args.dataset and args.vis_leaf_images:
-        cls = getattr(data, args.dataset)
+        cls = getattr(data, kwargs.pop('dataset'))
         dataset = cls(root="./data", train=False, download=True)
+
+    kwargs.pop('dataset', '')
+    kwargs.pop('fname', '')
+    return generate_hierarchy_vis_from(
+        G, dataset, path_html, verbose=True, **kwargs
+    )
+
+
+def generate_hierarchy_vis_from(
+    G,
+    dataset,
+    path_html,
+    color="blue",
+    vis_root=None,
+    vis_no_color_leaves=False,
+    vis_color_path_to=None,
+    vis_color_nodes=(),
+    vis_theme="regular",
+    vis_force_labels_left=(),
+    vis_leaf_images=False,
+    vis_image_resize_factor=1,
+    vis_fake_sublabels=False,
+    vis_zoom=2,
+    vis_curved=False,
+    vis_sublabels=False,
+    vis_height=750,
+    vis_width=1000,
+    vis_margin_top=20,
+    vis_margin_left=250,
+    vis_hide=(),
+    vis_above_dy=325,
+    vis_below_dy=475,
+    vis_scale=1,
+    vis_root_y="null",
+    vis_colormap="colormap_annotated.png",
+    vis_node_conf=(),
+    verbose=False,
+    **kwargs
+):
+    """
+    :param path_html: Where to write final hierarchy
+    """
+
+    roots = list(get_roots(G))
+    num_roots = len(roots)
+    root = vis_root or next(get_roots(G))
+
+    assert root in G, f"Node {root} is not a valid node. Nodes: {G.nodes}"
 
     color_info = get_color_info(
         G,
-        args.color,
-        color_leaves=not args.vis_no_color_leaves,
-        color_path_to=args.vis_color_path_to,
-        color_nodes=args.vis_color_nodes or (),
-        theme=args.vis_theme,
+        color,
+        color_leaves=not vis_no_color_leaves,
+        color_path_to=vis_color_path_to,
+        color_nodes=vis_color_nodes or (),
+        theme=vis_theme,
     )
 
-    node_to_conf = generate_node_conf(args.vis_node_conf)
+    node_to_conf = generate_node_conf(vis_node_conf)
 
     tree = build_tree(
         G,
         root,
         color_info=color_info,
-        force_labels_left=args.vis_force_labels_left or [],
+        force_labels_left=vis_force_labels_left or [],
         dataset=dataset,
-        include_leaf_images=args.vis_leaf_images,
-        image_resize_factor=args.vis_image_resize_factor,
-        include_fake_sublabels=args.vis_fake_sublabels,
+        include_leaf_images=vis_leaf_images,
+        image_resize_factor=vis_image_resize_factor,
+        include_fake_sublabels=vis_fake_sublabels,
         node_to_conf=node_to_conf,
     )
     graph = build_graph(G)
 
     if num_roots > 1:
         Colors.red(f"Found {num_roots} roots! Should be only 1: {roots}")
-    else:
+    elif verbose:
         print(f"Found just {num_roots} root.")
 
-    fname = generate_vis_fname(**vars(args))
     parent = Path(fwd()).parent
     generate_vis(
         str(parent / "nbdt/templates/tree-template.html"),
         tree,
-        fname,
-        zoom=args.vis_zoom,
-        straight_lines=not args.vis_curved,
-        show_sublabels=args.vis_sublabels,
-        height=args.vis_height,
+        path_html,
+        zoom=vis_zoom,
+        straight_lines=not vis_curved,
+        show_sublabels=vis_sublabels,
+        height=vis_height,
         bg=color_info["bg"],
         text_rect=color_info["text_rect"],
-        width=args.vis_width,
-        margin_top=args.vis_margin_top,
-        margin_left=args.vis_margin_left,
-        hide=args.vis_hide or [],
-        above_dy=args.vis_above_dy,
-        below_dy=args.vis_below_dy,
-        scale=args.vis_scale,
-        root_y=args.vis_root_y,
-        colormap=args.vis_colormap,
+        width=vis_width,
+        margin_top=vis_margin_top,
+        margin_left=vis_margin_left,
+        hide=vis_hide or [],
+        above_dy=vis_above_dy,
+        below_dy=vis_below_dy,
+        scale=vis_scale,
+        root_y=vis_root_y,
+        colormap=vis_colormap,
+        verbose=verbose,
     )
 

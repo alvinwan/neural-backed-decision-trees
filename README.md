@@ -434,6 +434,14 @@ python main.py --dataset-test=Imagenet1000 --dataset=CIFAR10 --disable-test-eval
 
 </details>
 
+<details><summary><b>Visualize inference probabilities in hierarchy.</b> <i>[click to expand]</i></summary>
+
+```
+python main.py --analysis=VisualizeHierarchyInference --eval --pretrained # soft inference by default
+```
+
+</details>
+
 # Results
 
 We compare against all previous decision-tree-based methods that report on CIFAR10, CIFAR100, and/or ImageNet, including methods that hinder interpretability by using impure leaves or a random forest. We report the baseline with the highest accuracy, of all these methods: Deep  Neural  Decision  Forest  (DNDF  updated with ResNet18), Explainable Observer-Classifier (XOC), Deep ConvolutionalDecision Jungle (DCDJ), Network of Experts (NofE), Deep Decision Network(DDN), and Adaptive Neural Trees (ANT).

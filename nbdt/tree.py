@@ -13,7 +13,6 @@ from nbdt.utils import (
     dataset_to_default_path_wnids,
     hierarchy_to_path_graph,
 )
-from nbdt.hierarchy import generate_hierarchy
 from nbdt.data import imagenet
 import torch.nn as nn
 import random
@@ -178,6 +177,7 @@ class Tree:
     def update_from_model(
         self, model, arch, dataset, classes=None, path_wnids=None, path_graph=None
     ):
+        from nbdt.hierarchy import generate_hierarchy  # avoid circular import hah
         assert model is not None, "`model` cannot be NoneType"
         path_graph = generate_hierarchy(
             dataset=dataset, method="induced", arch=arch, model=model, path=path_graph,
@@ -228,3 +228,15 @@ class Tree:
                 for next_index, (_, wnid) in zip(next_indices, leaf_to_path[leaf])
             ]
         return leaf_to_steps
+
+    def visualize(self, path_html, dataset=None, **kwargs):
+        """
+        :param path_html: Where to write the final generated visualization
+        """
+        from nbdt.hierarchy import generate_hierarchy_vis_from  # avoid circular import hah
+        generate_hierarchy_vis_from(
+            self.G,
+            dataset=dataset,
+            path_html=path_html,
+            **kwargs
+        )

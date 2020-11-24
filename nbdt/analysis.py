@@ -34,6 +34,7 @@ __all__ = names = (
     "TopEntropy",
     "TopDifference",
     "VisualizeDecisionNode",
+    "VisualizeHierarchyInference"
 )
 
 
@@ -586,3 +587,42 @@ class VisualizeDecisionNode(ScoreSave, Superclass):
         similarity = logits[:, child_index].detach().cpu().numpy()
         labels = self.mapping_target[targets]
         return [float(s) if l >= 0 else 0 for s, l in zip(similarity, labels)]
+
+
+class VisualizeHierarchyInference(SoftEmbeddedDecisionRules):
+    """Visualize hierarchy and inference probabilities"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.i = 0
+
+    def update_batch(self, outputs, targets, images):
+        tree = self.rules.tree
+        wnid_to_outputs = self.rules.forward_nodes(outputs)
+        outputs = self.rules.forward(outputs, wnid_to_outputs)
+        preds = torch.argmax(outputs, dim=1)
+
+        for j in range(len(targets)):
+            path_html = f"out/vis-inf-epoch{self.epoch}-sample{self.i}.html"
+            vis_node_conf = []
+            for node in tree.nodes:
+                if not node.parent or node.parent.wnid not in wnid_to_outputs:
+                    vis_node_conf.append((node.wnid, "sublabel", ""))
+                    continue
+                probs = wnid_to_outputs[node.parent.wnid]['probs']
+                child_index = node.parent.wnid_to_child_index(node.wnid)
+                vis_node_conf.append((
+                    node.wnid,
+                    "sublabel",
+                    f"{probs[j, child_index].item() * 100.:.0f}%"
+                ))
+            tree.visualize(
+                path_html,
+                vis_node_conf=vis_node_conf,
+                vis_sublabels=True,
+                vis_zoom=1.75,
+                vis_color_path_to=tree.wnids_leaves[preds[j]],
+                color="blue-minimal",
+                vis_margin_left=120,
+            )
+            self.i += 1
