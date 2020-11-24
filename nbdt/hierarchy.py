@@ -124,6 +124,7 @@ def generate_hierarchy(
     write_graph(G, path)
 
     Colors.green("==> Wrote tree to {}".format(path))
+    return path
 
 
 ########

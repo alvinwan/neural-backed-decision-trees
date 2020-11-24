@@ -203,6 +203,7 @@ class IgnoredSamples(Noop):
 class DecisionRules(Noop):
     """Generic support for evaluating embedded decision rules."""
 
+    accepts_tree = lambda tree, **kwargs: tree
     accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
     accepts_path_graph = True
     accepts_path_wnids = True
@@ -210,8 +211,8 @@ class DecisionRules(Noop):
 
     name = "NBDT"
 
-    def __init__(self, *args, Rules=HardRules, metric="top1", **kwargs):
-        self.rules = Rules(*args, **kwargs)
+    def __init__(self, *args, Rules=HardRules, tree=None, metric="top1", **kwargs):
+        self.rules = Rules(*args, **kwargs, tree=tree)
         super().__init__(self.rules.tree.classes)
         self.metric = getattr(metrics, metric)()
         self.best_accuracy = 0

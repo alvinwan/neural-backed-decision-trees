@@ -285,6 +285,9 @@ def generate_checkpoint_fname(
     xent_weight=1,
     xent_weight_end=None,
     xent_weight_power=1,
+    tree_start_epochs=None,
+    tree_update_every_epochs=None,
+    tree_update_end_epochs=None,
     **kwargs,
 ):
     fname = "ckpt"
@@ -314,14 +317,21 @@ def generate_checkpoint_fname(
             fname += f"-tsw{tree_supervision_weight}"
         if tree_supervision_weight_end not in (tree_supervision_weight, None):
             fname += f"-tswe{tree_supervision_weight_end}"
-        if tree_supervision_weight_power != 1:
+        if tree_supervision_weight_power not in (None, 1):
             fname += f"-tswp{tree_supervision_weight_power}"
         if xent_weight not in (None, 1):
             fname += f"-xw{xent_weight}"
         if xent_weight_end not in (xent_weight, None):
             fname += f"-xwe{xent_weight_end}"
-        if xent_weight_power != 1:
+        if xent_weight_power not in (None, 1):
             fname += f"-xwp{xent_weight_power}"
+    if "SoftTreeLoss" in loss:
+        if tree_start_epochs is not None:
+            fname += f"-tse{tree_start_epochs}"
+        if tree_update_every_epochs is not None:
+            fname += f"-tueve{tree_update_every_epochs}"
+        if tree_update_end_epochs is not None:
+            fname += f"-tuene{tree_update_end_epochs}"
     return fname
 
 

@@ -423,6 +423,9 @@ def build_induced_graph(
         "`--dataset` with the right number of classes."
     )
 
+    if centers.is_cuda:
+        centers = centers.cpu()
+
     G = nx.DiGraph()
 
     # add leaves

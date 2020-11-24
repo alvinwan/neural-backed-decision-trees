@@ -13,23 +13,18 @@ from nbdt.utils import (
     coerce_tensor,
     uncoerce_tensor,
 )
+from pathlib import Path
+import os
 
 __all__ = names = (
     "HardTreeSupLoss",
     "SoftTreeSupLoss",
+    "SoftTreeLoss",
     "CrossEntropyLoss",
 )
 
+
 def add_arguments(parser):
-    parser.add_argument(
-        "--hierarchy",
-        help="Hierarchy to use. If supplied, will be used to "
-        "generate --path-graph. --path-graph takes precedence.",
-    )
-    parser.add_argument(
-        "--path-graph", help="Path to graph-*.json file."
-    )  # WARNING: hard-coded suffix -build in generate_checkpoint_fname
-    parser.add_argument("--path-wnids", help="Path to wnids.txt file.")
     parser.add_argument(
         "--xent-weight", "--xw", type=float, help="Weight for cross entropy term"
     )
@@ -64,6 +59,24 @@ def add_arguments(parser):
         help="Raise progress to this power. > 1 to trend "
         "towards tswe more slowly. < 1 to trend more quickly",
     )
+    parser.add_argument(
+        "--tree-start-epochs",
+        "--tse",
+        type=int,
+        help="epoch count to start tree supervision loss from (generate tree at that pt)",
+    )
+    parser.add_argument(
+        "--tree-update-end-epochs",
+        "--tuene",
+        type=int,
+        help="epoch count to stop generating new trees at",
+    )
+    parser.add_argument(
+        "--tree-update-every-epochs",
+        "--tueve",
+        type=int,
+        help="Recompute tree from weights every (this many) epochs",
+    )
 
 
 def set_default_values(args):
@@ -83,6 +96,7 @@ CrossEntropyLoss = nn.CrossEntropyLoss
 
 class TreeSupLoss(nn.Module):
 
+    accepts_tree = lambda tree, **kwargs: tree
     accepts_criterion = lambda criterion, **kwargs: criterion
     accepts_dataset = lambda trainset, **kwargs: trainset.__class__.__name__
     accepts_path_graph = True
@@ -134,6 +148,7 @@ class TreeSupLoss(nn.Module):
         self.xent_weight_power = xent_weight_power
         self.criterion = criterion
         self.progress = 1
+        self.epochs = 0
 
     @staticmethod
     def assert_output_not_nbdt(outputs):
@@ -188,6 +203,7 @@ class TreeSupLoss(nn.Module):
         return loss_xent * xent_weight + loss_tree * tree_weight
 
     def set_epoch(self, cur, total):
+        self.epochs = cur
         self.progress = cur / total
         if hasattr(super(), "set_epoch"):
             super().set_epoch(cur, total)
@@ -248,6 +264,55 @@ class SoftTreeSupLoss(TreeSupLoss):
     def forward_tree(self, outputs, targets):
         self.assert_output_not_nbdt(outputs)
         return self.criterion(self.rules(outputs), targets)
+
+
+class SoftTreeLoss(SoftTreeSupLoss):
+
+    accepts_tree_start_epochs = True
+    accepts_tree_update_every_epochs = True
+    accepts_tree_update_end_epochs = True
+    accepts_arch = True
+    accepts_net = lambda net, **kwargs: net
+    accepts_checkpoint_path = lambda checkpoint_path, **kwargs: checkpoint_path
+
+    def __init__(
+        self,
+        *args,
+        arch=None,
+        checkpoint_path="./",
+        net=None,
+        tree_start_epochs=67,
+        tree_update_every_epochs=10,
+        tree_update_end_epochs=120,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.start_epochs = tree_start_epochs
+        self.update_every_epochs = tree_update_every_epochs
+        self.update_end_epochs = tree_update_end_epochs
+        self.net = net
+        self.arch = arch
+        self.checkpoint_path = checkpoint_path
+
+    def forward_tree(self, outputs, targets):
+        if self.epochs < self.start_epochs:
+            return self.criterion(outputs, targets)  # regular xent
+        self.assert_output_not_nbdt(outputs)
+        return self.criterion(self.rules(outputs), targets)
+
+    def set_epoch(self, *args, **kwargs):
+        super().set_epoch(*args, **kwargs)
+        offset = self.epochs - self.start_epochs
+        if (
+            offset >= 0
+            and offset % self.update_every_epochs == 0
+            and self.epochs < self.update_end_epochs
+        ):
+            checkpoint_dir = self.checkpoint_path.replace(".pth", "")
+            path_graph = os.path.join(checkpoint_dir, f"graph-epoch{self.epochs}.json")
+            self.tree.update_from_model(
+                self.net, self.arch, self.tree.dataset, path_graph=path_graph
+            )
 
 
 class SoftSegTreeSupLoss(SoftTreeSupLoss):

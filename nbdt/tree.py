@@ -13,6 +13,7 @@ from nbdt.utils import (
     dataset_to_default_path_wnids,
     hierarchy_to_path_graph,
 )
+from nbdt.hierarchy import generate_hierarchy
 from nbdt.data import imagenet
 import torch.nn as nn
 import random
@@ -22,6 +23,18 @@ def dataset_to_dummy_classes(dataset):
     assert dataset in DATASETS
     num_classes = DATASET_TO_NUM_CLASSES[dataset]
     return [FakeSynset.create_from_offset(i).wnid for i in range(num_classes)]
+
+
+def add_arguments(parser):
+    parser.add_argument(
+        "--hierarchy",
+        help="Hierarchy to use. If supplied, will be used to "
+        "generate --path-graph. --path-graph takes precedence.",
+    )
+    parser.add_argument(
+        "--path-graph", help="Path to graph-*.json file."
+    )  # WARNING: hard-coded suffix -build in generate_checkpoint_fname
+    parser.add_argument("--path-wnids", help="Path to wnids.txt file.")
 
 
 class Node:
@@ -144,6 +157,9 @@ class Tree:
         if dataset and not classes:
             classes = dataset_to_dummy_classes(dataset)
 
+        self.load_hierarchy(dataset, path_graph, path_wnids, classes)
+
+    def load_hierarchy(self, dataset, path_graph, path_wnids, classes):
         self.dataset = dataset
         self.path_graph = path_graph
         self.path_wnids = path_wnids
@@ -158,6 +174,31 @@ class Tree:
         self.nodes = [self.wnid_to_node[wnid] for wnid in sorted(self.wnid_to_node)]
         self.inodes = [node for node in self.nodes if not node.is_leaf()]
         self.leaves = [self.wnid_to_node[wnid] for wnid in self.wnids_leaves]
+
+    def update_from_model(
+        self, model, arch, dataset, classes=None, path_wnids=None, path_graph=None
+    ):
+        assert model is not None, "`model` cannot be NoneType"
+        path_graph = generate_hierarchy(
+            dataset=dataset, method="induced", arch=arch, model=model, path=path_graph,
+        )
+        tree = Tree(dataset, path_graph=path_graph, path_wnids=path_wnids, classes=classes, hierarchy="induced")
+        self.load_hierarchy(
+            dataset=tree.dataset,
+            path_graph=tree.path_graph,
+            path_wnids=tree.path_wnids,
+            classes=tree.classes
+        )
+
+    @classmethod
+    def create_from_args(cls, args, classes=None):
+        return cls(
+            args.dataset,
+            args.path_graph,
+            args.path_wnids,
+            classes=classes,
+            hierarchy=args.hierarchy,
+        )
 
     @property
     def root(self):
