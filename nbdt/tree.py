@@ -13,7 +13,6 @@ from nbdt.utils import (
     dataset_to_default_path_wnids,
     hierarchy_to_path_graph,
 )
-from nbdt.data import imagenet
 import torch.nn as nn
 import random
 
