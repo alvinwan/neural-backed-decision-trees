@@ -1,28 +1,24 @@
-# Neural-Backed Decision Trees
+# Neural-Backed Decision Trees [[Site]](http://nbdt.alvinwan.com) [[Paper]](http://nbdt.alvinwan.com/paper/) [[Demo]](http://nbdt.alvinwan.com/demo/) [[Blog]](https://towardsdatascience.com/what-explainable-ai-fails-to-explain-and-how-we-fix-that-1e35e37bee07)
 
-[Project Page](http://nbdt.alvinwan.com) &nbsp;//&nbsp; [Paper](http://nbdt.alvinwan.com/paper/) &nbsp;//&nbsp; [No-code Web Demo](http://nbdt.alvinwan.com/demo/) &nbsp;//&nbsp; [Colab Notebook](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb)
+[![Try In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb)
 
-*By Alvin Wan, \*Lisa Dunlap, \*Daniel Ho, Jihan Yin, Scott Lee, Henry Jin, Suzanne Petryk, Sarah Adel Bargal, Joseph E. Gonzalez*<br/>
+Alvin Wan, \*Lisa Dunlap, \*Daniel Ho, Jihan Yin, Scott Lee, Henry Jin, Suzanne Petryk, Sarah Adel Bargal, Joseph E. Gonzalez<br/>
 <sub>*denotes equal contribution</sub>
 
-NBDTs match or outperform modern neural networks on CIFAR, ImageNet and better generalize to unseen classes by up to 16%.  Furthermore, our surrogate loss improves the original model’s accuracy by up to 2%.
+NBDTs match or outperform modern neural networks on CIFAR10, CIFAR100, TinyImagenet200, ImageNet and better generalize to unseen classes by up to 16%. Furthermore, our loss improves the original model’s accuracy by up to 2%. We attain 76.60% on ImageNet.
 
-Run decision trees that achieve state-of-the-art accuracy for explainable models on CIFAR10, CIFAR100, TinyImagenet200, and ImageNet. NBDTs match or outperform modern neural networks on CIFAR, ImageNet and better generalize to unseen classes by up to 16%.  Furthermore, our surrogate loss improves the original model’s accuracy by up to 2%. We attain an ImageNet top-1 accuracy of 76.60%.
+**Updates**
 
-**Update 1/22/21: NBDT was accepted to ICLR 2021. Repository and arXiv will be updated with new results and supporting code.**
+- **1/22/21 Accepted**: NBDT was accepted to ICLR 2021. Repository has been updated with new results and supporting code.
 
-**Table of Contents**
+Table of Contents
 
 - [Quickstart: Running and loading NBDTs](#quickstart)
 - [Convert your own neural network into a decision tree](#convert-neural-networks-to-decision-trees)
 - [Training and evaluation](#training-and-evaluation)
 - [Results](#results)
-- [Setup for Development](#setup-for-development)
+- [Customize Repository for Your Application](#customize-repository-for-your-application)
 - [Citation](#citation)
-
-![pipeline](https://user-images.githubusercontent.com/2068077/76384774-1ffb8480-631d-11ea-973f-7cac2a60bb10.jpg)
-
-Per the pipeline illustration above, we (1) [generate the hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#1-Hierarchies) and (2) train the neural network [with a tree supervision loss](https://github.com/alvinwan/neural-backed-decision-trees#2-Tree-Supervision-Loss). Then, we (3) [run inference](https://github.com/alvinwan/neural-backed-decision-trees#3-Inference) by featurizing images using the network backbone and running embedded decision rules.
 
 # Quickstart
 
@@ -30,31 +26,23 @@ Per the pipeline illustration above, we (1) [generate the hierarchy](https://git
 
 <i>Don't want to download? Try your own images on the [web demo](http://nbdt.alvinwan.com/demo/).</i>
 
-Pip install the `nbdt` utility and run it on an image of your choosing. This can be a local image path or an image URL. Below, we evaluate on an image of a cat, from the web. This cat is pictured below.
+`pip install nbdt`, and run our CLI on any image. Below, we run a CIFAR10 model on images from the web, which outputs both the class prediction and all the intermediate decisions. Although the *Bear* and *Zebra* classes were not seen at train time, the model still correctly picks *Animal* over *Vehicle* for both.
 
 ```bash
+# install our cli
 pip install nbdt
+
+# Cat picture - can be a local image path or an image URL
 nbdt https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
-```
+# Prediction: cat // Decisions: animal (Confidence: 99.47%), chordate (Confidence: 99.20%), carnivore (Confidence: 99.42%), cat (Confidence: 99.86%)
 
-This outputs both the class prediction and all the intermediate decisions, like below:
-
-```
-Prediction: cat // Decisions: animal (Confidence: 99.47%), chordate (Confidence: 99.20%), carnivore (Confidence: 99.42%), cat (Confidence: 99.86%)
-```
-
-By default, this evaluation utility uses WideResNet pretrained on CIFAR10. You can also pass classes not seen in CIFAR10. Below, we pass a picture of a bear and a zebra. This zebra is also pictured below.
-
-```bash
+# Zebra picture (not in CIFAR10) - picks the closest CIFAR10 animal, which is horse
 nbdt https://images.pexels.com/photos/750539/pexels-photo-750539.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=32
+# Prediction: horse // Decisions: animal (Confidence: 99.31%), ungulate (Confidence: 99.25%), horse (Confidence: 99.62%)
+
+# Bear picture (not in CIFAR10)
 nbdt https://images.pexels.com/photos/158109/kodiak-brown-bear-adult-portrait-wildlife-158109.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=32
-```
-
-Like before, this outputs the class prediction and intermediate decisions. Although the *Bear* and *Zebra* classes were not seen at train time, the model still correctly picks *Animal* over *Vehicle* for both. Note that for *Zebra*, the obvious closest class is *Horse*, matching the model's prediction below.
-
-```
-Prediction: horse // Decisions: animal (Confidence: 99.31%), ungulate (Confidence: 99.25%), horse (Confidence: 99.62%)
-Prediction: dog // Decisions: animal (Confidence: 99.51%), chordate (Confidence: 99.35%), carnivore (Confidence: 99.69%), dog (Confidence: 99.22%)
+# Prediction: dog // Decisions: animal (Confidence: 99.51%), chordate (Confidence: 99.35%), carnivore (Confidence: 99.69%), dog (Confidence: 99.22%)
 ```
 
 <img src="https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=120" height=120 align=left>
@@ -68,13 +56,7 @@ Prediction: dog // Decisions: animal (Confidence: 99.51%), chordate (Confidence:
 
 <i>Don't want to download? Try inference on a pre-filled [Google Colab Notebook](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb).</i>
 
-If you haven't already, pip install the `nbdt` utility.
-
-```bash
-pip install nbdt
-```
-
-Then, pick an NBDT inference mode (hard or soft), dataset, and backbone. By default, we support ResNet18 and WideResNet28x10 for CIFAR10, CIFAR100, and TinyImagenet200. See [nbdt-pytorch-image-models](https://github.com/alvinwan/nbdt-pytorch-image-models) for EfficientNet-EdgeTPUSmall on ImageNet.
+`pip install nbdt` to use our models. We have pretrained models for ResNet18 and WideResNet28x10 for CIFAR10, CIFAR100, and TinyImagenet200. See [Models](#models) for adding other models. See [nbdt-pytorch-image-models](https://github.com/alvinwan/nbdt-pytorch-image-models) for EfficientNet on ImageNet.
 
 <sub>[Try below script on Google Colab](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb)</sub>
 
@@ -89,8 +71,6 @@ model = SoftNBDT(
   arch='wrn28_10_cifar10',
   model=model)
 ```
-
-Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.models.resnet.ResNet18` supports variable size inputs. See [Models](#models) for instructions on using your favorite image classification neural network.
 
 **Example in ~30 lines**: See [`nbdt/bin/nbdt`](https://github.com/alvinwan/neural-backed-decision-trees/blob/master/nbdt/bin/nbdt), which loads the pretrained model, loads an image, and runs inference on the image in ~30 lines. This file is the executable `nbdt` in the previous section. Try this in a [Google Colab Notebook](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb).
 
@@ -176,29 +156,24 @@ For more information on generating different hierarchies, see [Induced Hierarchy
 
 # Training and Evaluation
 
-**To reproduce experimental results**, start by cloning the repository and installing all requirements.
+**To reproduce experimental results**, clone the repository, install all requirements, and run our bash script.
 
 ```bash
 git clone git@github.com:alvinwan/neural-backed-decision-trees.git  # or http addr if you don't have private-public github key setup
 cd neural-backed-decision-trees
-python setup.py develop
+python setup.py develop # install all requirements
+bash scripts/gen_train_eval_wideresnet.sh # reproduce paper core CIFAR10, CIFAR100, and TinyImagenet200 results
 ```
 
-To reproduce the core experimental results in our paper -- ignoring ablation studies -- simply run the following bash script:
+We (1) [generate the hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#1-generate-hierarchy) and (2) train the neural network [with a tree supervision loss](https://github.com/alvinwan/neural-backed-decision-trees#2-tree-supervision-loss). Then, we (3) [run inference](https://github.com/alvinwan/neural-backed-decision-trees#3-inference) by featurizing images using the network backbone and running embedded decision rules. Notes:
 
-```bash
-bash scripts/gen_train_eval_wideresnet.sh
-```
+- See below sections for details on visualizations, reproducing ablation studies, and different configurations (e.g., different hierarchies).
+- To reproduce our ImageNet results, see [`examples/imagenet`](https://github.com/alvinwan/neural-backed-decision-trees/tree/master/examples/imagenet) for ResNet and [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models) for EfficientNet.
+- For all scripts, you can use any [`torchvision`](https://pytorch.org/docs/stable/torchvision/models.html) model or any [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch) model, as we directly support both model zoos. Customization for each step is explained below.
 
-Want more transparent step-by-step instructions? The bash scripts above are explained in more detail in the following sections: [Induced Hierarchy](https://github.com/alvinwan/neural-backed-decision-trees#Induced-Hierarchy), [Soft Tree Supervision Loss](https://github.com/alvinwan/neural-backed-decision-trees#Tree-Supervision-Loss), and [Soft Inference](https://github.com/alvinwan/neural-backed-decision-trees#Soft-Inference). These scripts reproduce our CIFAR10, CIFAR100, and TinyImagenet200 results. To reproduce our ImageNet results, see [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models).
+## 1. Generate Hierarchy
 
-For all scripts, you can use any [`torchvision`](https://pytorch.org/docs/stable/torchvision/models.html) model or any [`pytorchcv`](https://github.com/osmr/imgclsmob/tree/master/pytorch) model, as we directly support both model zoos. Customization for each step is explained below.
-
-## 1. Hierarchies
-
-### Induced Hierarchy
-
-Run the following to generate and test induced hierarchies for CIFAR10 based off of the WideResNet model.
+Run the following to generate and test **induced hierarchies** for CIFAR10 based off of the WideResNet model.
 
 ```bash
 nbdt-hierarchy --arch=wrn28_10_cifar10 --dataset=CIFAR10
@@ -279,17 +254,14 @@ nbdt-hierarchy --vis-zoom=2.5 --dataset=CIFAR10 --arch=wrn28_10_cifar10 --vis-co
 </div>
 </details>
 
-
-### WordNet Hierarchy
-
+<details><summary><b>Generate WordNet hierarchy and see how it works.</b> <i>[click to expand]</i></summary>
+<div>
+  
 Run the following to generate and test WordNet hierarchies for CIFAR10, CIFAR100, and TinyImagenet200. The script also downloads the NLTK WordNet corpus.
 
 ```bash
 bash scripts/generate_hierarchies_wordnet.sh
 ```
-
-<details><summary><b>See how it works.</b> <i>[click to expand]</i></summary>
-<div>
 
 The below just explains the above `generate_hierarchies_wordnet.sh`, using CIFAR10. You do not need to run the following after running the above bash script.
 
@@ -302,7 +274,7 @@ nbdt-hierarchy --method=wordnet --dataset=CIFAR10
 ```
 </details>
 
-<details><summary><b>See example visualization.</b> <i>[click to expand]</i></summary>
+<details><summary><b>See example WordNet visualization.</b> <i>[click to expand]</i></summary>
 <div>
 
 We can generate a visualization with a slightly improved zoom and with wordnet IDs. By default, the script builds the Wordnet hierarchy for CIFAR10.
@@ -317,13 +289,16 @@ nbdt-hierarchy --method=wordnet --vis-zoom=1.25 --vis-sublabels
 </details>
 
 
-### Random Hierarchy
+<details><summary><b>Generate random hierarchy.</b> <i>[click to expand]</i></summary>
+<div>
 
 Use `--method=random` to randomly generate a binary-ish hierarchy. Optionally, use the `--seed` (`--seed=-1` to *not* shuffle leaves) and `--branching-factor` flags. When debugging, we set branching factor to the number of classes. For example, the sanity check hierarchy for CIFAR10 is
 
 ```bash
 nbdt-hierarchy --seed=-1 --branching-factor=10 --dataset=CIFAR10
 ```
+</div>
+</details>
 
 ## 2. Tree Supervision Loss
 
@@ -440,32 +415,36 @@ python main.py --analysis=VisualizeHierarchyInference --eval --pretrained # soft
 
 # Results
 
-We compare against all previous decision-tree-based methods that report on CIFAR10, CIFAR100, and/or ImageNet, including methods that hinder interpretability by using impure leaves or a random forest. We report the baseline with the highest accuracy, of all these methods: Deep  Neural  Decision  Forest  (DNDF  updated with ResNet18), Explainable Observer-Classifier (XOC), Deep ConvolutionalDecision Jungle (DCDJ), Network of Experts (NofE), Deep Decision Network(DDN), and Adaptive Neural Trees (ANT).
+We compare against all previous decision-tree-based methods that report on CIFAR10, CIFAR100, and/or ImageNet; we use numbers reported in the original papers (except DNDF, which did not have CIFAR or ImageNet top-1 scores):
+
+- Deep  Neural  Decision  Forest  (DNDF, updated with ResNet18)
+- Explainable Observer-Classifier (XOC)
+- Deep ConvolutionalDecision Jungle (DCDJ)
+- Network of Experts (NofE)
+- Deep Decision Network (DDN)
+- Adaptive Neural Trees (ANT)
+- Oblique Decision Trees (ODT)
+- Classic Decision Trees
 
 |                      | CIFAR10 | CIFAR100 | TinyImagenet200 | ImageNet |
 |----------------------|---------|----------|-----------------|----------|
 | NBDT (Ours)          | 97.55%  | 82.97%   | 67.72%          | 76.60%   |
 | Best Pre-NBDT Acc    | 94.32%  | 76.24%   | 44.56%          | 61.29%   |
 | Best Pre-NBDT Method | DNDF    | NofE     | DNDF            | NofE     |
-| Our improvement      | 3.23%   | 6.73%    | 23.16%          | 15.31%   |
+| Our improvement      | 3.23%   | 6.73%    | 23.16%          | **15.31%**   |
 
-As the last row denotes, we outperform all previous decision-tree-based methods by anywhere from 3% (CIFAR10) to 15%+ (ImageNet). Note that accuracies in our pretrained checkpoints for small to medium datasets (CIFAR10, CIFAR100, and TinyImagenet200) may fluctuate by 0.1-0.2%, as we retrained all models with the current public version of this repository.
+Our pretrained checkpoints (CIFAR10, CIFAR100, and TinyImagenet200) may deviate from these numbers by 0.1-0.2%, as we retrained all models for public release.
 
-# Setup for Development
+# Customize Repository for Your Application
 
-As discussed above, you can use the `nbdt` python library to integrate NBDT training into any existing training pipeline. However, if you wish to use the barebones training utilities here, refer to the following sections for adding custom models and datasets.
+As discussed above, you can use the `nbdt` python library to integrate NBDT training into any existing training pipeline, like ClassyVision ([ClassyVision + NBDT Imagenet example](https://github.com/alvinwan/neural-backed-decision-trees/tree/master/examples/imagenet)). However, if you wish to use the barebones training utilities here, refer to the following sections for adding custom models and datasets.
 
-If you have not already, start by cloning the repository and installing all requirements.
+If you have not already, start by cloning the repository and installing all requirements. As a sample, we've included copies of the WideResNet bash script but for ResNet18.
 
 ```bash
 git clone git@github.com:alvinwan/neural-backed-decision-trees.git  # or http addr if you don't have private-public github key setup
 cd neural-backed-decision-trees
 python setup.py develop
-```
-
-As a sample, we've included copies of the WideResNet bash script but for ResNet18.
-
-```bash
 bash scripts/gen_train_eval_resnet.sh
 ```
 
