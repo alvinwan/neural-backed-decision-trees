@@ -2,10 +2,14 @@
 
 [Project Page](http://nbdt.alvinwan.com) &nbsp;//&nbsp; [Paper](http://nbdt.alvinwan.com/paper/) &nbsp;//&nbsp; [No-code Web Demo](http://nbdt.alvinwan.com/demo/) &nbsp;//&nbsp; [Colab Notebook](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb)
 
-*By Alvin Wan, \*Lisa Dunlap, \*Daniel Ho, Jihan Yin, Scott Lee, Henry Jin, Suzanne Petryk, Sarah Adel Bargal, Joseph E. Gonzalez*
+*By Alvin Wan, \*Lisa Dunlap, \*Daniel Ho, Jihan Yin, Scott Lee, Henry Jin, Suzanne Petryk, Sarah Adel Bargal, Joseph E. Gonzalez*<br/>
 <sub>*denotes equal contribution</sub>
 
-Run decision trees that achieve state-of-the-art accuracy for explainable models on CIFAR10, CIFAR100, TinyImagenet200, and ImageNet. NBDTs achieve accuracies within 1% of the original neural network on CIFAR10, CIFAR100, and TinyImagenet200 with the recently state-of-the-art WideResNet; and within 2% of the original neural network on ImageNet, using recently state-of-the-art EfficientNet. We attain an ImageNet top-1 accuracy of 75.13%.
+NBDTs match or outperform modern neural networks on CIFAR, ImageNet and better generalize to unseen classes by up to 16%.  Furthermore, our surrogate loss improves the original model’s accuracy by up to 2%.
+
+Run decision trees that achieve state-of-the-art accuracy for explainable models on CIFAR10, CIFAR100, TinyImagenet200, and ImageNet. NBDTs match or outperform modern neural networks on CIFAR, ImageNet and better generalize to unseen classes by up to 16%.  Furthermore, our surrogate loss improves the original model’s accuracy by up to 2%. We attain an ImageNet top-1 accuracy of 76.60%.
+
+**Update 1/22/21: NBDT was accepted to ICLR 2021. Repository and arXiv will be updated with new results and supporting code.**
 
 **Table of Contents**
 
@@ -15,10 +19,6 @@ Run decision trees that achieve state-of-the-art accuracy for explainable models
 - [Results](#results)
 - [Setup for Development](#setup-for-development)
 - [Citation](#citation)
-
-**Applications**
-
-- **NEW!** [SegNBDT: Visual Decision Rules for Segmentation](https://github.com/daniel-ho/SegNBDT)
 
 ![pipeline](https://user-images.githubusercontent.com/2068077/76384774-1ffb8480-631d-11ea-973f-7cac2a60bb10.jpg)
 
@@ -57,10 +57,10 @@ Prediction: horse // Decisions: animal (Confidence: 99.31%), ungulate (Confidenc
 Prediction: dog // Decisions: animal (Confidence: 99.51%), chordate (Confidence: 99.35%), carnivore (Confidence: 99.69%), dog (Confidence: 99.22%)
 ```
 
-<img src="https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=125" height=125 align=left>
-<img src="https://images.pexels.com/photos/158109/kodiak-brown-bear-adult-portrait-wildlife-158109.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=125" height=125 align=left>
-<img src="https://images.pexels.com/photos/1490908/pexels-photo-1490908.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=125" height=125 align=left>
-<img src="https://images.pexels.com/photos/750539/pexels-photo-750539.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=125" height=125>
+<img src="https://images.pexels.com/photos/126407/pexels-photo-126407.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=140" height=140 align=left>
+<img src="https://images.pexels.com/photos/158109/kodiak-brown-bear-adult-portrait-wildlife-158109.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=140" height=140 align=left>
+<img src="https://images.pexels.com/photos/1490908/pexels-photo-1490908.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=140" height=140 align=left>
+<img src="https://images.pexels.com/photos/750539/pexels-photo-750539.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=140" height=140>
 
 <sub>*Pictures are taken from [pexels.com](http://pexels.com), which are free to use per the [Pexels license](https://www.pexels.com/photo-license/).*</sub>
 
@@ -96,8 +96,6 @@ Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.m
 
 # Convert Neural Networks to Decision Trees
 
-<!--<i>Don't want to download? Try on MNIST in a pre-filled [Google Colab Notebook]().</i>-->
-
 **To convert your neural network** into a neural-backed decision tree, perform the following 3 steps:
 
 1. **First**, if you haven't already, pip install the `nbdt` utility:
@@ -121,8 +119,6 @@ Note `torchvision.models.resnet18` only supports 224x224 input. However, `nbdt.m
   ```
 
 **Example integration with repository**: See [`nbdt-pytorch-image-models`](https://github.com/alvinwan/nbdt-pytorch-image-models), which applies this 3-step integration to a popular image classification repository `pytorch-image-models`.
-
-<!--**Example notebook with MNIST training**: Try the [Google Colab Notebook]() with example training for MNIST, applying this 3-step integration to a simple pipeline.-->
 
 <details><summary><b>Example integration with a random neural network in 16 lines</b> <i>[click to expand]</i></summary>
 <div>
@@ -448,13 +444,12 @@ We compare against all previous decision-tree-based methods that report on CIFAR
 
 |                      | CIFAR10 | CIFAR100 | TinyImagenet200 | ImageNet |
 |----------------------|---------|----------|-----------------|----------|
-| NBDT-S (Ours)        | 97.57%  | 82.87%   | 66.66%          | 75.13%   |
-| NBDT-H (Ours)        | 97.55%  | 82.21%   | 64.39%          | 74.79%   |
+| NBDT (Ours)          | 97.55%  | 82.97%   | 67.72%          | 76.60%   |
 | Best Pre-NBDT Acc    | 94.32%  | 76.24%   | 44.56%          | 61.29%   |
 | Best Pre-NBDT Method | DNDF    | NofE     | DNDF            | NofE     |
-| Our improvement      | 3.25%   | 6.63%    | 22.1%           | 13.84%   |
+| Our improvement      | 3.23%   | 6.73%    | 23.16%          | 15.31%   |
 
-As the last row denotes, we outperform all previous decision-tree-based methods by anywhere from 3% (CIFAR10) to 13%+ (ImageNet). Note that accuracies in our pretrained checkpoints for small to medium datasets (CIFAR10, CIFAR100, and TinyImagenet200) may fluctuate by 0.1-0.2%, as we retrained all models with the current public version of this repository.
+As the last row denotes, we outperform all previous decision-tree-based methods by anywhere from 3% (CIFAR10) to 15%+ (ImageNet). Note that accuracies in our pretrained checkpoints for small to medium datasets (CIFAR10, CIFAR100, and TinyImagenet200) may fluctuate by 0.1-0.2%, as we retrained all models with the current public version of this repository.
 
 # Setup for Development
 
