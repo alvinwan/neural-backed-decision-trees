@@ -9,6 +9,7 @@ NBDTs match or outperform modern neural networks on CIFAR10, CIFAR100, TinyImage
 
 **Updates**
 
+- **1/28/21 arXiv**: updated [arXiv](https://arxiv.org/pdf/2004.00221.pdf) with latest results, improving neural network accuracy, generalization, and interpretability (4 new human studies, 600 responses each).
 - **1/22/21 Accepted**: NBDT was accepted to ICLR 2021. Repository has been updated with new results and supporting code.
 
 Table of Contents
