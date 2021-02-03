@@ -1,18 +1,13 @@
-# Neural-Backed Decision Trees [[Site]](http://nbdt.alvinwan.com) [[Paper]](http://nbdt.alvinwan.com/paper/) [[Demo]](http://nbdt.alvinwan.com/demo/) [[Blog]](https://towardsdatascience.com/what-explainable-ai-fails-to-explain-and-how-we-fix-that-1e35e37bee07)
+# Neural-Backed Decision Trees &middot; [Site](http://nbdt.alvinwan.com) &middot; [Paper](http://nbdt.alvinwan.com/paper/) &middot; [Blog](https://towardsdatascience.com/what-explainable-ai-fails-to-explain-and-how-we-fix-that-1e35e37bee07) &middot; [Video](https://youtu.be/fQ2eNFCSRiA)
 
 [![Try In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/alvinwan/neural-backed-decision-trees/blob/master/examples/load_pretrained_nbdts.ipynb)
 
 Alvin Wan, \*Lisa Dunlap, \*Daniel Ho, Jihan Yin, Scott Lee, Henry Jin, Suzanne Petryk, Sarah Adel Bargal, Joseph E. Gonzalez<br/>
 <sub>*denotes equal contribution</sub>
 
-NBDTs match or outperform modern neural networks on CIFAR10, CIFAR100, TinyImagenet200, ImageNet and better generalize to unseen classes by up to 16%. Furthermore, our loss improves the original model’s accuracy by up to 2%. We attain 76.60% on ImageNet.
+NBDTs match or outperform modern neural networks on CIFAR10, CIFAR100, TinyImagenet200, ImageNet and better generalize to unseen classes by up to 16%. Furthermore, our loss improves the original model’s accuracy by up to 2%. We attain 76.60% on ImageNet. [See the 3-minute YouTube summary](https://youtu.be/fQ2eNFCSRiA).
 
-**Updates**
-
-- **1/28/21 arXiv**: updated [arXiv](https://arxiv.org/pdf/2004.00221.pdf) with latest results, improving neural network accuracy, generalization, and interpretability (4 new human studies, 600 responses each).
-- **1/22/21 Accepted**: NBDT was accepted to ICLR 2021. Repository has been updated with new results and supporting code.
-
-Table of Contents
+**Table of Contents**
 
 - [Quickstart: Running and loading NBDTs](#quickstart)
 - [Convert your own neural network into a decision tree](#convert-neural-networks-to-decision-trees)
@@ -20,6 +15,12 @@ Table of Contents
 - [Results](#results)
 - [Customize Repository for Your Application](#customize-repository-for-your-application)
 - [Citation](#citation)
+
+**Updates**
+
+- **2/2/21 Talks**: released a [3-minute YouTube video summarizing NBDT](https://youtu.be/fQ2eNFCSRiA), along with a [15-minute technical talk](https://youtu.be/bC5n1Yov7D0)
+- **1/28/21 arXiv**: updated [arXiv](https://arxiv.org/pdf/2004.00221.pdf) with latest results, improving neural network accuracy, generalization, and interpretability (4 new human studies, 600 responses each).
+- **1/22/21 Accepted**: NBDT was accepted to ICLR 2021. Repository has been updated with new results and supporting code.
 
 # Quickstart
 
