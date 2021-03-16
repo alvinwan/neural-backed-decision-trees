@@ -1,6 +1,9 @@
 pytorchcv
+requests
+pyparsing
+zipp
 torch==1.6.0
-torchvision
+torchvision==0.7.0
 nltk
 scikit-learn
 networkx
