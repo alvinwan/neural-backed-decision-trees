@@ -8,7 +8,7 @@ for i in "CIFAR10 ${MODEL_NAME}_cifar10 1" "CIFAR100 ${MODEL_NAME}_cifar100 1" "
   nbdt-hierarchy  --dataset=${dataset} --arch=${model}
 
   # 2. train with soft tree supervision loss
-  python main.py --lr=0.01 --dataset=${dataset} --model=${model} --hierarchy=induced-${model} --pretrained --loss=SoftTreeSupLoss --tree-supervision-weight=${weight}
+  python main.py --lr=0.01 --dataset=${dataset} --arch=${model} --hierarchy=induced-${model} --pretrained --loss=SoftTreeSupLoss --tree-supervision-weight=${weight}
 
   # 3. evaluate with soft then hard inference
   for analysis in SoftEmbeddedDecisionRules HardEmbeddedDecisionRules; do
