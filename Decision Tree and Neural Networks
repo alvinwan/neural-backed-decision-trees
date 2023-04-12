@@ -1,0 +1,116 @@
+from sklearn.tree import DecisionTreeRegressor
+tree_reg = DecisionTreeRegressor(min_samples_leaf=10, max_depth=5) 
+tree_reg.fit(train_x, train_target)
+# Train RMSE for Decission Tree Regressor
+train_pred_dtr = tree_reg.predict(train_x)
+train_mse_dtr = mean_squared_error(train_target, train_pred_dtr)
+train_rmse_dtr = np.sqrt(train_mse_dtr)
+print(f'Train RMSE for Decission Tree Regressor: {train_rmse_dtr}')
+
+# Test RMSE for Decission Tree Regressor
+test_pred_dtr = tree_reg.predict(test_x)
+test_mse_dtr = mean_squared_error(test_target, test_pred_dtr)
+test_rmse_dtr = np.sqrt(test_mse_dtr)
+print(f'Test RMSE for Decission Tree Regressor: {test_rmse_dtr}')
+
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import SGDRegressor 
+from sklearn.svm import SVR 
+from sklearn.ensemble import VotingRegressor
+
+dtree_reg = DecisionTreeRegressor(max_depth=25)
+svm_reg = SVR(kernel="rbf", C=10, epsilon=0.03, gamma='scale') 
+sgd_reg = SGDRegressor( max_iter=13000, tol=1e-3)
+
+voting_reg = VotingRegressor(
+    estimators=[
+        ('dt', dtree_reg), 
+        ('svr', svm_reg), 
+        ('sgd', sgd_reg)]
+)
+
+voting_reg.fit(train_x, train_target)
+# Train RMSE for Voting Regressor
+train_pred_vr = voting_reg.predict(train_x)
+train_mse_vr = mean_squared_error(train_target, train_pred_vr)
+train_rmse_vr = np.sqrt(train_mse_vr)
+print(f'Train RMSE for Voting Regressor: {train_rmse_vr}')
+# Test RMSE for Voting Regressor
+test_pred_vr = voting_reg.predict(test_x)
+test_mse_vr = mean_squared_error(test_target, test_pred_vr)
+test_rmse_vr = np.sqrt(test_mse_vr)
+print(f'Test RMSE for Voting Regressor: {test_rmse_vr}')
+#### GradientBoosting
+from sklearn.ensemble import GradientBoostingRegressor
+
+gb_reg = GradientBoostingRegressor(max_depth=3, n_estimators=150, learning_rate=0.1) 
+gb_reg.fit(train_x, train_target)
+# Train RMSE for Gradient Boosting Regressor
+train_pred_gbr = gb_reg.predict(train_x)
+train_mse_gbr = mean_squared_error(train_target, train_pred_gbr)
+train_rmse_gbr = np.sqrt(train_mse_gbr)
+print(f'Train RMSE for Gradient Boosting Regressor: {train_rmse_gbr}')
+# Test RMSE for Gradient Boosting Regressor
+test_pred_gbr = gb_reg.predict(test_x)
+test_mse_gbr = mean_squared_error(test_target, test_pred_gbr)
+test_rmse_gbr = np.sqrt(test_mse_gbr)
+print(f'Test RMSE for Gradient Boosting Regressor: {test_rmse_gbr}')
+from sklearn.neural_network import MLPRegressor
+
+mlp_reg = MLPRegressor(
+    hidden_layer_sizes=(200, 200, 200, 200, 200), 
+    max_iter=1000, 
+    early_stopping=True, 
+    alpha = 0.1
+)
+mlp_reg.fit(train_x, train_target)
+# Train RMSE
+train_pred_nnr = mlp_reg.predict(train_x)
+train_mse_nnr = mean_squared_error(train_target, train_pred_nnr)
+train_rmse_nnr = np.sqrt(train_mse_nnr)
+print(f'Train RMSE for Neural Network Regressor: {train_rmse_nnr}')
+# Test RMSE
+test_pred_nnr = mlp_reg.predict(test_x)
+test_mse_nnr = mean_squared_error(test_target, test_pred_nnr)
+test_rmse_nnr = np.sqrt(test_mse_nnr)
+print(f'Test RMSE for Neural Network Regressor: {test_rmse_nnr}')
+# Randomized Grid search on Decision Tree Regressor
+from sklearn.model_selection import RandomizedSearchCV
+
+param_grid = [
+    {
+        'min_samples_leaf': np.arange(10, 30), 
+        'max_depth': np.arange(10,30)
+    }
+]
+
+tree_reg = DecisionTreeRegressor()
+
+grid_search = RandomizedSearchCV(
+    tree_reg, param_grid, cv=5, n_iter=10, 
+    scoring='neg_mean_squared_error', 
+    verbose=1,return_train_score=True
+)
+
+grid_search.fit(train_x, train_target)
+cvres = grid_search.cv_results_
+
+for mean_score, params in zip(cvres["mean_test_score"], cvres["params"]):
+    print(np.sqrt(-mean_score), params)
+    
+    print(
+    "grid_search.best_params_: ", grid_search.best_params_,
+    "\ngrid_search.best_estimator_: ", grid_search.best_estimator_,
+)
+
+# Train RMSE for Randomized Grid search on Decision Tree Regressor
+train_pred_rgs = grid_search.best_estimator_.predict(train_x)
+train_mse_rgs = mean_squared_error(train_target, train_pred_rgs)
+train_rmse_rgs = np.sqrt(train_mse_rgs)
+print(f'Train RMSE for Randomized Grid search on Decision Tree Regressor: {train_rmse_rgs}')
+
+# Test RMSE for Randomized Grid search on Decision Tree Regressor
+test_pred_rgs = grid_search.best_estimator_.predict(test_x)
+test_mse_rgs = mean_squared_error(test_target, test_pred_rgs)
+test_rmse_rgs = np.sqrt(test_mse_rgs)
+print(f'Test RMSE for Randomized Grid search on Decision Tree Regressor: {test_rmse_rgs}')
